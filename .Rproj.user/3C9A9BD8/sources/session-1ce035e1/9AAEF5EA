@@ -3,7 +3,7 @@
     "path": "C:/WBG/GitHub/WWBI/Code/01-processing-data.R",
     "project_path": "Code/01-processing-data.R",
     "type": "r_source",
-    "hash": "0",
+    "hash": "3665738818",
     "contents": "",
     "dirty": false,
     "created": 1730900567733.0,
@@ -12,14 +12,16 @@
     "properties": {
         "tempName": "Untitled1",
         "source_window_id": "",
-        "Source": "Source"
+        "Source": "Source",
+        "cursorPosition": "54,0",
+        "scrollLine": "38"
     },
     "folds": "",
-    "lastKnownWriteTime": 1730900585,
+    "lastKnownWriteTime": 1730902903,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1730900585974,
+    "last_content_update": 1730902903498,
     "read_only": false,
     "read_only_alternatives": []
 }
