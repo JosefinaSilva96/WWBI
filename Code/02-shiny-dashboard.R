@@ -18,6 +18,7 @@ library(leaflet)
 library(DT)
 library(rnaturalearth)
 library(sf)
+library(plotly)
 
 
 ### INITIAL COMMANDS ----
@@ -83,9 +84,11 @@ countries <- c(
 # Extract available years and countries for select inputs
 
 years <- as.character(2000:2022)  # Years are 2000 to 2022 based on column names in your data
+
 countries <- unique(data_wwbi$country_name)  # Extract unique country names from the dataset
 
 # Define UI ----
+
 ui <- dashboardPage(
   skin = "black",
   dashboardHeader(title = "WWB Indicators"),
@@ -120,6 +123,10 @@ ui <- dashboardPage(
       
       tabItem(tabName = "variableList",
               fluidRow(
+                box(title = "Year Filter", status = "primary", solidHeader = TRUE, width = 3,
+                    selectInput("yearFilter", "Select Year", 
+                                choices = paste0("year_", 2000:2022), selected = "year_2022", multiple = TRUE)
+                ),
                 box(title = "Available Variables", status = "primary", solidHeader = TRUE, width = 12,
                     DTOutput("variableTable")
                 )
@@ -129,27 +136,27 @@ ui <- dashboardPage(
       tabItem(tabName = "graphs",
               fluidRow(
                 box(selectInput("indicator", "Select a WWB Indicator", 
-                                choices = c("Wage bill (as % of public expenditure) over time", "Wage bill (% of public expenditures) and GDP per capita", "Public sector employment", "Public sector employment over time", "Distribution of public sector workforce", "Sectoral distribution of public sector workforce", 
-                                            "Female employment by sector", "Gender distribution in the public sector workforce", "Individuals with tertiary education by sector of employment", 
-                                            "Formality levels", "Public sector wage premium (compared to all private sector workers)", 
+                                choices = c("Wage bill (as % of public expenditure) over time", 
+                                            "Wage bill (% of public expenditures) and GDP per capita", 
+                                            "Public sector employment", 
+                                            "Public sector employment over time", 
+                                            "Distribution of public sector workforce", 
+                                            "Sectoral distribution of public sector workforce", 
+                                            "Female employment by sector", 
+                                            "Gender distribution in the public sector workforce", 
+                                            "Individuals with tertiary education by sector of employment", 
+                                            "Formality levels", 
                                             "Public sector wage premium (compared to all private sector workers)", 
-                                            "Gender wage premium in the public sector", "Pay compression ratios (ratio of 90th/10th percentile earners)")),
+                                            "Gender wage premium in the public sector")),
                     title = "Worldwide Bureaucracy Indicators", status = "primary", solidHeader = TRUE, width = 4),
-                box(selectInput("yearSelect", "Select Year", choices = years), width = 4),
-                box(selectInput("countrySelect", "Select Country", choices = countries), width = 4)
+                box(selectizeInput("countrySelect", "Select Countries", 
+                                   choices = countries, multiple = TRUE, selected = countries[1:3]), 
+                    width = 4),
+                box(selectInput("yearSelect", "Select Year", choices = years), width = 4)
               ),
-              conditionalPanel(
-                condition = "input.indicator == 'Wage Bill'",
-                box(title = "Wage bill (as % of public expenditure) over time", status = "primary", solidHeader = TRUE, width = 12,
-                    plotOutput("genderPlot", width = "100%"),
-                    downloadButton("downloadgenderPlot", "Download Plot", class = "btn btn-primary")
-                )
-              ),
-              conditionalPanel(
-                condition = "input.indicator == 'Wage Bill and GDP per capita'",
-                box(title = "Wage Bill and GDP per capita", status = "primary", solidHeader = TRUE, width = 12,
-                    plotOutput("industryPlot", width = "100%"),
-                    downloadButton("downloadindustryPlot", "Download Plot", class = "btn btn-primary")
+              fluidRow(
+                box(title = "Indicator Trend Over Time", status = "primary", solidHeader = TRUE, width = 12,
+                    plotlyOutput("linePlot", height = "500px")
                 )
               )
       ),
@@ -173,30 +180,43 @@ ui <- dashboardPage(
 )
 
 # Define Server ----
+
 server <- function(input, output, session) {
   
-  output$numberIndicatorsBox <- renderInfoBox({
-    infoBox("Number of Indicators", "300", icon = icon("flag"), color = "light-blue")
+  # Ensure indicator selection is handled
+  observe({
+    req(input$indicator)
+    # Use input$indicator to filter or select data
+    selected_indicator <- input$indicator
   })
   
-  output$numberCountriesBox <- renderInfoBox({
-    infoBox("Number of Countries", "200", icon = icon("earth-americas"), color = "light-blue")
-  })
-  
-  output$temporalCoverageAnnualBox <- renderInfoBox({
-    infoBox("Temporal Coverage", "Annual", icon = icon("check"), color = "light-blue")
-  })
-  
-  output$temporalCoverageYearsBox <- renderInfoBox({
-    infoBox("Temporal Coverage", "2000 to 2022", icon = icon("timeline"), color = "light-blue")
-  })
-  
-  output$lastUpdatedBox <- renderInfoBox({
-    infoBox("Last Updated on", "Sep 15, 2022", icon = icon("calendar"), color = "light-blue")
-  })
-  
-  output$variableTable <- renderDT({
-    datatable(data_wwbi, options = list(pageLength = 5, autoWidth = TRUE))
+  # Render the plot
+  output$indicatorPlot <- renderPlotly({
+    req(input$indicator, input$countrySelect, input$yearSelect)
+    
+    # Subset the data based on selected indicator and countries
+    selected_data_long <- data_wwbi %>%
+      filter(indicator_name == input$indicator,
+             country_name %in% input$countrySelect,
+             year %in% 2010:2022) %>%
+      select(country_name, year, value)
+    
+    # Check if the data looks correct
+    print(head(selected_data_long))  # Optional debugging step
+    
+    # Generate the plot with the filtered data
+    plot_ly(selected_data_long, 
+            x = ~year, 
+            y = ~value, 
+            color = ~country_name, 
+            type = 'scatter', 
+            mode = 'lines+markers',
+            line = list(width = 2), 
+            marker = list(size = 6)) %>%
+      layout(title = paste("Indicator Trend Over Time:", input$indicator),
+             xaxis = list(title = "Year"),
+             yaxis = list(title = paste(input$indicator)),
+             legend = list(title = list(text = "Country")))
   })
   
   output$worldMap <- renderLeaflet({
@@ -229,3 +249,8 @@ server <- function(input, output, session) {
 
 # Run the app ----
 shinyApp(ui, server)
+
+
+
+
+
