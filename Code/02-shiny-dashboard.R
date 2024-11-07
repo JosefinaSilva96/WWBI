@@ -200,49 +200,21 @@ ui <- dashboardPage(
 # Server ----
 server <- function(input, output, session) {
   
-  # Reactive data based on selected indicator and year
-  selected_data_long <- reactive({
-    req(input$indicator, input$yearFilter)  # Ensure inputs are selected
-    
-    data_filtered <- data_wwbi %>%
-      filter(indicator_name == input$indicator) %>%
-      pivot_longer(cols = starts_with("year_"), 
-                   names_to = "year", 
-                   values_to = "value") %>%
-      mutate(year = as.numeric(gsub("year_", "", year))) %>%
-      filter(year %in% input$yearFilter)  # Filter based on year selection
-    
-    return(data_filtered)
-  })
-  
-  # Dynamically update the X and Y variable selection
-  observe({
-    data_long <- selected_data_long()
-    
-    # Update the X and Y variable select inputs
-    updateSelectInput(session, 'xcol', choices = names(data_long), selected = names(data_long)[1])
-    updateSelectInput(session, 'ycol', choices = names(data_long), selected = names(data_long)[2])
-  })
-  
-  # Reactive expressions for X and Y values based on selected columns
-  x <- reactive({
-    data_long <- selected_data_long()
-    data_long[[input$xcol]]
-  })
-  
-  y <- reactive({
-    data_long <- selected_data_long()
-    data_long[[input$ycol]]
-  })
-  
   # Render the plotly plot
   output$plot <- renderPlotly({
-    plot_ly(
-      x = x(),
-      y = y(),
-      type = 'scatter',
-      mode = 'markers'
-    )
+    plot_ly(filtered_data, 
+            x = ~year, 
+            y = ~value, 
+            color = ~country_name, 
+            type = 'scatter', 
+            mode = 'lines+markers',
+            line = list(width = 2), 
+            marker = list(size = 6)) %>%
+      layout(title = "Wage Bill as a Percentage of Public Expenditure: Trend Over Time",
+             xaxis = list(title = "Year", dtick = 5),  # 5-year intervals
+             yaxis = list(title = "Wage Bill (%)"),
+             legend = list(title = list(text = "Country")))
+    
   })
   
   # Update world map based on selected indicator
@@ -280,19 +252,19 @@ server <- function(input, output, session) {
   })
   
   output$numberCountriesBox <- renderInfoBox({
-    infoBox("Countries", length(unique(data_wwbi$country_name)), icon = icon("globe"), color = "green")
+    infoBox("Countries", length(unique(data_wwbi$country_name)), icon = icon("globe"), color = "blue")
   })
   
   output$temporalCoverageAnnualBox <- renderInfoBox({
-    infoBox("Temporal Coverage (Annual)", "2000-2022", icon = icon("calendar"), color = "purple")
+    infoBox("Temporal Coverage (Annual)", "2000-2022", icon = icon("calendar"), color = "blue")
   })
   
   output$temporalCoverageYearsBox <- renderInfoBox({
-    infoBox("Temporal Coverage (Years)", "22", icon = icon("calendar"), color = "yellow")
+    infoBox("Temporal Coverage (Years)", "22", icon = icon("calendar"), color = "blue")
   })
   
   output$lastUpdatedBox <- renderInfoBox({
-    infoBox("Last Updated", "2022", icon = icon("clock"), color = "red")
+    infoBox("Last Updated", "2022", icon = icon("clock"), color = "blue")
   })
 }
 
@@ -302,7 +274,17 @@ shinyApp(ui, server)
 
 
 # Filter the data for the specific indicator "Wage bill as a percentage of Public Expenditure"
-filtered_data <- selected_data_long[selected_data_long$indicator_name == "Wage bill as a percentage of Public Expenditure", ]
+
+filtered_data <- data_wwbi[data_wwbi$indicator_name == "Wage bill as a percentage of Public Expenditure", ]
+
+
+filtered_data <- filtered_data %>%
+  pivot_longer(cols = starts_with("year_"), 
+               names_to = "year", 
+               values_to = "value") %>%
+  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
+  filter(!is.na(value)) 
+
 
 # Create the plot
 plot <- plot_ly(filtered_data, 
@@ -317,6 +299,7 @@ plot <- plot_ly(filtered_data,
          xaxis = list(title = "Year", dtick = 5),  # 5-year intervals
          yaxis = list(title = "Wage Bill (%)"),
          legend = list(title = list(text = "Country")))
+
 print(plot)
 
 

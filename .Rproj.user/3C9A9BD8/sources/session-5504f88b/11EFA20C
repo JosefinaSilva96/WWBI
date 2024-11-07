@@ -15,10 +15,10 @@
         "totalObservations": "523",
         "displayedObservations": "523",
         "variables": "4",
-        "cacheKey": "1FA8C42F",
+        "cacheKey": "287516AE",
         "object": "selected_data_long",
         "environment": "",
-        "contentUrl": "grid_resource/gridviewer.html?env=&obj=selected_data_long&cache_key=1FA8C42F&max_display_columns=50",
+        "contentUrl": "grid_resource/gridviewer.html?env=&obj=selected_data_long&cache_key=287516AE&max_display_columns=50",
         "preview": "0",
         "source_window_id": "",
         "Source": "Source"
