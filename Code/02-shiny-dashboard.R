@@ -41,6 +41,9 @@ world_spdf <- ne_countries(scale = "medium", returnclass = "sf")
 color_palette <- colorFactor(c("lightgreen", "lightgray"), domain = c("reported", "not_reported"))
 
 
+selectInput("countrySelect", "Select Country", 
+            choices = unique(data_wwbi$country_name), 
+            multiple = TRUE)
 
 #Countries 
 
@@ -88,7 +91,27 @@ years <- as.character(2000:2022)  # Years are 2000 to 2022 based on column names
 
 countries <- unique(data_wwbi$country_name)  # Extract unique country names from the data set
 
+
+indicator <- unique(data_wwbi$indicator_name)
+
+# Filter the data using dplyr
+selected_data_long <- data_wwbi %>%
+  filter(indicator_name == indicator & country_name %in% countries) %>%
+  select(country_name, indicator_name, starts_with("year_"))  # Select relevant columns
+
+# Reshape the data using pivot_longer
+selected_data_long <- selected_data_long %>%
+  pivot_longer(cols = starts_with("year_"), 
+               names_to = "year", 
+               values_to = "value") %>%
+  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
+  filter(!is.na(value))  # Remove rows with NA values
+
+# View the reshaped data
+print(selected_data_long)
+
 # Define UI ----
+
 ui <- dashboardPage(
   skin = "black",
   dashboardHeader(title = "WWB Indicators"),
@@ -139,13 +162,15 @@ ui <- dashboardPage(
                                             "Public sector employment", 
                                             "Gender distribution in the public sector workforce")),
                     title = "Worldwide Bureaucracy Indicators", status = "primary", solidHeader = TRUE, width = 4),
-                box(selectizeInput("countrySelect", "Select Countries", 
-                                   choices = countries, multiple = TRUE, selected = countries[1:3]), 
+                # Adjust the country selection input
+                box(selectInput("countrySelect", "Select Country", 
+                                choices = unique(data_wwbi$country_name), # Use the actual country names from your dataset
+                                multiple = TRUE, selected = unique(data_wwbi$country_name)[1:3]), 
                     width = 4)
               ),
               fluidRow(
                 box(title = "Indicator Trend Over Time", status = "primary", solidHeader = TRUE, width = 12,
-                    plotlyOutput("linePlot", height = "500px")
+                    plotOutput("linePlot", height = "500px")  # Changed to plotOutput for ggplot
                 )
               )
       ),
@@ -171,27 +196,20 @@ ui <- dashboardPage(
 # Define Server ----
 server <- function(input, output, session) {
   
-  # Render plot with filtered data based on indicator and selected countries
-  output$linePlot <- renderPlotly({
-    req(input$indicator, input$countrySelect)
+  # Render the plot when the country is selected
+  output$linePlot <- renderPlot({
     
-    # Select and filter data for years 2010 to 2022, removing rows with NA values
-    selected_data_long <- data_wwbi %>%
-      filter(indicator_name == input$indicator,
-             country_name %in% input$countrySelect) %>%
-      select(country_name, indicator_name, matches("^year_20(1[0-9]|2[0-2])")) %>%
-      pivot_longer(cols = matches("^year_"), 
-                   names_to = "year", 
-                   values_to = "value") %>%
-      mutate(year = as.numeric(sub("year_", "", year))) %>%
-      drop_na(value)
-    
-    # Plot with 5-year skips on the x-axis
-    plot_ly(selected_data_long(), x = ~year, y = ~value, color = ~country, type = 'scatter', mode = 'lines+markers') %>%
-      layout(title = 'Country Trend Over Time',
-             xaxis_title = 'Year',
-             yaxis_title = 'Value',
-             legend_title_text = 'Country')
+    # Plot the data using ggplot2
+    ggplot(selected_data_long, aes(x = year, y = value, color = country_name)) +
+      geom_line() +
+      geom_point() +
+      labs(
+        title = paste(input$indicator, "Trend Over Time"),
+        x = 'Year',
+        y = 'Value'
+      ) +
+      theme_minimal() +
+      scale_x_continuous(breaks = seq(min(selected_data_long$year), max(selected_data_long$year), by = 5))  # Ticks every 5 years
   })
   
   # Update world map based on selected indicator
@@ -247,8 +265,5 @@ server <- function(input, output, session) {
 
 # Run the app
 shinyApp(ui, server)
-
-
-
 
 

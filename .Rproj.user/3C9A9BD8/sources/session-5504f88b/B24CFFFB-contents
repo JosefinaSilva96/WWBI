@@ -41,6 +41,9 @@ world_spdf <- ne_countries(scale = "medium", returnclass = "sf")
 color_palette <- colorFactor(c("lightgreen", "lightgray"), domain = c("reported", "not_reported"))
 
 
+selectInput("countrySelect", "Select Country", 
+            choices = unique(data_wwbi$country_name), 
+            multiple = TRUE)
 
 #Countries 
 
@@ -88,7 +91,28 @@ years <- as.character(2000:2022)  # Years are 2000 to 2022 based on column names
 
 countries <- unique(data_wwbi$country_name)  # Extract unique country names from the data set
 
-# Define UI ----
+
+indicator <- unique(data_wwbi$indicator_name)
+
+# Filter the data using dplyr
+selected_data_long <- data_wwbi %>%
+  filter(indicator_name == indicator & country_name %in% countries) %>%
+  select(country_name, indicator_name, starts_with("year_"))  # Select relevant columns
+
+
+# Reshape the data using pivot_longer
+selected_data_long <- selected_data_long %>%
+  pivot_longer(cols = starts_with("year_"), 
+               names_to = "year", 
+               values_to = "value") %>%
+  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
+  filter(!is.na(value))  # Remove rows with NA values
+
+# View the reshaped data
+print(selected_data_long)
+
+## Define UI ----
+
 ui <- dashboardPage(
   skin = "black",
   dashboardHeader(title = "WWB Indicators"),
@@ -139,13 +163,19 @@ ui <- dashboardPage(
                                             "Public sector employment", 
                                             "Gender distribution in the public sector workforce")),
                     title = "Worldwide Bureaucracy Indicators", status = "primary", solidHeader = TRUE, width = 4),
-                box(selectizeInput("countrySelect", "Select Countries", 
-                                   choices = countries, multiple = TRUE, selected = countries[1:3]), 
-                    width = 4)
+                
+                # Updated input for dynamic variable selection
+                box(selectInput('xcol', 'X Variable', choices = NULL),  # Placeholder for dynamic choice
+                    selectInput('ycol', 'Y Variable', choices = NULL),  # Placeholder for dynamic choice
+                    width = 4),
+                
+                mainPanel(
+                  plotlyOutput('plot')  # Render plotly output
+                )
               ),
               fluidRow(
                 box(title = "Indicator Trend Over Time", status = "primary", solidHeader = TRUE, width = 12,
-                    plotlyOutput("linePlot", height = "500px")
+                    plotOutput("linePlot", height = "500px")  # Changed to plotOutput for ggplot
                 )
               )
       ),
@@ -167,31 +197,52 @@ ui <- dashboardPage(
     )
   )
 )
-
-# Define Server ----
+# Server ----
 server <- function(input, output, session) {
   
-  # Render plot with filtered data based on indicator and selected countries
-  output$linePlot <- renderPlotly({
-    req(input$indicator, input$countrySelect)
+  # Reactive data based on selected indicator and year
+  selected_data_long <- reactive({
+    req(input$indicator, input$yearFilter)  # Ensure inputs are selected
     
-    # Select and filter data for years 2010 to 2022, removing rows with NA values
-    selected_data_long <- data_wwbi %>%
-      filter(indicator_name == input$indicator,
-             country_name %in% input$countrySelect) %>%
-      select(country_name, indicator_name, matches("^year_20(1[0-9]|2[0-2])")) %>%
-      pivot_longer(cols = matches("^year_"), 
+    data_filtered <- data_wwbi %>%
+      filter(indicator_name == input$indicator) %>%
+      pivot_longer(cols = starts_with("year_"), 
                    names_to = "year", 
                    values_to = "value") %>%
-      mutate(year = as.numeric(sub("year_", "", year))) %>%
-      drop_na(value)
+      mutate(year = as.numeric(gsub("year_", "", year))) %>%
+      filter(year %in% input$yearFilter)  # Filter based on year selection
     
-    # Plot with 5-year skips on the x-axis
-    plot_ly(selected_data_long(), x = ~year, y = ~value, color = ~country, type = 'scatter', mode = 'lines+markers') %>%
-      layout(title = 'Country Trend Over Time',
-             xaxis_title = 'Year',
-             yaxis_title = 'Value',
-             legend_title_text = 'Country')
+    return(data_filtered)
+  })
+  
+  # Dynamically update the X and Y variable selection
+  observe({
+    data_long <- selected_data_long()
+    
+    # Update the X and Y variable select inputs
+    updateSelectInput(session, 'xcol', choices = names(data_long), selected = names(data_long)[1])
+    updateSelectInput(session, 'ycol', choices = names(data_long), selected = names(data_long)[2])
+  })
+  
+  # Reactive expressions for X and Y values based on selected columns
+  x <- reactive({
+    data_long <- selected_data_long()
+    data_long[[input$xcol]]
+  })
+  
+  y <- reactive({
+    data_long <- selected_data_long()
+    data_long[[input$ycol]]
+  })
+  
+  # Render the plotly plot
+  output$plot <- renderPlotly({
+    plot_ly(
+      x = x(),
+      y = y(),
+      type = 'scatter',
+      mode = 'markers'
+    )
   })
   
   # Update world map based on selected indicator
@@ -217,7 +268,7 @@ server <- function(input, output, session) {
       )
   })
   
-  # Render Data Table
+  # Render Data Table of variables
   output$variableTable <- renderDT({
     data_wwbi %>%
       select(country_name, indicator_name, matches("^year_20(1[0-9]|2[0-2])"))
@@ -249,6 +300,24 @@ server <- function(input, output, session) {
 shinyApp(ui, server)
 
 
+
+# Filter the data for the specific indicator "Wage bill as a percentage of Public Expenditure"
+filtered_data <- selected_data_long[selected_data_long$indicator_name == "Wage bill as a percentage of Public Expenditure", ]
+
+# Create the plot
+plot <- plot_ly(filtered_data, 
+                x = ~year, 
+                y = ~value, 
+                color = ~country_name, 
+                type = 'scatter', 
+                mode = 'lines+markers',
+                line = list(width = 2), 
+                marker = list(size = 6)) %>%
+  layout(title = "Wage Bill as a Percentage of Public Expenditure: Trend Over Time",
+         xaxis = list(title = "Year", dtick = 5),  # 5-year intervals
+         yaxis = list(title = "Wage Bill (%)"),
+         legend = list(title = list(text = "Country")))
+print(plot)
 
 
 
