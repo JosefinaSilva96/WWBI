@@ -86,7 +86,7 @@ countries <- c(
 
 years <- as.character(2000:2022)  # Years are 2000 to 2022 based on column names in your data
 
-countries <- unique(data_wwbi$country_name)  # Extract unique country names from the dataset
+countries <- unique(data_wwbi$country_name)  # Extract unique country names from the data set
 
 # Define UI ----
 
@@ -188,11 +188,11 @@ server <- function(input, output, session) {
   output$linePlot <- renderPlotly({
     req(input$indicator, input$countrySelect, input$yearSelect)
     
-    # Subset the data based on selected indicator, countries, and years (2010-2022)
+    # Convert year to numeric if needed and subset the data
     selected_data_long <- data_wwbi %>%
       filter(indicator_name == input$indicator,
              country_name %in% input$countrySelect,
-             year >= 2010 & year <= 2022) %>%
+             as.numeric(year) >= 2010 & as.numeric(year) <= 2022) %>%
       select(country_name, year, value)
     
     # Generate the plot with the filtered data
@@ -239,7 +239,10 @@ server <- function(input, output, session) {
 }
 
 # Run the app ----
+
 shinyApp(ui, server)
+
+
 
 
 

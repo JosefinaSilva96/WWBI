@@ -29,7 +29,7 @@ data_path <- "C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/Data
 
 #Load indicators data set 
 
-wwbi <- read_dta(file.path(data_path, "data_wwbi.dta"))
+data_wwbi <- read_dta(file.path(data_path, "data_wwbi.dta"))
 
 
 # Load world spatial data
@@ -37,6 +37,7 @@ wwbi <- read_dta(file.path(data_path, "data_wwbi.dta"))
 world_spdf <- ne_countries(scale = "medium", returnclass = "sf")
 
 # Create a color palette for countries
+
 color_palette <- colorFactor(c("lightgreen", "lightgray"), domain = c("reported", "not_reported"))
 
 
@@ -152,7 +153,7 @@ ui <- dashboardPage(
                 box(selectizeInput("countrySelect", "Select Countries", 
                                    choices = countries, multiple = TRUE, selected = countries[1:3]), 
                     width = 4),
-                box(selectInput("yearSelect", "Select Year", choices = years), width = 4)
+                box(selectInput("yearSelect", "Select Year", choices = 2010:2022), width = 4)
               ),
               fluidRow(
                 box(title = "Indicator Trend Over Time", status = "primary", solidHeader = TRUE, width = 12,
@@ -183,26 +184,16 @@ ui <- dashboardPage(
 
 server <- function(input, output, session) {
   
-  # Ensure indicator selection is handled
-  observe({
-    req(input$indicator)
-    # Use input$indicator to filter or select data
-    selected_indicator <- input$indicator
-  })
-  
-  # Render the plot
-  output$indicatorPlot <- renderPlotly({
+  # Render plot with filtered data based on indicator and selected countries
+  output$linePlot <- renderPlotly({
     req(input$indicator, input$countrySelect, input$yearSelect)
     
-    # Subset the data based on selected indicator and countries
+    # Convert year to numeric if needed and subset the data
     selected_data_long <- data_wwbi %>%
       filter(indicator_name == input$indicator,
              country_name %in% input$countrySelect,
-             year %in% 2010:2022) %>%
+             as.numeric(year) >= 2010 & as.numeric(year) <= 2022) %>%
       select(country_name, year, value)
-    
-    # Check if the data looks correct
-    print(head(selected_data_long))  # Optional debugging step
     
     # Generate the plot with the filtered data
     plot_ly(selected_data_long, 
@@ -248,6 +239,7 @@ server <- function(input, output, session) {
 }
 
 # Run the app ----
+
 shinyApp(ui, server)
 
 
