@@ -99,6 +99,7 @@ selected_data_long <- data_wwbi %>%
   filter(indicator_name == indicator & country_name %in% countries) %>%
   select(country_name, indicator_name, starts_with("year_"))  # Select relevant columns
 
+
 # Reshape the data using pivot_longer
 selected_data_long <- selected_data_long %>%
   pivot_longer(cols = starts_with("year_"), 
@@ -110,7 +111,7 @@ selected_data_long <- selected_data_long %>%
 # View the reshaped data
 print(selected_data_long)
 
-# Define UI ----
+## Define UI ----
 
 ui <- dashboardPage(
   skin = "black",
@@ -162,11 +163,15 @@ ui <- dashboardPage(
                                             "Public sector employment", 
                                             "Gender distribution in the public sector workforce")),
                     title = "Worldwide Bureaucracy Indicators", status = "primary", solidHeader = TRUE, width = 4),
-                # Adjust the country selection input
-                box(selectInput("countrySelect", "Select Country", 
-                                choices = unique(data_wwbi$country_name), # Use the actual country names from your dataset
-                                multiple = TRUE, selected = unique(data_wwbi$country_name)[1:3]), 
-                    width = 4)
+                
+                # Updated input for dynamic variable selection
+                box(selectInput('xcol', 'X Variable', choices = NULL),  # Placeholder for dynamic choice
+                    selectInput('ycol', 'Y Variable', choices = NULL),  # Placeholder for dynamic choice
+                    width = 4),
+                
+                mainPanel(
+                  plotlyOutput('plot')  # Render plotly output
+                )
               ),
               fluidRow(
                 box(title = "Indicator Trend Over Time", status = "primary", solidHeader = TRUE, width = 12,
@@ -192,24 +197,52 @@ ui <- dashboardPage(
     )
   )
 )
-
-# Define Server ----
+# Server ----
 server <- function(input, output, session) {
   
-  # Render the plot when the country is selected
-  output$linePlot <- renderPlot({
+  # Reactive data based on selected indicator and year
+  selected_data_long <- reactive({
+    req(input$indicator, input$yearFilter)  # Ensure inputs are selected
     
-    # Plot the data using ggplot2
-    ggplot(selected_data_long, aes(x = year, y = value, color = country_name)) +
-      geom_line() +
-      geom_point() +
-      labs(
-        title = paste(input$indicator, "Trend Over Time"),
-        x = 'Year',
-        y = 'Value'
-      ) +
-      theme_minimal() +
-      scale_x_continuous(breaks = seq(min(selected_data_long$year), max(selected_data_long$year), by = 5))  # Ticks every 5 years
+    data_filtered <- data_wwbi %>%
+      filter(indicator_name == input$indicator) %>%
+      pivot_longer(cols = starts_with("year_"), 
+                   names_to = "year", 
+                   values_to = "value") %>%
+      mutate(year = as.numeric(gsub("year_", "", year))) %>%
+      filter(year %in% input$yearFilter)  # Filter based on year selection
+    
+    return(data_filtered)
+  })
+  
+  # Dynamically update the X and Y variable selection
+  observe({
+    data_long <- selected_data_long()
+    
+    # Update the X and Y variable select inputs
+    updateSelectInput(session, 'xcol', choices = names(data_long), selected = names(data_long)[1])
+    updateSelectInput(session, 'ycol', choices = names(data_long), selected = names(data_long)[2])
+  })
+  
+  # Reactive expressions for X and Y values based on selected columns
+  x <- reactive({
+    data_long <- selected_data_long()
+    data_long[[input$xcol]]
+  })
+  
+  y <- reactive({
+    data_long <- selected_data_long()
+    data_long[[input$ycol]]
+  })
+  
+  # Render the plotly plot
+  output$plot <- renderPlotly({
+    plot_ly(
+      x = x(),
+      y = y(),
+      type = 'scatter',
+      mode = 'markers'
+    )
   })
   
   # Update world map based on selected indicator
@@ -235,7 +268,7 @@ server <- function(input, output, session) {
       )
   })
   
-  # Render Data Table
+  # Render Data Table of variables
   output$variableTable <- renderDT({
     data_wwbi %>%
       select(country_name, indicator_name, matches("^year_20(1[0-9]|2[0-2])"))
@@ -265,5 +298,26 @@ server <- function(input, output, session) {
 
 # Run the app
 shinyApp(ui, server)
+
+
+
+# Filter the data for the specific indicator "Wage bill as a percentage of Public Expenditure"
+filtered_data <- selected_data_long[selected_data_long$indicator_name == "Wage bill as a percentage of Public Expenditure", ]
+
+# Create the plot
+plot <- plot_ly(filtered_data, 
+                x = ~year, 
+                y = ~value, 
+                color = ~country_name, 
+                type = 'scatter', 
+                mode = 'lines+markers',
+                line = list(width = 2), 
+                marker = list(size = 6)) %>%
+  layout(title = "Wage Bill as a Percentage of Public Expenditure: Trend Over Time",
+         xaxis = list(title = "Year", dtick = 5),  # 5-year intervals
+         yaxis = list(title = "Wage Bill (%)"),
+         legend = list(title = list(text = "Country")))
+print(plot)
+
 
 
