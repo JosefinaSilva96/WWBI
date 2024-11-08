@@ -138,7 +138,17 @@ wage_bill_gdp <- wage_bill_gdp %>%
   mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
   filter(!is.na(value)) #4104 obs
 
+# Filter the data for the specific indicator "Public sector employment, as a share of formal employment and paid employment "
 
+public_sector_emp <- data_wwbi[data_wwbi$indicator_name %in% c("Public sector employment, as a share of formal employment", 
+                                                               "Public sector employment, as a share of paid employment"), ]
+
+public_sector_emp <- public_sector_emp %>%
+  pivot_longer(cols = starts_with("year_"), 
+               names_to = "year", 
+               values_to = "value") %>%
+  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
+  filter(!is.na(value)) #2015 obs
 
 
 
