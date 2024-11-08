@@ -123,7 +123,7 @@ filtered_data <- filtered_data %>%
                names_to = "year", 
                values_to = "value") %>%
   mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
-  filter(!is.na(value)) 
+  filter(!is.na(value)) #4096 obs
 
 
 # Filter the data for the specific indicator "Wage bill as a percentage of GDP"
@@ -136,7 +136,7 @@ wage_bill_gdp <- wage_bill_gdp %>%
                names_to = "year", 
                values_to = "value") %>%
   mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
-  filter(!is.na(value)) 
+  filter(!is.na(value)) #4104 obs
 
 
 
@@ -359,17 +359,14 @@ plot <- plot_ly(filtered_data,
 print(plot)
 
 
-
-
-library(shiny)
-library(plotly)
+###############################################################################
 
 ui <- fluidPage(
   headerPanel('Example'),
   sidebarPanel(
     selectInput('countries', 'Countries', 
-                choices = unique(filtered_data$country_name), 
-                selected = unique(filtered_data$country_name)[1],  # Default to the first country
+                choices = unique(wage_bill_gdp$country_name), 
+                selected = unique(wage_bill_gdp$country_name)[1],  # Default to the first country
                 multiple = TRUE)  # Allow multiple countries to be selected
   ),
   mainPanel(
@@ -381,50 +378,28 @@ server <- function(input, output) {
   
   # Reactive expression to filter data based on selected countries
   filtered_countries_data <- reactive({
-    filtered_data[filtered_data$country_name %in% input$countries, ]
+    wage_bill_gdp[wage_bill_gdp$country_name %in% input$countries, ]
   })
   
   # Render Plotly plot based on selected countries
   output$plot <- renderPlotly({
-    data_to_plot <- filtered_countries_data()  # Get filtered data based on selected countries
     
-    # Extract the most recent year and its value for each country
-    last_year_data <- data_to_plot %>%
-      group_by(country_name) %>%
-      filter(year == max(year)) %>%
-      ungroup() %>%
-      select(country_name, year, value)
-    
-    # Create the plot
-    plot <- plot_ly(data_to_plot, 
-                    x = ~year, 
-                    y = ~value, 
-                    color = ~country_name,  # Different colors for each country
-                    type = 'scatter', 
-                    mode = 'lines+markers',
-                    line = list(width = 2), 
-                    marker = list(size = 6)) %>%
-      layout(title = paste("Wage Bill as a Percentage of Public Expenditure for Selected Countries Over Time"),
-             xaxis = list(title = "Year", dtick = 5),  # 5-year intervals
-             yaxis = list(title = "Wage Bill (%)"),
-             legend = list(title = list(text = "Country")))
-    
-    # Add annotations for the last year values for each country without arrows
-    for(i in 1:nrow(last_year_data)) {
-      plot <- plot %>%
-        add_annotations(
-          x = last_year_data$year[i], 
-          y = last_year_data$value[i],
-          text = paste(round(last_year_data$value[i], 2)),
-          showarrow = FALSE,  # Remove the arrow
-          font = list(size = 12, color = "black"),
-          bgcolor = "white",
-          xanchor = "center",
-          yanchor = "bottom"
-        )
-    }
-    
-    plot
+    plot_ly(data = filtered_countries_data(), 
+            x = ~year,                    # Set year on x-axis
+            y = ~value,                   # Set wage bill % on y-axis
+            type = 'scatter', 
+            mode = 'markers+text',        # Add markers with labels
+            color = ~country_name,        # Different colors for each country
+            marker = list(size = 10),     # Set dot size
+            hoverinfo = 'text',           # Show country name on hover
+            textposition = "top center"   # Position labels on top center
+    ) %>%
+      layout(
+        title = "Dot Plot of Wage Bill as a Percentage for Each Country Over Time",
+        xaxis = list(title = "Year"),
+        yaxis = list(title = "Wage Bill (%)"),
+        showlegend = TRUE                # Show legend to identify countries
+      )
   })
 }
 
