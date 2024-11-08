@@ -111,9 +111,40 @@ selected_data_long <- selected_data_long %>%
 # View the reshaped data
 print(selected_data_long)
 
-## Define UI ----
 
-# Define UI
+
+# Filter the data for the specific indicator "Wage bill as a percentage of Public Expenditure"
+
+filtered_data <- data_wwbi[data_wwbi$indicator_name == "Wage bill as a percentage of Public Expenditure", ]
+
+
+filtered_data <- filtered_data %>%
+  pivot_longer(cols = starts_with("year_"), 
+               names_to = "year", 
+               values_to = "value") %>%
+  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
+  filter(!is.na(value)) 
+
+
+# Filter the data for the specific indicator "Wage bill as a percentage of GDP"
+
+wage_bill_gdp <- data_wwbi[data_wwbi$indicator_name == "Wage bill as a percentage of GDP", ]
+
+
+wage_bill_gdp <- wage_bill_gdp %>%
+  pivot_longer(cols = starts_with("year_"), 
+               names_to = "year", 
+               values_to = "value") %>%
+  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
+  filter(!is.na(value)) 
+
+
+
+
+
+# Define UI ----
+
+
 ui <- dashboardPage(
   skin = "black",
   dashboardHeader(title = "WWB Indicators"),
@@ -159,11 +190,14 @@ ui <- dashboardPage(
                 box(selectInput("indicator", "Select a WWB Indicator", 
                                 choices = c("Wage bill (as % of public expenditure) over time")), # Select indicator
                     title = "Worldwide Bureaucracy Indicators", status = "primary", solidHeader = TRUE, width = 4),
-                box(selectInput("countryFilter", "Select Country", 
-                                choices = unique(filtered_data$country_name), selected = NULL, multiple = TRUE),
-                    width = 4),
+                box(selectInput('countries', 'Countries', 
+                                choices = unique(filtered_data$country_name), 
+                                selected = unique(filtered_data$country_name)[1],  # Default to the first country
+                                multiple = TRUE),  # Allow multiple countries to be selected
+                    width = 8
+                ),
                 mainPanel(
-                  plotlyOutput('plot')  # Render plotly output
+                  plotlyOutput('plot')
                 )
               )
       ),
@@ -186,33 +220,56 @@ ui <- dashboardPage(
 )
 
 # Server ----
+
 server <- function(input, output, session) {
   
-  # Filter data based on indicator and selected countries
-  filtered_data <- reactive({
-    selected_data_long %>%
-      filter(indicator_name == "Wage bill as a percentage of Public Expenditure",
-             country_name %in% input$countryFilter)
+  # Reactive expression to filter data based on selected countries
+  filtered_countries_data <- reactive({
+    filtered_data[filtered_data$country_name %in% input$countries, ]
   })
   
-  # Render the plotly plot
+  # Render Plotly plot based on selected countries
   output$plot <- renderPlotly({
-    req(filtered_data())
+    data_to_plot <- filtered_countries_data()  # Get filtered data based on selected countries
     
-    plot_ly(filtered_data(), 
-            x = ~year, 
-            y = ~value, 
-            color = ~country_name, 
-            type = 'scatter', 
-            mode = 'lines+markers',
-            line = list(width = 2), 
-            marker = list(size = 6)) %>%
-      layout(title = "Wage Bill as a Percentage of Public Expenditure: Trend Over Time",
+    # Extract the most recent year and its value for each country
+    last_year_data <- data_to_plot %>%
+      group_by(country_name) %>%
+      filter(year == max(year)) %>%
+      ungroup() %>%
+      select(country_name, year, value)
+    
+    # Create the plot
+    plot <- plot_ly(data_to_plot, 
+                    x = ~year, 
+                    y = ~value, 
+                    color = ~country_name,  # Different colors for each country
+                    type = 'scatter', 
+                    mode = 'lines+markers',
+                    line = list(width = 2), 
+                    marker = list(size = 6)) %>%
+      layout(title = "Wage Bill as a Percentage of Public Expenditure for Selected Countries Over Time",
              xaxis = list(title = "Year", dtick = 5),  # 5-year intervals
              yaxis = list(title = "Wage Bill (%)"),
              legend = list(title = list(text = "Country")))
+    
+    # Add annotations for the last year values for each country without arrows
+    for(i in 1:nrow(last_year_data)) {
+      plot <- plot %>%
+        add_annotations(
+          x = last_year_data$year[i], 
+          y = last_year_data$value[i],
+          text = paste(round(last_year_data$value[i], 2)),
+          showarrow = FALSE,  # Remove the arrow
+          font = list(size = 12, color = "black"),
+          bgcolor = "white",
+          xanchor = "center",
+          yanchor = "bottom"
+        )
+    }
+    
+    plot
   })
-  
   # Update world map based on selected indicator
   observe({
     req(input$indicatorSelect)
@@ -267,8 +324,8 @@ server <- function(input, output, session) {
 # Run the app
 shinyApp(ui, server)
 
-# Run the app
-shinyApp(ui, server)
+
+
 
 
 
@@ -372,5 +429,20 @@ server <- function(input, output) {
 }
 
 shinyApp(ui, server)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
