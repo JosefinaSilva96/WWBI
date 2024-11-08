@@ -352,19 +352,18 @@ server <- function(input, output) {
              yaxis = list(title = "Wage Bill (%)"),
              legend = list(title = list(text = "Country")))
     
-    # Add annotations for the last year values for each country
+    # Add annotations for the last year values for each country without arrows
     for(i in 1:nrow(last_year_data)) {
       plot <- plot %>%
         add_annotations(
           x = last_year_data$year[i], 
           y = last_year_data$value[i],
-          text = paste(last_year_data$country_name[i], ":", round(last_year_data$value[i], 2)),
-          showarrow = TRUE,
-          arrowhead = 2,
-          ax = 20, 
-          ay = -40,
-          font = list(size = 10, color = "black"),
-          bgcolor = "white"
+          text = paste(round(last_year_data$value[i], 2)),
+          showarrow = FALSE,  # Remove the arrow
+          font = list(size = 12, color = "black"),
+          bgcolor = "white",
+          xanchor = "center",
+          yanchor = "bottom"
         )
     }
     
@@ -373,6 +372,5 @@ server <- function(input, output) {
 }
 
 shinyApp(ui, server)
-
 
 
