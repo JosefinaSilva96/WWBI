@@ -364,8 +364,8 @@ ui <- fluidPage(
   headerPanel('Example'),
   sidebarPanel(
     selectInput('countries', 'Countries', 
-                choices = unique(wage_bill_gdp$country_name), 
-                selected = unique(wage_bill_gdp$country_name)[1],  # Default to the first country
+                choices = unique(public_sector_emp$country_name), 
+                selected = unique(public_sector_emp$country_name)[1],  # Default to the first country
                 multiple = TRUE)  # Allow multiple countries to be selected
   ),
   mainPanel(
@@ -373,37 +373,44 @@ ui <- fluidPage(
   )
 )
 
+
+
 server <- function(input, output) {
   
-  # Reactive expression to filter data based on selected countries
-  filtered_countries_data <- reactive({
-    wage_bill_gdp[wage_bill_gdp$country_name %in% input$countries, ]
+  # Reactive expression to filter the data based on selected countries
+  filtered_data <- reactive({
+    public_sector_emp %>%
+      filter(country_name %in% input$countries)
   })
   
-  # Render Plotly plot based on selected countries
+  # Render Plotly plot
   output$plot <- renderPlotly({
+    data_to_plot <- filtered_data()  # Get filtered data
     
-    plot_ly(data = filtered_countries_data(), 
-            x = ~year,                    # Set year on x-axis
-            y = ~value,                   # Set wage bill % on y-axis
-            type = 'scatter', 
-            mode = 'markers+text',        # Add markers with labels
-            color = ~country_name,        # Different colors for each country
-            marker = list(size = 10),     # Set dot size
-            hoverinfo = 'text',           # Show country name on hover
-            textposition = "top center"   # Position labels on top center
-    ) %>%
-      layout(
-        title = "Dot Plot of Wage Bill as a Percentage for Each Country Over Time",
-        xaxis = list(title = "Year"),
-        yaxis = list(title = "Wage Bill (%)"),
-        showlegend = TRUE                # Show legend to identify countries
-      )
+    # Ensure the data is in the correct format (long format)
+    data_to_plot_long <- data_to_plot %>%
+      select(country_name, indicator_name, year, value) %>%
+      mutate(indicator_name = factor(indicator_name))
+    
+    # Plotly: scatter plot with different colors for each indicator
+    plot <- plot_ly(data = data_to_plot_long, 
+                    x = ~country_name, 
+                    y = ~value, 
+                    color = ~indicator_name,  # Different color for each indicator
+                    type = 'scatter',
+                    mode = 'markers',  # Scatter plot (dots)
+                    marker = list(size = 8)) %>%
+      layout(title = "Public Sector Employment Indicators by Country",
+             xaxis = list(title = "Country", tickangle = 45),  # Rotate x-axis labels if needed
+             yaxis = list(title = "Value"),
+             legend = list(title = list(text = "Indicator")))
+    
+    plot
   })
 }
 
-shinyApp(ui, server)
 
+shinyApp(ui, server)
 
 
 
