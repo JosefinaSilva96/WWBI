@@ -680,6 +680,7 @@ server <- function(input, output, session) {
   })
   
   output$firstGraph <- renderPlotly({
+    
     data_to_plot <- public_sector_emp %>% 
       filter(country_name %in% input$countries)
     
@@ -703,7 +704,8 @@ server <- function(input, output, session) {
   })
   
   output$secondGraph <- renderPlotly({
-    data_to_plot <- public_sector_emp_time()  # Get filtered data
+    data_to_plot <- public_sector_emp_time %>% 
+      filter(country_name %in% input$countries)
     
     data_to_plot_long <- data_to_plot %>%
       select(year, indicator_name, value) %>%
