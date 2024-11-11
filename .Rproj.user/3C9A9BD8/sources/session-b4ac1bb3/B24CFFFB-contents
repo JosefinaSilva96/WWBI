@@ -232,24 +232,33 @@ ui <- dashboardPage(
                                 multiple = TRUE),
                     width = 8)
               ),
-              mainPanel(
+              fluidRow(
                 plotlyOutput('plot')
               )
       ),
       tabItem(tabName = "publicSectorGraphs",
               fluidRow(
-                box(selectInput("indicator", "Select a WWB Indicator", 
-                                choices = c("Public sector employment as a share of")),
-                    title = "Worldwide Bureaucracy Indicators", status = "primary", solidHeader = TRUE, width = 4),
-                box(selectInput('countries', 'Countries', 
-                                choices = unique(public_sector_emp$country_name), 
-                                selected = unique(public_sector_emp$country_name)[1], 
-                                multiple = TRUE),
-                    width = 8)
-              ),
-              mainPanel(
-                plotlyOutput('thirdGraph')
-              )        
+                
+                # First Graph: Multi-country selection
+                selectInput("countries_first", 
+                            "Select Countries for First Graph", 
+                            choices = unique(public_sector_emp$country_name), 
+                            selected = NULL, 
+                            multiple = TRUE),  # Multiple selection
+                
+                # First Graph plot
+                plotlyOutput("firstGraph"),
+                
+                # Second Graph: Single country selection
+                selectInput("country_second", 
+                            "Select Country for Second Graph", 
+                            choices = unique(public_sector_emp_time$country_name), 
+                            selected = NULL, 
+                            multiple = FALSE),  # Single selection
+                
+                # Second Graph plot
+                plotlyOutput("secondGraph")
+              )
       ),
       tabItem(tabName = "indicators",
               fluidRow(
@@ -269,6 +278,7 @@ ui <- dashboardPage(
   )
 )
 
+
 # Define Server ----
 
 server <- function(input, output, session) {
@@ -281,7 +291,6 @@ server <- function(input, output, session) {
       # Filter wage_bill_gdp dataset based on selected countries
       data <- wage_bill_gdp %>% filter(country_name %in% input$countries)
     } else {
-      # If filtered_data is a dataset, refer to it without parentheses
       data <- filtered_data %>% filter(country_name %in% input$countries)
     }
     return(data)
@@ -331,12 +340,12 @@ server <- function(input, output, session) {
         )
     }
     
-    plot
+    plot 
   })
-  
-  output$thirdGraph <- renderPlotly({
-    data_to_plot <- public_sector_emp %>% 
-      filter(country_name %in% input$countries)
+  # First Graph (Multiple Countries)
+  output$firstGraph <- renderPlotly({
+    data_to_plot <- public_sector_emp %>%
+      filter(country_name %in% input$countries_first)
     
     data_to_plot_long <- data_to_plot %>%
       select(country_name, indicator_name, year, value) %>%
@@ -353,6 +362,44 @@ server <- function(input, output, session) {
              xaxis = list(title = "Country", tickangle = 45),
              yaxis = list(title = "Value"),
              legend = list(title = list(text = "Indicator")))
+    
+    plot
+  })
+  
+  # Second Graph (Single Country)
+  output$secondGraph <- renderPlotly({
+    data_to_plot <- public_sector_emp_time %>%
+      filter(country_name == input$country_second)  # Single country selection
+    
+    data_to_plot_long <- data_to_plot %>%
+      select(year, indicator_name, value) %>%
+      mutate(indicator_name = factor(indicator_name))
+    
+    plot <- plot_ly(
+      data = data_to_plot_long, 
+      x = ~year, 
+      y = ~value, 
+      color = ~indicator_name,  # Color each indicator differently
+      text = ~paste("Value:", round(value, 2)),  # Tooltip with value
+      type = 'scatter', 
+      mode = 'lines+markers',  # Add lines and markers
+      marker = list(size = 8)  # Set marker size
+    ) %>%
+      layout(
+        title = paste("Public Sector Employment in", input$country_second, "Over Time"),
+        xaxis = list(title = "Year", tickangle = 45),
+        yaxis = list(title = "Employment Value"),
+        legend = list(title = list(text = "Indicator"))
+      ) %>%
+      add_annotations(
+        x = ~year, 
+        y = ~value,  # Add offset to place annotation above the point
+        text = ~round(value, 2),  # Display value as annotation
+        showarrow = FALSE,  # Remove arrows
+        font = list(size = 12, color = "black"),
+        xanchor = "center",  # Center annotation horizontally
+        yanchor = "bottom"   # Position annotation above the point
+      )
     
     plot
   })
@@ -424,6 +471,8 @@ server <- function(input, output, session) {
 # Run the application 
 
 shinyApp(ui = ui, server = server)
+
+
 
 
 
@@ -570,31 +619,26 @@ ui <- dashboardPage(
       ),
       tabItem(tabName = "publicSectorGraphs",
               fluidRow(
-                box(title = "Select Graph Type", status = "primary", solidHeader = TRUE, width = 4,
-                    radioButtons("graphType", "Choose Graph Type:",
-                                 choices = c("Multiple Countries" = "multi", "Single Country" = "single"),
-                                 selected = "multi")
-                ),
-                box(selectInput('countriesMulti', 'Countries (Multiple)', 
-                                choices = unique(public_sector_emp$country_name), 
-                                selected = unique(public_sector_emp$country_name)[1], 
-                                multiple = TRUE),
-                    width = 8
-                ),
-                box(selectInput('countriesSingle', 'Country (Single)', 
-                                choices = unique(public_sector_emp_time$country_name), 
-                                selected = unique(public_sector_emp_time$country_name)[1], 
-                                multiple = FALSE),
-                    width = 8
-                )
-              ),
-              fluidRow(
-                column(width = 6,
-                       plotlyOutput('firstGraph')
-                ),
-                column(width = 6,
-                       plotlyOutput('secondGraph')
-                )
+                
+                # First Graph: Multi-country selection
+                selectInput("countries_first", 
+                            "Select Countries for First Graph", 
+                            choices = unique(public_sector_emp$country_name), 
+                            selected = NULL, 
+                            multiple = TRUE),  # Multiple selection
+                
+                # First Graph plot
+                plotlyOutput("firstGraph"),
+                
+                # Second Graph: Single country selection
+                selectInput("country_second", 
+                            "Select Country for Second Graph", 
+                            choices = unique(public_sector_emp_time$country_name), 
+                            selected = NULL, 
+                            multiple = FALSE),  # Single selection
+                
+                # Second Graph plot
+                plotlyOutput("secondGraph")
               )
       ),
       tabItem(tabName = "indicators",
@@ -614,6 +658,7 @@ ui <- dashboardPage(
     )
   )
 )
+
 
 # Define Server ----
 
@@ -676,13 +721,12 @@ server <- function(input, output, session) {
         )
     }
     
-    plot
+    plot 
   })
-  
+  # First Graph (Multiple Countries)
   output$firstGraph <- renderPlotly({
-    
-    data_to_plot <- public_sector_emp %>% 
-      filter(country_name %in% input$countries)
+    data_to_plot <- public_sector_emp %>%
+      filter(country_name %in% input$countries_first)
     
     data_to_plot_long <- data_to_plot %>%
       select(country_name, indicator_name, year, value) %>%
@@ -703,9 +747,10 @@ server <- function(input, output, session) {
     plot
   })
   
+  # Second Graph (Single Country)
   output$secondGraph <- renderPlotly({
-    data_to_plot <- public_sector_emp_time %>% 
-      filter(country_name %in% input$countries)
+    data_to_plot <- public_sector_emp_time %>%
+      filter(country_name == input$country_second)  # Single country selection
     
     data_to_plot_long <- data_to_plot %>%
       select(year, indicator_name, value) %>%
@@ -715,19 +760,30 @@ server <- function(input, output, session) {
       data = data_to_plot_long, 
       x = ~year, 
       y = ~value, 
-      color = ~indicator_name,  
-      text = ~paste("Value:", round(value, 2)),  
+      color = ~indicator_name,  # Color each indicator differently
+      text = ~paste("Value:", round(value, 2)),  # Tooltip with value
       type = 'scatter', 
-      mode = 'lines+markers', 
-      marker = list(size = 6, opacity = 0.7)
+      mode = 'lines+markers',  # Add lines and markers
+      marker = list(size = 8)  # Set marker size
     ) %>%
-      layout(title = "Indicator trends over time",
-             xaxis = list(title = "Year", tickmode = "linear", dtick = 1),
-             yaxis = list(title = "Value"))
+      layout(
+        title = paste("Public Sector Employment in", input$country_second, "Over Time"),
+        xaxis = list(title = "Year", tickangle = 45),
+        yaxis = list(title = "Employment Value"),
+        legend = list(title = list(text = "Indicator"))
+      ) %>%
+      add_annotations(
+        x = ~year, 
+        y = ~value,  # Add offset to place annotation above the point
+        text = ~round(value, 2),  # Display value as annotation
+        showarrow = FALSE,  # Remove arrows
+        font = list(size = 12, color = "black"),
+        xanchor = "center",  # Center annotation horizontally
+        yanchor = "bottom"   # Position annotation above the point
+      )
     
     plot
   })
-  
   
   # Define the initial world map render
   output$worldMap <- renderLeaflet({
