@@ -150,7 +150,12 @@ public_sector_emp <- public_sector_emp %>%
   mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
   filter(!is.na(value)) #2015 obs
 
-
+# Keep the last year available for each country
+public_sector_emp <- public_sector_emp %>%
+  filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
+  group_by(country_name) %>%                      # Group by country_name (or any other variable)
+  filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
+  ungroup()                                      # Ungroup the data
 
 # Define UI ----
 
@@ -360,6 +365,8 @@ shinyApp(ui, server)
 
 ###############################################################################
 
+
+
 ui <- fluidPage(
   headerPanel('Example'),
   sidebarPanel(
@@ -400,7 +407,7 @@ server <- function(input, output) {
                     type = 'scatter',
                     mode = 'markers',  # Scatter plot (dots)
                     marker = list(size = 8)) %>%
-      layout(title = "Public Sector Employment Indicators by Country",
+      layout(title = "Public sector employment as a share of",
              xaxis = list(title = "Country", tickangle = 45),  # Rotate x-axis labels if needed
              yaxis = list(title = "Value"),
              legend = list(title = list(text = "Indicator")))
@@ -415,6 +422,9 @@ shinyApp(ui, server)
 
 
 
+
+
+# Define UI ----
 
 
 ui <- dashboardPage(
@@ -460,7 +470,7 @@ ui <- dashboardPage(
       tabItem(tabName = "graphs",
               fluidRow(
                 box(selectInput("indicator", "Select a WWB Indicator", 
-                                choices = c("Wage bill (as % of public expenditure) over time", "Wage bill as a percentage of GDP")),
+                                choices = c("Wage bill (as % of public expenditure) over time", "Wage bill as a percentage of GDP", "Public sector employment as a share of")),
                     title = "Worldwide Bureaucracy Indicators", status = "primary", solidHeader = TRUE, width = 4),
                 box(selectInput('countries', 'Countries', 
                                 choices = unique(filtered_data$country_name), 
@@ -490,41 +500,46 @@ ui <- dashboardPage(
   )
 )
 
+
+## Define Server ----
+
 server <- function(input, output, session) {
   
-  # Reactive expression to select appropriate dataset based on indicator
+  # Reactive expression to select the appropriate dataset based on the indicator
   selected_data <- reactive({
+    req(input$countries)  # Ensure 'countries' input is available
+    
     if (input$indicator == "Wage bill as a percentage of GDP") {
-      # Assuming wage_bill_gdp is a data frame that contains the relevant data
-      data <- wage_bill_gdp[wage_bill_gdp$country_name %in% input$countries, ]
+      # Filter wage_bill_gdp dataset based on selected countries
+      data <- wage_bill_gdp %>% filter(country_name %in% input$countries)
     } else {
-      # Assuming filtered_data is a data frame that contains the relevant data
-      data <- filtered_data[filtered_data$country_name %in% input$countries, ]
+      # Filter filtered_data dataset based on selected countries
+      data <- filtered_data() %>% filter(country_name %in% input$countries)
     }
     return(data)
   })
   
-  # Render Plotly plot based on selected indicator
+  # Render Plotly plot for the main indicator
   output$plot <- renderPlotly({
     data_to_plot <- selected_data()
     
-    # Get the final value (last year data) for each country
+    # Calculate the maximum year to get the latest data points
+    max_year <- max(data_to_plot$year, na.rm = TRUE)
+    
+    # Filter data to the latest year for annotation
     last_year_data <- data_to_plot %>%
       group_by(country_name) %>%
-      filter(year == max(year)) %>%
+      filter(year == max_year) %>%
       ungroup() %>%
       select(country_name, year, value)
     
-    # Set title and mode based on selected indicator
-    if (input$indicator == "Wage bill as a percentage of GDP") {
-      title_text <- "Wage Bill as % of GDP Over Time"
-      plot_mode <- 'markers'  # Dot plot for GDP indicator
-    } else {
-      title_text <- "Wage Bill as % of Public Expenditure Over Time"
-      plot_mode <- 'lines+markers'  # Line plot for public expenditure indicator
-    }
+    # Set plot title and mode based on the selected indicator
+    title_text <- ifelse(input$indicator == "Wage bill as a percentage of GDP",
+                         "Wage Bill as % of GDP Over Time",
+                         "Wage Bill as % of Public Expenditure Over Time")
+    plot_mode <- ifelse(input$indicator == "Wage bill as a percentage of GDP", 'markers', 'lines+markers')
     
-    # Create the plot
+    # Create the Plotly plot
     plot <- plot_ly(data = data_to_plot, 
                     x = ~year, 
                     y = ~value, 
@@ -538,14 +553,14 @@ server <- function(input, output, session) {
                                          "Wage Bill (% of GDP)", "Wage Bill (%)")),
              legend = list(title = list(text = "Country")))
     
-    # Add annotations for the last year's value for each country
+    # Add annotations for each country's last year's value
     for (i in 1:nrow(last_year_data)) {
       plot <- plot %>%
         add_annotations(
           x = last_year_data$year[i], 
           y = last_year_data$value[i],
           text = paste(round(last_year_data$value[i], 2)),
-          showarrow = FALSE,  # No arrow for annotation
+          showarrow = FALSE,
           font = list(size = 12, color = "black"),
           bgcolor = "white",
           xanchor = "center",
@@ -556,9 +571,34 @@ server <- function(input, output, session) {
     plot
   })
   
-  # Update world map based on selected indicator
+  # Render third graph: Public Sector Employment Indicators by Country
+  output$thirdGraph <- renderPlotly({
+    data_to_plot <- filtered_data()  # Call filtered_data as a reactive expression
+    
+    # Reshape data to long format
+    data_to_plot_long <- data_to_plot %>%
+      select(country_name, indicator_name, year, value) %>%
+      mutate(indicator_name = factor(indicator_name))
+    
+    # Create scatter plot for employment indicators
+    plot <- plot_ly(data = data_to_plot_long, 
+                    x = ~country_name, 
+                    y = ~value, 
+                    color = ~indicator_name, 
+                    type = 'scatter',
+                    mode = 'markers',  
+                    marker = list(size = 8)) %>%
+      layout(title = "Public sector employment as a share of",
+             xaxis = list(title = "Country", tickangle = 45),
+             yaxis = list(title = "Value"),
+             legend = list(title = list(text = "Indicator")))
+    
+    plot
+  })
+  
+  # Update the world map based on the selected indicator
   observe({
-    req(input$indicatorSelect)
+    req(input$indicatorSelect)  # Ensure indicatorSelect is available
     
     reported_countries <- data_wwbi %>%
       filter(!is.na(.data[[paste0("year_", 2022)]])) %>%
@@ -584,7 +624,7 @@ server <- function(input, output, session) {
       select(country_name, indicator_name, matches("^year_20(1[0-9]|2[0-2])"))
   })
   
-  # Dummy outputs for widgets
+  # Dummy outputs for info boxes
   output$numberIndicatorsBox <- renderInfoBox({
     infoBox("Indicators", 100, icon = icon("list"), color = "blue")
   })
@@ -598,22 +638,17 @@ server <- function(input, output, session) {
   })
   
   output$temporalCoverageYearsBox <- renderInfoBox({
-    infoBox("Temporal Coverage (Years)", "22", icon = icon("calendar"), color = "blue")
+    infoBox("Years Available", "2022", icon = icon("calendar"), color = "blue")
   })
   
   output$lastUpdatedBox <- renderInfoBox({
-    infoBox("Last Updated", "2022", icon = icon("clock"), color = "blue")
+    infoBox("Last Updated", "November 2024", icon = icon("clock"), color = "blue")
   })
-  
 }
 
 
+
 shinyApp(ui, server)
-
-
-
-
-
 
 
 
