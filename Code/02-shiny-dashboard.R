@@ -160,6 +160,22 @@ public_sector_emp <- public_sector_emp %>%
 
 
 
+# Filter the data for the specific indicator "Public sector employment over time  "
+
+public_sector_emp_time <- data_wwbi[data_wwbi$indicator_name %in% c("Public sector employment, as a share of formal employment", 
+                                                               "Public sector employment, as a share of paid employment"), ]
+
+public_sector_emp_time <- public_sector_emp_time %>%
+  pivot_longer(cols = starts_with("year_"), 
+               names_to = "year", 
+               values_to = "value") %>%
+  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
+  filter(!is.na(value)) #2015 obs
+
+
+
+
+
 # Define UI ----
 
 
@@ -423,67 +439,78 @@ shinyApp(ui = ui, server = server)
 
 
 
+# Define UI ----
 ui <- fluidPage(
-  headerPanel('Example'),
+  headerPanel('Public Sector Employment Over Time'),
   sidebarPanel(
-    selectInput('countries', 'Countries', 
-                choices = unique(public_sector_emp$country_name), 
-                selected = unique(public_sector_emp$country_name)[1],  # Default to the first country
-                multiple = TRUE)  # Allow multiple countries to be selected
+    selectInput('countries', 'Country', 
+                choices = unique(public_sector_emp_time$country_name), 
+                selected = unique(public_sector_emp_time$country_name)[1])  # Single country selection
   ),
   mainPanel(
     plotlyOutput('plot')
   )
 )
 
-
-
+# Define Server ----
 server <- function(input, output) {
   
-  # Reactive expression to filter the data based on selected countries
+  # Reactive expression to filter the data based on the selected country
   filtered_data <- reactive({
-    public_sector_emp %>%
-      filter(country_name %in% input$countries)
+    public_sector_emp_time %>%
+      filter(country_name == input$countries)
   })
   
   # Render Plotly plot
   output$plot <- renderPlotly({
     data_to_plot <- filtered_data()  # Get filtered data
     
-    # Ensure the data is in the correct format (long format)
+    # Ensure data is in long format if needed
     data_to_plot_long <- data_to_plot %>%
-      select(country_name, indicator_name, year, value) %>%
+      select(year, indicator_name, value) %>%
       mutate(indicator_name = factor(indicator_name))
     
-    # Plotly: scatter plot with different colors for each indicator
-    plot <- plot_ly(data = data_to_plot_long, 
-                    x = ~country_name, 
-                    y = ~value, 
-                    color = ~indicator_name,  # Different color for each indicator
-                    type = 'scatter',
-                    mode = 'markers',  # Scatter plot (dots)
-                    marker = list(size = 8)) %>%
-      layout(title = "Public sector employment over time",
-             xaxis = list(title = "Country", tickangle = 45),  # Rotate x-axis labels if needed
-             yaxis = list(title = "Value"),
-             legend = list(title = list(text = "Indicator")))
+    # Create the plot with Plotly
+    plot <- plot_ly(
+      data = data_to_plot_long, 
+      x = ~year, 
+      y = ~value, 
+      color = ~indicator_name,  # Color each indicator differently
+      text = ~paste("Value:", round(value, 2)),  # Tooltip with value
+      type = 'scatter', 
+      mode = 'lines+markers',  # Add lines and markers
+      marker = list(size = 8)  # Set marker size
+    ) %>%
+      layout(
+        title = paste("Public Sector Employment in", input$countries, "Over Time"),
+        xaxis = list(title = "Year", tickangle = 45),
+        yaxis = list(title = "Employment Value"),
+        legend = list(title = list(text = "Indicator"))
+      ) %>%
+      add_annotations(
+        x = ~year, 
+        y = ~value,  # Add offset to place annotation above the point
+        text = ~round(value, 2),  # Display value as annotation
+        showarrow = FALSE,  # Remove arrows
+        font = list(size = 12, color = "black"),
+        xanchor = "center",  # Center annotation horizontally
+        yanchor = "bottom"   # Position annotation above the point
+      )
     
     plot
   })
 }
 
+# Run the application 
 
-shinyApp(ui, server)
-
-
-
+shinyApp(ui = ui, server = server)
 
 
-
-# Define UI ----
 
 
 # Define UI ----
+
+
 ui <- dashboardPage(
   skin = "black",
   dashboardHeader(title = "WWB Indicators"),
@@ -537,24 +564,38 @@ ui <- dashboardPage(
                                 multiple = TRUE),
                     width = 8)
               ),
-              mainPanel(
+              fluidRow(
                 plotlyOutput('plot')
               )
       ),
       tabItem(tabName = "publicSectorGraphs",
               fluidRow(
-                box(selectInput("indicator", "Select a WWB Indicator", 
-                                choices = c("Public sector employment as a share of")),
-                    title = "Worldwide Bureaucracy Indicators", status = "primary", solidHeader = TRUE, width = 4),
-                box(selectInput('countries', 'Countries', 
+                box(title = "Select Graph Type", status = "primary", solidHeader = TRUE, width = 4,
+                    radioButtons("graphType", "Choose Graph Type:",
+                                 choices = c("Multiple Countries" = "multi", "Single Country" = "single"),
+                                 selected = "multi")
+                ),
+                box(selectInput('countriesMulti', 'Countries (Multiple)', 
                                 choices = unique(public_sector_emp$country_name), 
                                 selected = unique(public_sector_emp$country_name)[1], 
                                 multiple = TRUE),
-                    width = 8)
+                    width = 8
+                ),
+                box(selectInput('countriesSingle', 'Country (Single)', 
+                                choices = unique(public_sector_emp_time$country_name), 
+                                selected = unique(public_sector_emp_time$country_name)[1], 
+                                multiple = FALSE),
+                    width = 8
+                )
               ),
-              mainPanel(
-                plotlyOutput('thirdGraph')
-              )        
+              fluidRow(
+                column(width = 6,
+                       plotlyOutput('firstGraph')
+                ),
+                column(width = 6,
+                       plotlyOutput('secondGraph')
+                )
+              )
       ),
       tabItem(tabName = "indicators",
               fluidRow(
@@ -575,6 +616,7 @@ ui <- dashboardPage(
 )
 
 # Define Server ----
+
 server <- function(input, output, session) {
   
   # Reactive expression to select the appropriate dataset based on the indicator
@@ -585,7 +627,6 @@ server <- function(input, output, session) {
       # Filter wage_bill_gdp dataset based on selected countries
       data <- wage_bill_gdp %>% filter(country_name %in% input$countries)
     } else {
-      # If filtered_data is a dataset, refer to it without parentheses
       data <- filtered_data %>% filter(country_name %in% input$countries)
     }
     return(data)
@@ -638,7 +679,7 @@ server <- function(input, output, session) {
     plot
   })
   
-  output$thirdGraph <- renderPlotly({
+  output$firstGraph <- renderPlotly({
     data_to_plot <- public_sector_emp %>% 
       filter(country_name %in% input$countries)
     
@@ -660,6 +701,31 @@ server <- function(input, output, session) {
     
     plot
   })
+  
+  output$secondGraph <- renderPlotly({
+    data_to_plot <- public_sector_emp_time()  # Get filtered data
+    
+    data_to_plot_long <- data_to_plot %>%
+      select(year, indicator_name, value) %>%
+      mutate(indicator_name = factor(indicator_name))
+    
+    plot <- plot_ly(
+      data = data_to_plot_long, 
+      x = ~year, 
+      y = ~value, 
+      color = ~indicator_name,  
+      text = ~paste("Value:", round(value, 2)),  
+      type = 'scatter', 
+      mode = 'lines+markers', 
+      marker = list(size = 6, opacity = 0.7)
+    ) %>%
+      layout(title = "Indicator trends over time",
+             xaxis = list(title = "Year", tickmode = "linear", dtick = 1),
+             yaxis = list(title = "Value"))
+    
+    plot
+  })
+  
   
   # Define the initial world map render
   output$worldMap <- renderLeaflet({
@@ -726,11 +792,8 @@ server <- function(input, output, session) {
 }
 
 # Run the application 
+
 shinyApp(ui = ui, server = server)
-
-
-
-
 
 
 
