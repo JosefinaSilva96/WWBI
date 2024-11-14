@@ -160,17 +160,21 @@ public_sector_emp <- public_sector_emp %>%
 
 
 
-# Filter the data for the specific indicator "Public sector employment over time  "
+# Filter the data for the specific indicator "Characteristics of the public sector workforce"
 
-public_sector_emp_time <- data_wwbi[data_wwbi$indicator_name %in% c("Public sector employment, as a share of formal employment", 
-                                                               "Public sector employment, as a share of paid employment"), ]
+public_sector_workforce <- data_wwbi[data_wwbi$indicator_name %in% c("Education workers, as a share of public total employees", 
+                                                               "Health workers, as a share of public total employees", 
+                                                               "Core Public Administration workers, as a share of public total employees"), ]
 
-public_sector_emp_time <- public_sector_emp_time %>%
+public_sector_workforce <- public_sector_workforce %>%
   pivot_longer(cols = starts_with("year_"), 
                names_to = "year", 
                values_to = "value") %>%
   mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
-  filter(!is.na(value)) #2015 obs
+  filter(!is.na(value)) #1043 obs
+
+
+
 
 
 
@@ -189,6 +193,7 @@ ui <- dashboardPage(
       menuItem("Variable List", tabName = "variableList", icon = icon("table")),
       menuItem("Wage Bill Graphs", tabName = "wageBillGraphs", icon = icon("chart-line")), 
       menuItem("Public Sector Graphs", tabName = "publicSectorGraphs", icon = icon("chart-line")), 
+      menuItem("Public Sector Workforce Graphs", tabName = "publicSectorWorkforceGraphs", icon = icon("chart-line")), 
       menuItem("Indicators Status", tabName = "indicators", icon = icon("globe"))
     )
   ),
@@ -490,7 +495,7 @@ shinyApp(ui = ui, server = server)
 
 # Define UI ----
 ui <- fluidPage(
-  headerPanel('Public Sector Employment Over Time'),
+  headerPanel('Sectoral distribution of public sector workforce'),
   sidebarPanel(
     selectInput('countries', 'Country', 
                 choices = unique(public_sector_emp_time$country_name), 
@@ -852,6 +857,10 @@ server <- function(input, output, session) {
 # Run the application 
 
 shinyApp(ui = ui, server = server)
+
+
+
+
 
 
 
