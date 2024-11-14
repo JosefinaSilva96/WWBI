@@ -311,7 +311,7 @@ server <- function(input, output, session) {
     title_text <- ifelse(input$indicator == "Wage bill as a percentage of GDP",
                          "Wage Bill as % of GDP Over Time",
                          "Wage Bill as % of Public Expenditure Over Time")
-    plot_mode <- ifelse(input$indicator == "Wage bill as a percentage of GDP", 'markers', 'lines+markers')
+    plot_mode <- ifelse(input$indicator == "Wage bill as a percentage of GDP", 'lines+markers', 'lines+markers')
     
     plot <- plot_ly(data = data_to_plot, 
                     x = ~year, 
@@ -321,7 +321,7 @@ server <- function(input, output, session) {
                     mode = plot_mode,
                     marker = list(size = 8)) %>%
       layout(title = title_text,
-             xaxis = list(title = "Year", dtick = 5),
+             xaxis = list(title = "Year", dtick = 2),
              yaxis = list(title = ifelse(input$indicator == "Wage bill as a percentage of GDP", 
                                          "Wage Bill (% of GDP)", "Wage Bill (%)")),
              legend = list(title = list(text = "Country")))
@@ -387,7 +387,7 @@ server <- function(input, output, session) {
     ) %>%
       layout(
         title = paste("Public Sector Employment in", input$country_second, "Over Time"),
-        xaxis = list(title = "Year", tickangle = 45),
+        xaxis = list(title = "Year", tickangle = 45, dtick = 2),
         yaxis = list(title = "Employment Value"),
         legend = list(title = list(text = "Indicator"))
       ) %>%

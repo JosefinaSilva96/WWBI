@@ -3,7 +3,7 @@
     "path": "C:/WBG/GitHub/WWBI/Code/0-main.R",
     "project_path": "Code/0-main.R",
     "type": "r_source",
-    "hash": "1786063022",
+    "hash": "0",
     "contents": "",
     "dirty": false,
     "created": 1730900610990.0,
@@ -12,8 +12,8 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "17,0",
-        "scrollLine": "0"
+        "cursorPosition": "34,0",
+        "scrollLine": "11"
     },
     "folds": "",
     "lastKnownWriteTime": 1730901144,
