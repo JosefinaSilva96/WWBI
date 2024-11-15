@@ -666,7 +666,7 @@ ui <- dashboardPage(
   dashboardSidebar(
     sidebarMenu(
       menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
-      menuItem("Widgets", icon = icon("th"), tabName = "widgets"),
+      menuItem("Widgets", tabName = "widgets", icon = icon("th")),
       menuItem("Variable List", tabName = "variableList", icon = icon("table")),
       menuItem("Wage Bill Graphs", tabName = "wageBillGraphs", icon = icon("chart-line")), 
       menuItem("Public Sector Graphs", tabName = "publicSectorGraphs", icon = icon("chart-line")), 
@@ -715,8 +715,7 @@ ui <- dashboardPage(
                 ),
                 box(title = "Country Selection", status = "primary", solidHeader = TRUE, width = 8,
                     selectInput("countries", "Countries", 
-                                choices = unique(filtered_data$country_name), 
-                                selected = unique(filtered_data$country_name)[1], 
+                                choices = NULL,  # Populated dynamically in the server
                                 multiple = TRUE)
                 )
               ),
@@ -732,8 +731,7 @@ ui <- dashboardPage(
                 box(title = "First Graph - Multi-Country Selection", status = "primary", solidHeader = TRUE, width = 12,
                     selectInput("countries_first", 
                                 "Select Countries for First Graph", 
-                                choices = unique(public_sector_emp$country_name), 
-                                selected = NULL, 
+                                choices = NULL,  # Populated dynamically in the server
                                 multiple = TRUE)
                 )
               ),
@@ -746,8 +744,7 @@ ui <- dashboardPage(
                 box(title = "Second Graph - Single Country Selection", status = "primary", solidHeader = TRUE, width = 12,
                     selectInput("country_second", 
                                 "Select Country for Second Graph", 
-                                choices = unique(public_sector_emp_time$country_name), 
-                                selected = NULL, 
+                                choices = NULL,  # Populated dynamically in the server
                                 multiple = FALSE)
                 )
               ),
@@ -760,11 +757,14 @@ ui <- dashboardPage(
       # Public Sector Workforce Graphs Tab
       tabItem(tabName = "publicSectorWorkforceGraphs",
               fluidRow(
-                box(title = "Country Selection", status = "primary", solidHeader = TRUE, width = 12,
-                    selectInput("countries_workforce", 
-                                "Select Countries for Workforce Graph", 
-                                choices = unique(public_sector_workforce$country_name), 
-                                selected = unique(public_sector_workforce$country_name)[1], 
+                box(title = "WWB Indicator Selection", status = "primary", solidHeader = TRUE, width = 4,
+                    selectInput("indicator_workforce", "Select a WWB Indicator", 
+                                choices = c("Sectoral distribution of public sector workforce", 
+                                            "Sectoral distribution of public sector workforce for first and last year available"))
+                ),
+                box(title = "Country Selection", status = "primary", solidHeader = TRUE, width = 8,
+                    selectInput("countries_workforce", "Countries", 
+                                choices = NULL,  # Populated dynamically in the server
                                 multiple = TRUE)
                 )
               ),
@@ -798,7 +798,6 @@ ui <- dashboardPage(
     )
   )
 )
-
 
 # Define Server ----
 
@@ -924,6 +923,66 @@ server <- function(input, output, session) {
     
     plot
   })
+  # Reactive expression to select the appropriate data set based on the indicator
+  selected_data <- reactive({
+    req(input$countries)  # Ensure 'countries' input is available
+    
+    if (input$indicator == "Wage bill as a percentage of GDP") {
+      # Filter wage_bill_gdp dataset based on selected countries
+      
+      data <- public_sector_workforce %>% filter(country_name %in% input$countries)
+    } else {
+      data <- public_sector_workforce %>% filter(country_name %in% input$countries)
+    }
+    return(data)
+  })
+  
+  # Render Plotly plot for the main indicator
+  output$plot <- renderPlotly({
+    data_to_plot <- selected_data()
+    
+    max_year <- max(data_to_plot$year, na.rm = TRUE)
+    
+    last_year_data <- data_to_plot %>%
+      group_by(country_name) %>%
+      filter(year == max_year) %>%
+      ungroup() %>%
+      select(country_name, year, value)
+    
+    title_text <- ifelse(input$indicator == "Wage bill as a percentage of GDP",
+                         "Wage Bill as % of GDP Over Time",
+                         "Wage Bill as % of Public Expenditure Over Time")
+    plot_mode <- ifelse(input$indicator == "Wage bill as a percentage of GDP", 'lines+markers', 'lines+markers')
+    
+    plot <- plot_ly(data = data_to_plot, 
+                    x = ~year, 
+                    y = ~value, 
+                    color = ~country_name, 
+                    type = 'scatter', 
+                    mode = plot_mode,
+                    marker = list(size = 8)) %>%
+      layout(title = title_text,
+             xaxis = list(title = "Year", dtick = 2),
+             yaxis = list(title = ifelse(input$indicator == "Wage bill as a percentage of GDP", 
+                                         "Wage Bill (% of GDP)", "Wage Bill (%)")),
+             legend = list(title = list(text = "Country")))
+    
+    for (i in 1:nrow(last_year_data)) {
+      plot <- plot %>%
+        add_annotations(
+          x = last_year_data$year[i], 
+          y = last_year_data$value[i],
+          text = paste(round(last_year_data$value[i], 2)),
+          showarrow = FALSE,
+          font = list(size = 12, color = "black"),
+          bgcolor = "white",
+          xanchor = "center",
+          yanchor = "bottom"
+        )
+    }
+    
+    plot 
+  })
   
   # Define the initial world map render
   output$worldMap <- renderLeaflet({
@@ -931,19 +990,19 @@ server <- function(input, output, session) {
       addTiles() %>%
       setView(lng = 0, lat = 20, zoom = 2)  # Adjust view to show the world
   })
-  # Reactive expression to filter data based on selected countries
+  # Reactive expression for workforce distribution (multi-country)
   filtered_workforce_data <- reactive({
-    req(input$countries_workforce)  # Ensure countries are selected
+    req(input$countries_workforce)
     public_sector_workforce %>%
       filter(country_name %in% input$countries_workforce) %>%
       group_by(country_name, indicator_name) %>%
       summarise(value_percentage = mean(value_percentage, na.rm = TRUE), .groups = "drop")
   })
   
-  # Render the stacked bar graph
+  # Render stacked bar graph (multi-country)
   output$stackedBarGraph <- renderPlotly({
-    data_to_plot <- filtered_workforce_data()  # Get filtered data
-    req(nrow(data_to_plot) > 0)  # Ensure there's data to plot
+    data_to_plot <- filtered_workforce_data()
+    req(nrow(data_to_plot) > 0)
     
     plot_ly(
       data = data_to_plot,
@@ -956,7 +1015,7 @@ server <- function(input, output, session) {
         "Health workers, as a share of public total employees" = "#003366"
       ),
       type = "bar",
-      text = ~paste0(round(value_percentage, 1), "%"),  # Add percentage labels
+      text = ~paste0(round(value_percentage, 1), "%"),
       textposition = "auto"
     ) %>%
       layout(
@@ -967,6 +1026,58 @@ server <- function(input, output, session) {
         legend = list(title = list(text = "Indicator"))
       )
   })
+  
+  # Render horizontal stacked bar graph (single-country, two years)
+  output$messageOutput <- renderUI({
+    filtered_data <- public_sector_workforce %>%
+      filter(country_name == input$selected_country)
+    
+    if (nrow(filtered_data) < 2) {
+      message <- "Not enough data available for this country to create the graph."
+      return(tags$p(message, style = "color: red; font-weight: bold;"))
+    }
+    return(NULL)
+  })
+  
+  output$horizontalStackedBar <- renderPlotly({
+    req(input$selected_country)
+    
+    filtered_data <- public_sector_workforce %>%
+      filter(country_name == input$selected_country)
+    
+    first_year <- min(filtered_data$year, na.rm = TRUE)
+    last_year <- max(filtered_data$year, na.rm = TRUE)
+    
+    data_to_plot <- filtered_data %>%
+      filter(year %in% c(first_year, last_year)) %>%
+      group_by(year, indicator_name) %>%
+      summarise(value_percentage = mean(value_percentage, na.rm = TRUE), .groups = "drop")
+    
+    plot_ly(
+      data = data_to_plot,
+      x = ~value_percentage,
+      y = ~factor(year, levels = c(last_year, first_year)),
+      color = ~indicator_name,
+      type = "bar",
+      orientation = "h",
+      text = ~paste0(round(value_percentage, 1), "%"),
+      textposition = "inside",
+      colors = c(
+        "Core Public Administration workers, as a share of public total employees" = "#568340",
+        "Education workers, as a share of public total employees" = "#B3242B",
+        "Health workers, as a share of public total employees" = "#003366"
+      )
+    ) %>%
+      layout(
+        barmode = "stack",
+        title = paste("Sectoral Distribution of Public Sector Workforce in", input$selected_country, 
+                      "(", first_year, "&", last_year, ")"),
+        xaxis = list(title = "Percentage (%)"),
+        yaxis = list(title = "Year"),
+        legend = list(title = list(text = "Sector"))
+      )
+  })
+  
   
   # Update the map based on indicator selection
   observe({
@@ -1028,6 +1139,8 @@ server <- function(input, output, session) {
 # Run the application 
 
 shinyApp(ui = ui, server = server)
+
+
 
 
 
