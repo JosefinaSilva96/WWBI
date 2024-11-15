@@ -550,6 +550,10 @@ server <- function(input, output) {
 shinyApp(ui = ui, server = server)
 
 
+###########################################################
+
+
+
 ## Define UI
 
 
@@ -625,12 +629,20 @@ ui <- dashboardPage(
       ),
       tabItem(tabName = "publicSectorWorkforceGraphs",
               fluidRow(
-                selectInput("countries_workforce", 
-                            "Select Countries for Workforce Graph", 
-                            choices = unique(public_sector_workforce$country_name), 
-                            selected = NULL, 
-                            multiple = TRUE),
-                plotlyOutput("stackedBarGraph")
+                box(
+                  title = "Country Selection", status = "primary", solidHeader = TRUE, width = 12,
+                  selectInput("countries_workforce", 
+                              "Select Countries for Workforce Graph", 
+                              choices = unique(public_sector_workforce$country_name), 
+                              selected = unique(public_sector_workforce$country_name)[1], 
+                              multiple = TRUE)
+                )
+              ),
+              fluidRow(
+                box(
+                  title = "Stacked Bar Chart", status = "primary", solidHeader = TRUE, width = 12,
+                  plotlyOutput("stackedBarGraph", height = "600px")
+                )
               )
       ),
       tabItem(tabName = "indicators",
@@ -714,29 +726,41 @@ server <- function(input, output, session) {
     plot
   })
   
-  # Workforce graph
-  output$stackedBarGraph <- renderPlotly({
-    data_to_plot <- public_sector_workforce %>%
+  # Reactive expression to filter data based on selected countries
+  filtered_workforce_data <- reactive({
+    req(input$countries_workforce)  # Ensure countries are selected
+    public_sector_workforce %>%
       filter(country_name %in% input$countries_workforce) %>%
       group_by(country_name, indicator_name) %>%
       summarise(value_percentage = mean(value_percentage, na.rm = TRUE), .groups = "drop")
-    plot_ly(data = data_to_plot,
-            x = ~country_name,
-            y = ~value_percentage,
-            color = ~indicator_name,
-            colors = c("Core Public Administration workers, as a share of public total employees" = "#568340", 
-                       "Education workers, as a share of public total employees" = "#B3242B", 
-                       "Health workers, as a share of public total employees" = "#003366"),
-            type = "bar", 
-            text = ~paste0(round(value_percentage, 1), "%"),  
-            textposition = "auto") %>%
-      layout(barmode = "stack",
-             title = "Public Workforce Distribution by Country",
-             xaxis = list(title = "Country"),
-             yaxis = list(title = "Workforce Distribution (%)"),
-             legend = list(title = list(text = "Indicator")))
+  })
   
-    plot 
+  # Render the stacked bar graph
+  output$stackedBarGraph <- renderPlotly({
+    data_to_plot <- filtered_workforce_data()  # Get filtered data
+    req(nrow(data_to_plot) > 0)  # Ensure there's data to plot
+    
+    plot_ly(
+      data = data_to_plot,
+      x = ~country_name,
+      y = ~value_percentage,
+      color = ~indicator_name,
+      colors = c(
+        "Core Public Administration workers, as a share of public total employees" = "#568340", 
+        "Education workers, as a share of public total employees" = "#B3242B", 
+        "Health workers, as a share of public total employees" = "#003366"
+      ),
+      type = "bar",
+      text = ~paste0(round(value_percentage, 1), "%"),  # Add percentage labels
+      textposition = "auto"
+    ) %>%
+      layout(
+        barmode = "stack",
+        title = "Public Workforce Distribution by Country",
+        xaxis = list(title = "Country"),
+        yaxis = list(title = "Workforce Distribution (%)"),
+        legend = list(title = list(text = "Indicator"))
+      )
   })
   
   # Render the other plot outputs (omitted here for brevity)
