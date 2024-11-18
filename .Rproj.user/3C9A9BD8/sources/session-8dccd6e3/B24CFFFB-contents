@@ -182,9 +182,22 @@ public_sector_workforce <- public_sector_workforce %>%
   mutate(value_percentage = value * 100)
 
 
+# Filter the data for the specific indicator "Characteristics of the gender workforce"
 
 
+gender_workforce <- data_wwbi[data_wwbi$indicator_name %in% c("Females, as a share of public paid employees", 
+                                                               "Females, as a share of private paid employees"), ]
 
+public_sector_workforce <- public_sector_workforce %>%
+  pivot_longer(cols = starts_with("year_"), 
+               names_to = "year", 
+               values_to = "value") %>%
+  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
+  filter(!is.na(value)) #1043 obs
+
+
+public_sector_workforce <- public_sector_workforce %>%
+  mutate(value_percentage = value * 100)
 
 
 ## Shiny Dashboard ----
