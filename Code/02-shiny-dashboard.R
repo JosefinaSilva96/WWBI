@@ -684,91 +684,104 @@ shinyApp(ui = ui, server = server)
 
 # Test ----
 
-
 # Define UI ----
-
 ui <- fluidPage(
-  titlePanel("Public Workforce Distribution"),
+  titlePanel("Gender Workforce Distribution"),
   sidebarLayout(
     sidebarPanel(
-      selectInput("selected_country", 
-                  "Select Country", 
-                  choices = unique(public_sector_workforce$country_name), 
-                  selected = unique(public_sector_workforce$country_name)[1], 
-                  multiple = FALSE)  # Single country selection for simplicity
+      selectInput(
+        "selected_country", 
+        "Select Country", 
+        choices = unique(gender_workforce$country_name), 
+        selected = unique(gender_workforce$country_name)[1], 
+        multiple = TRUE # Allow multiple country selection
+      )
     ),
     mainPanel(
-      uiOutput("messageOutput"),  # Display validation messages
-      plotlyOutput("horizontalStackedBar")
+      plotlyOutput("employment_plot")
     )
   )
 )
 
 # Define Server ----
-
-server <- function(input, output) {
-  output$messageOutput <- renderUI({
-    # Filter data for the selected country
-    filtered_data <- public_sector_workforce %>%
-      filter(country_name == input$selected_country)
-    
-    # Check if there is enough data
-    if (nrow(filtered_data) < 2) {
-      message <- "Not enough data available for this country to create the graph."
-      return(tags$p(message, style = "color: red; font-weight: bold;"))
-    }
-    return(NULL)
-  })
+server <- function(input, output, session) {
+  # Reactive value to store clicked point info
+  clicked_point <- reactiveVal(NULL)
   
-  output$horizontalStackedBar <- renderPlotly({
-    req(input$selected_country)
+  output$employment_plot <- renderPlotly({
+    # Filter data based on selected countries
+    filtered_data <- gender_workforce %>%
+      filter(country_name %in% input$selected_country)
     
-    # Filter data for the selected country
-    filtered_data <- public_sector_workforce %>%
-      filter(country_name == input$selected_country)
-    
-    # Find the first and last year available for the selected country
-    first_year <- min(filtered_data$year, na.rm = TRUE)
-    last_year <- max(filtered_data$year, na.rm = TRUE)
-    
-    # Filter data for the first and last year
-    data_to_plot <- filtered_data %>%
-      filter(year %in% c(first_year, last_year)) %>%
-      group_by(year, indicator_name) %>%
-      summarise(value_percentage = mean(value_percentage, na.rm = TRUE), .groups = "drop")
-    
-    # Create the horizontal stacked bar chart
-    plot_ly(data = data_to_plot,
-            x = ~value_percentage,  # Horizontal bar
-            y = ~factor(year, levels = c(last_year, first_year)),  # Ensure correct order
-            color = ~indicator_name,
-            type = "bar",
-            orientation = "h",  # Horizontal orientation
-            text = ~paste0(round(value_percentage, 1), "%"),  # Add percentage as text
-            textposition = "inside",
-            colors = c(
-              "Core Public Administration workers, as a share of public total employees" = "#568340",
-              "Education workers, as a share of public total employees" = "#B3242B",
-              "Health workers, as a share of public total employees" = "#003366"
-            )
+    # Create the plot
+    plot <- plot_ly(
+      data = filtered_data %>% filter(indicator_name == "Females, as a share of public paid employees"),
+      x = ~country_name,
+      y = ~value_percentage,
+      type = 'bar',
+      color = I("#003366"),  # Color for public sector
+      text = ~paste(indicator_name, ": ", value_percentage, "%"), # Add hover text
+      hoverinfo = "text",  # Show hover info
+      name = "Public Sector",
+      textinfo = "none"  # Hide text by default above the bar
     ) %>%
+      add_trace(
+        data = filtered_data %>% filter(indicator_name == "Females, as a share of private paid employees"),
+        x = ~country_name,
+        y = ~value_percentage,
+        type = "scatter",
+        mode = "markers",
+        marker = list(size = 10, color = "#B3242B"),
+        name = "Private Sector",
+        text = ~paste(indicator_name, ": ", value_percentage, "%"), # Add hover text for private sector
+        hoverinfo = "text",  # Show hover info
+        showlegend = FALSE # Hide the legend for scatter markers
+      ) %>%
       layout(
-        barmode = "stack",
-        title = paste("Sectoral Distribution of Public Sector Workforce in", input$selected_country, 
-                      "(", first_year, "&", last_year, ")"),
-        xaxis = list(title = "Percentage (%)"),
-        yaxis = list(title = "Year"),
+        barmode = "group",
+        title = "Female Employment by Sector",
+        xaxis = list(title = "Country"),
+        yaxis = list(title = "Employment (%)"),
         legend = list(title = list(text = "Sector"))
       )
+    
+    # Update text for clicked point
+    if (!is.null(clicked_point())) {
+      plot <- plot %>%
+        layout(
+          annotations = list(
+            x = clicked_point()$x,
+            y = clicked_point()$y,
+            text = clicked_point()$text,
+            showarrow = TRUE,
+            arrowhead = 7,
+            ax = 0,
+            ay = -40
+          )
+        )
+    }
+    
+    return(plot)
+  })
+  
+  # Capture the click event
+  observeEvent(event_data("plotly_click"), {
+    # Extract clicked data point
+    click_data <- event_data("plotly_click")
+    
+    # Store the clicked point's info
+    clicked_point(list(
+      x = click_data$x,
+      y = click_data$y,
+      text = click_data$text
+    ))
   })
 }
 
 # Run the App ----
+shinyApp(ui, server)
 
-shinyApp(ui = ui, server = server)
-
-
-###########################################################
+ ###########################################################
 
 #Test 2 ----
 
