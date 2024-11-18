@@ -666,7 +666,7 @@ ui <- dashboardPage(
   dashboardSidebar(
     sidebarMenu(
       menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
-      menuItem("Widgets", tabName = "widgets", icon = icon("th")),
+      menuItem("Widgets", icon = icon("th"), tabName = "widgets"),
       menuItem("Variable List", tabName = "variableList", icon = icon("table")),
       menuItem("Wage Bill Graphs", tabName = "wageBillGraphs", icon = icon("chart-line")), 
       menuItem("Public Sector Graphs", tabName = "publicSectorGraphs", icon = icon("chart-line")), 
@@ -715,7 +715,8 @@ ui <- dashboardPage(
                 ),
                 box(title = "Country Selection", status = "primary", solidHeader = TRUE, width = 8,
                     selectInput("countries", "Countries", 
-                                choices = NULL,  # Populated dynamically in the server
+                                choices = unique(filtered_data$country_name), 
+                                selected = unique(filtered_data$country_name)[1], 
                                 multiple = TRUE)
                 )
               ),
@@ -731,7 +732,8 @@ ui <- dashboardPage(
                 box(title = "First Graph - Multi-Country Selection", status = "primary", solidHeader = TRUE, width = 12,
                     selectInput("countries_first", 
                                 "Select Countries for First Graph", 
-                                choices = NULL,  # Populated dynamically in the server
+                                choices = unique(public_sector_emp$country_name), 
+                                selected = NULL, 
                                 multiple = TRUE)
                 )
               ),
@@ -744,7 +746,8 @@ ui <- dashboardPage(
                 box(title = "Second Graph - Single Country Selection", status = "primary", solidHeader = TRUE, width = 12,
                     selectInput("country_second", 
                                 "Select Country for Second Graph", 
-                                choices = NULL,  # Populated dynamically in the server
+                                choices = unique(public_sector_emp$country_name), 
+                                selected = NULL, 
                                 multiple = FALSE)
                 )
               ),
@@ -757,14 +760,11 @@ ui <- dashboardPage(
       # Public Sector Workforce Graphs Tab
       tabItem(tabName = "publicSectorWorkforceGraphs",
               fluidRow(
-                box(title = "WWB Indicator Selection", status = "primary", solidHeader = TRUE, width = 4,
-                    selectInput("indicator_workforce", "Select a WWB Indicator", 
-                                choices = c("Sectoral distribution of public sector workforce", 
-                                            "Sectoral distribution of public sector workforce for first and last year available"))
-                ),
-                box(title = "Country Selection", status = "primary", solidHeader = TRUE, width = 8,
-                    selectInput("countries_workforce", "Countries", 
-                                choices = NULL,  # Populated dynamically in the server
+                box(title = "Country Selection", status = "primary", solidHeader = TRUE, width = 12,
+                    selectInput("countries_workforce", 
+                                "Select Countries for Workforce Graph", 
+                                choices = unique(public_sector_workforce$country_name), 
+                                selected = unique(public_sector_workforce$country_name)[1], 
                                 multiple = TRUE)
                 )
               ),
@@ -798,6 +798,7 @@ ui <- dashboardPage(
     )
   )
 )
+
 
 # Define Server ----
 
@@ -1024,12 +1025,9 @@ server <- function(input, output, session) {
   
 }
 
-
 # Run the application 
 
 shinyApp(ui = ui, server = server)
-
-
 
 
 
