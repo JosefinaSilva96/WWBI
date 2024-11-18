@@ -95,12 +95,14 @@ countries <- unique(data_wwbi$country_name)  # Extract unique country names from
 indicator <- unique(data_wwbi$indicator_name)
 
 # Filter the data using dplyr
+
 selected_data_long <- data_wwbi %>%
   filter(indicator_name == indicator & country_name %in% countries) %>%
   select(country_name, indicator_name, starts_with("year_"))  # Select relevant columns
 
 
 # Reshape the data using pivot_longer
+
 selected_data_long <- selected_data_long %>%
   pivot_longer(cols = starts_with("year_"), 
                names_to = "year", 
@@ -109,6 +111,7 @@ selected_data_long <- selected_data_long %>%
   filter(!is.na(value))  # Remove rows with NA values
 
 # View the reshaped data
+
 print(selected_data_long)
 
 
@@ -151,7 +154,8 @@ public_sector_emp <- public_sector_emp %>%
   filter(!is.na(value)) #2015 obs
 
 # Keep the last year available for each country
-public_sector_emp <- public_sector_emp %>%
+
+public_sector_emp_temp <- public_sector_emp %>%
   filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
   group_by(country_name) %>%                      # Group by country_name (or any other variable)
   filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
@@ -271,7 +275,7 @@ ui <- dashboardPage(
                 box(title = "Second Graph - Single Country Selection", status = "primary", solidHeader = TRUE, width = 12,
                     selectInput("country_second", 
                                 "Select Country for Second Graph", 
-                                choices = unique(public_sector_emp$country_name), 
+                                choices = unique(public_sector_emp_temp$country_name), 
                                 selected = NULL, 
                                 multiple = FALSE)
                 )
@@ -414,7 +418,7 @@ server <- function(input, output, session) {
   
   # Second Graph (Single Country)
   output$secondGraph <- renderPlotly({
-    data_to_plot <- public_sector_emp %>%
+    data_to_plot <- public_sector_emp_temp %>%
       filter(country_name == input$country_second)  # Single country selection
     
     data_to_plot_long <- data_to_plot %>%
