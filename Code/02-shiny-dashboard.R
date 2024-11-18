@@ -188,15 +188,15 @@ public_sector_workforce <- public_sector_workforce %>%
 gender_workforce <- data_wwbi[data_wwbi$indicator_name %in% c("Females, as a share of public paid employees", 
                                                                "Females, as a share of private paid employees"), ]
 
-public_sector_workforce <- public_sector_workforce %>%
+gender_workforce <- gender_workforce %>%
   pivot_longer(cols = starts_with("year_"), 
                names_to = "year", 
                values_to = "value") %>%
   mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
-  filter(!is.na(value)) #1043 obs
+  filter(!is.na(value)) #1967 obs 
 
 
-public_sector_workforce <- public_sector_workforce %>%
+gender_workforce <- gender_workforce %>%
   mutate(value_percentage = value * 100)
 
 
