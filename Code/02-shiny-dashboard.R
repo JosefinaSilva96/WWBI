@@ -685,6 +685,7 @@ shinyApp(ui = ui, server = server)
 # Test ----
 
 # Define UI ----
+# Define UI ----
 ui <- fluidPage(
   titlePanel("Gender Workforce Distribution"),
   sidebarLayout(
@@ -723,7 +724,7 @@ server <- function(input, output, session) {
       text = ~paste(indicator_name, ": ", value_percentage, "%"), # Add hover text
       hoverinfo = "text",  # Show hover info
       name = "Public Sector",
-      textinfo = "none"  # Hide text by default above the bar
+      showlegend = TRUE
     ) %>%
       add_trace(
         data = filtered_data %>% filter(indicator_name == "Females, as a share of private paid employees"),
@@ -780,6 +781,8 @@ server <- function(input, output, session) {
 
 # Run the App ----
 shinyApp(ui, server)
+
+
 
  ###########################################################
 
