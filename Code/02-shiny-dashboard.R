@@ -769,31 +769,47 @@ ui <- dashboardPage(
       # Public Sector Workforce Graphs Tab
       tabItem(tabName = "publicSectorWorkforceGraphs",
               fluidRow(
-                box(title = "First Graph - Multi-Country Selection", status = "primary", solidHeader = TRUE, width = 12,
-                    selectInput("countries_first", 
-                                "Select Countries for First Graph", 
-                                choices = unique(public_sector_workforce$country_name), 
-                                selected = NULL, 
-                                multiple = TRUE)
+                box(
+                  title = "Select Countries (First Graph)",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  width = 12,
+                  selectInput("countries_first", 
+                              "Select Countries for First Graph", 
+                              choices = unique(public_sector_workforce$country_name), 
+                              selected = NULL, 
+                              multiple = TRUE)
                 )
               ),
               fluidRow(
-                box(title = "First Graph", status = "primary", solidHeader = TRUE, width = 12,
-                    plotlyOutput("stackedBarGraph")
+                box(
+                  title = "First Graph: Stacked Bar (Multi-Country)",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  width = 12,
+                  plotlyOutput("stackedBarGraph")
                 )
               ),
               fluidRow(
-                box(title = "Second Graph - Single Country Selection", status = "primary", solidHeader = TRUE, width = 12,
-                    selectInput("country_second", 
-                                "Select Country for Second Graph", 
-                                choices = unique(public_sector_workforce$country_name), 
-                                selected = NULL, 
-                                multiple = FALSE)
+                box(
+                  title = "Select Country (Second Graph)",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  width = 12,
+                  selectInput("selected_country", 
+                              "Select Country for Second Graph", 
+                              choices = unique(public_sector_workforce$country_name), 
+                              selected = NULL, 
+                              multiple = FALSE)
                 )
               ),
               fluidRow(
-                box(title = "Second Graph", status = "primary", solidHeader = TRUE, width = 12,
-                    plotlyOutput("horizontalStackedBar")
+                box(
+                  title = "Second Graph: Horizontal Stacked Bar (Single Country)",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  width = 12,
+                  plotlyOutput("horizontalStackedBar")
                 )
               )
       ),
@@ -947,24 +963,36 @@ server <- function(input, output, session) {
     plot
   })
   
-  # Third Graph (Multiple Country)
+  # Reactive expression to filter workforce data
+  filtered_workforce_data <- reactive({
+    req(input$countries_first) # Ensure input is not null
+    public_sector_workforce %>%
+      filter(country_name %in% input$countries_first) %>%
+      group_by(country_name, indicator_name) %>%
+      summarise(
+        value_percentage = mean(value_percentage, na.rm = TRUE),
+        .groups = "drop"
+      )
+  })
+  
+  # Render the stacked bar graph
   output$stackedBarGraph <- renderPlotly({
-    data_to_plot <- filtered_workforce_data()  # Get filtered data
-    req(nrow(data_to_plot) > 0)  # Ensure there's data to plot
+    data_to_plot <- filtered_workforce_data()
+    req(nrow(data_to_plot) > 0) # Ensure there's data to plot
     
     plot_ly(
       data = data_to_plot,
       x = ~country_name,
       y = ~value_percentage,
       color = ~indicator_name,
+      type = "bar",
+      text = ~paste0(round(value_percentage, 1), "%"), # Add percentage labels
+      textposition = "auto",
       colors = c(
         "Core Public Administration workers, as a share of public total employees" = "#568340", 
         "Education workers, as a share of public total employees" = "#B3242B", 
         "Health workers, as a share of public total employees" = "#003366"
-      ),
-      type = "bar",
-      text = ~paste0(round(value_percentage, 1), "%"),  # Add percentage labels
-      textposition = "auto"
+      )
     ) %>%
       layout(
         barmode = "stack",
@@ -975,50 +1003,38 @@ server <- function(input, output, session) {
       )
   })
   
-  
-  # Fourth Graph (Single Countries)
+  # Second Graph: Horizontal Stacked Bar Chart (Single Country)
   output$horizontalStackedBar <- renderPlotly({
     req(input$selected_country)
     
-    # Filter data for the selected country
-    filtered_data <- public_sector_workforce %>%
-      filter(country_name == input$selected_country)
-    
-    # Find the first and last year available for the selected country
-    first_year <- min(filtered_data$year, na.rm = TRUE)
-    last_year <- max(filtered_data$year, na.rm = TRUE)
-    
-    # Filter data for the first and last year
-    data_to_plot <- filtered_data %>%
-      filter(year %in% c(first_year, last_year)) %>%
+    data_to_plot <- public_sector_workforce %>%
+      filter(country_name == input$selected_country) %>%
       group_by(year, indicator_name) %>%
       summarise(value_percentage = mean(value_percentage, na.rm = TRUE), .groups = "drop")
     
-    # Create the horizontal stacked bar chart
-    plot_ly(data = data_to_plot,
-            x = ~value_percentage,  # Horizontal bar
-            y = ~factor(year, levels = c(last_year, first_year)),  # Ensure correct order
-            color = ~indicator_name,
-            type = "bar",
-            orientation = "h",  # Horizontal orientation
-            text = ~paste0(round(value_percentage, 1), "%"),  # Add percentage as text
-            textposition = "inside",
-            colors = c(
-              "Core Public Administration workers, as a share of public total employees" = "#568340",
-              "Education workers, as a share of public total employees" = "#B3242B",
-              "Health workers, as a share of public total employees" = "#003366"
-            )
+    plot_ly(
+      data = data_to_plot,
+      x = ~value_percentage,
+      y = ~factor(year, levels = unique(year)),
+      color = ~indicator_name,
+      type = "bar",
+      orientation = "h",
+      text = ~paste0(round(value_percentage, 1), "%"),
+      textposition = "inside",
+      colors = c(
+        "Core Public Administration workers, as a share of public total employees" = "#568340",
+        "Education workers, as a share of public total employees" = "#B3242B",
+        "Health workers, as a share of public total employees" = "#003366"
+      )
     ) %>%
       layout(
         barmode = "stack",
-        title = paste("Sectoral Distribution of Public Sector Workforce in", input$selected_country, 
-                      "(", first_year, "&", last_year, ")"),
+        title = paste("Sectoral Distribution of Public Sector Workforce in", input$selected_country),
         xaxis = list(title = "Percentage (%)"),
         yaxis = list(title = "Year"),
         legend = list(title = list(text = "Sector"))
       )
   })
-  
   
   # Define the initial world map render
   output$worldMap <- renderLeaflet({
@@ -1033,34 +1049,6 @@ server <- function(input, output, session) {
       filter(country_name %in% input$countries_workforce) %>%
       group_by(country_name, indicator_name) %>%
       summarise(value_percentage = mean(value_percentage, na.rm = TRUE), .groups = "drop")
-  })
-  
-  # Render the stacked bar graph
-  output$stackedBarGraph <- renderPlotly({
-    data_to_plot <- filtered_workforce_data()  # Get filtered data
-    req(nrow(data_to_plot) > 0)  # Ensure there's data to plot
-    
-    plot_ly(
-      data = data_to_plot,
-      x = ~country_name,
-      y = ~value_percentage,
-      color = ~indicator_name,
-      colors = c(
-        "Core Public Administration workers, as a share of public total employees" = "#568340", 
-        "Education workers, as a share of public total employees" = "#B3242B", 
-        "Health workers, as a share of public total employees" = "#003366"
-      ),
-      type = "bar",
-      text = ~paste0(round(value_percentage, 1), "%"),  # Add percentage labels
-      textposition = "auto"
-    ) %>%
-      layout(
-        barmode = "stack",
-        title = "Public Workforce Distribution by Country",
-        xaxis = list(title = "Country"),
-        yaxis = list(title = "Workforce Distribution (%)"),
-        legend = list(title = list(text = "Indicator"))
-      )
   })
   
   # Update the map based on indicator selection
