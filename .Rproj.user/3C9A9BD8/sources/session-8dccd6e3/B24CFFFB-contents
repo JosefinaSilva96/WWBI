@@ -781,6 +781,7 @@ ui <- dashboardPage(
       menuItem("Wage Bill Graphs", tabName = "wageBillGraphs", icon = icon("chart-line")), 
       menuItem("Public Sector Graphs", tabName = "publicSectorGraphs", icon = icon("chart-line")), 
       menuItem("Public Sector Workforce Graphs", tabName = "publicSectorWorkforceGraphs", icon = icon("chart-line")), 
+      menuItem("Gender Workforce Graphs", tabName = "genderWorkforceGraphs", icon = icon("chart-line")),
       menuItem("Indicators Status", tabName = "indicators", icon = icon("globe"))
     )
   ),
@@ -910,6 +911,59 @@ ui <- dashboardPage(
                 )
               )
       ),
+      #Gender Workforce graphs 
+      tabItem(tabName = "genderWorkforceGraphs",
+              fluidRow(
+                box(
+                  title = "Country Selection",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  width = 12,
+                  selectInput(
+                    "countries_gender_workforce",  # Make this unique
+                    "Select Countries for Workforce Graph",
+                    choices = unique(gender_workforce$country_name),
+                    selected = unique(gender_workforce$country_name)[1],
+                    multiple = TRUE
+                  )
+                )
+              ),
+              fluidRow(
+                box(
+                  title = "Bar Chart",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  width = 12,
+                  plotlyOutput("genderEmploymentPlot", height = "600px")  # Rename the output
+                )
+              ),
+              fluidRow(
+                box(
+                  title = "Select Country (Second Graph)",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  width = 12,
+                  selectInput(
+                    "selected_gender_country",  # Make this unique
+                    "Select Country for Second Graph",
+                    choices = unique(gender_workforce$country_name),
+                    selected = NULL,
+                    multiple = FALSE
+                  )
+                )
+              ),
+              fluidRow(
+                box(
+                  title = "Second Graph: Horizontal Stacked Bar (Single Country)",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  width = 12,
+                  uiOutput("genderMessageOutput"),  # Rename this
+                  plotlyOutput("genderHorizontalStackedBar")  # Rename this
+                )
+              )
+      ),
+      
       # Indicators Tab
       tabItem(tabName = "indicators",
               fluidRow(
@@ -1154,6 +1208,61 @@ server <- function(input, output, session) {
         yaxis = list(title = "Year"),
         legend = list(title = list(text = "Sector"))
       )
+  })
+  
+  #Gender Workforce 
+  output$genderEmploymentPlot <- renderPlotly({
+    # Filter data based on selected countries
+    filtered_data <- gender_workforce %>%
+      filter(country_name %in% input$selected_country)
+    
+    # Calculate the mean for the public sector for each country
+    public_means <- filtered_data %>%
+      filter(indicator_name == "Females, as a share of public paid employees") %>%
+      group_by(country_name) %>%
+      summarize(public_mean = mean(value_percentage, na.rm = TRUE)) %>%
+      ungroup()
+    
+    # Calculate the mean for the private sector for each country
+    private_means <- filtered_data %>%
+      filter(indicator_name == "Females, as a share of private paid employees") %>%
+      group_by(country_name) %>%
+      summarize(private_mean = mean(value_percentage, na.rm = TRUE)) %>%
+      ungroup()
+    
+    # Create the plot
+    plot <- plot_ly(
+      data = public_means,
+      x = ~country_name,
+      y = ~public_mean,
+      type = 'bar',
+      color = I("#003366"),  # Color for public sector mean
+      text = ~paste("Public Mean: ", round(public_mean, 2), "%"), # Add hover text for the public mean
+      hoverinfo = "text",  # Show hover info
+      name = "Public Sector Mean",
+      showlegend = TRUE
+    ) %>%
+      add_trace(
+        data = private_means,
+        x = ~country_name,
+        y = ~private_mean,
+        type = "scatter",
+        mode = "markers",
+        marker = list(size = 10, color = "#B3242B"),
+        name = "Private Sector Mean",
+        text = ~paste("Private Mean: ", round(private_mean, 2), "%"),
+        hoverinfo = "text",  # Show hover info for the private sector mean
+        showlegend = FALSE # Hide the legend for the mean dots
+      ) %>%
+      layout(
+        barmode = "group",
+        title = "Female Employment by Sector (Mean)",
+        xaxis = list(title = "Country"),
+        yaxis = list(title = "Employment (%)"),
+        legend = list(title = list(text = "Sector"))
+      )
+    
+    return(plot)
   })
   
   # Define the initial world map render
