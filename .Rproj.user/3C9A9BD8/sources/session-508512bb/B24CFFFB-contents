@@ -155,7 +155,7 @@ public_sector_emp_temp <- public_sector_emp %>%
 
 # Keep the last year available for each country
 
-public_sector_emp <- public_sector_emp %>%
+public_sector_emp_temp <- public_sector_emp_temp %>%
   filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
   group_by(country_name) %>%                      # Group by country_name (or any other variable)
   filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
@@ -778,11 +778,11 @@ ui <- dashboardPage(
       menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
       menuItem("Widgets", icon = icon("th"), tabName = "widgets"),
       menuItem("Variable List", tabName = "variableList", icon = icon("table")),
+      menuItem("Indicators Status", tabName = "indicators", icon = icon("globe")),
       menuItem("Wage Bill Graphs", tabName = "wageBillGraphs", icon = icon("chart-line")), 
       menuItem("Public Sector Graphs", tabName = "publicSectorGraphs", icon = icon("chart-line")), 
       menuItem("Public Sector Workforce Graphs", tabName = "publicSectorWorkforceGraphs", icon = icon("chart-line")), 
-      menuItem("Gender Workforce Graphs", tabName = "genderWorkforceGraphs", icon = icon("chart-line")),
-      menuItem("Indicators Status", tabName = "indicators", icon = icon("globe"))
+      menuItem("Gender Workforce Graphs", tabName = "genderWorkforceGraphs", icon = icon("chart-line"))
     )
   ),
   dashboardBody(
@@ -873,11 +873,12 @@ ui <- dashboardPage(
               fluidRow(
                 box(
                   box(title = "Country Selection", status = "primary", solidHeader = TRUE, width = 12,
-                      selectInput("countries_workforce", 
-                                  "Select Countries for Workforce Graph", 
-                                  choices = unique(public_sector_workforce$country_name), 
-                                  selected = unique(public_sector_workforce$country_name)[1], 
-                                  multiple = TRUE)
+                      selectInput(
+                        "selected_country", 
+                        "Select Country", 
+                        choices = unique(gender_workforce$country_name), 
+                        selected = unique(gender_workforce$country_name)[1], 
+                        multiple = TRUE )# Allow multiple country selection 
                 )
                
                 )
@@ -930,11 +931,11 @@ ui <- dashboardPage(
               ),
               fluidRow(
                 box(
-                  title = "Bar Chart",
+                  title = "Female employment by sector",
                   status = "primary",
                   solidHeader = TRUE,
                   width = 12,
-                  plotlyOutput("genderEmploymentPlot", height = "600px")  # Rename the output
+                  plotlyOutput("employment_plot", height = "600px")  # Rename the output
                 )
               ),
               fluidRow(
@@ -1211,7 +1212,7 @@ server <- function(input, output, session) {
   })
   
   #Gender Workforce 
-  output$genderEmploymentPlot <- renderPlotly({
+  output$employment_plot <- renderPlotly({
     # Filter data based on selected countries
     filtered_data <- gender_workforce %>%
       filter(country_name %in% input$selected_country)
@@ -1257,14 +1258,18 @@ server <- function(input, output, session) {
       layout(
         barmode = "group",
         title = "Female Employment by Sector (Mean)",
-        xaxis = list(title = "Country"),
+        xaxis = list(
+          title = "Country",
+          tickmode = 'array', 
+          tickvals = public_means$country_name,  # Explicitly set the tick values
+          ticktext = public_means$country_name   # Match tick values to countries
+        ),
         yaxis = list(title = "Employment (%)"),
         legend = list(title = list(text = "Sector"))
       )
     
     return(plot)
   })
-  
   # Define the initial world map render
   output$worldMap <- renderLeaflet({
     leaflet(world_spdf) %>%
