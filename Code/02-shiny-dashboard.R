@@ -685,7 +685,6 @@ shinyApp(ui = ui, server = server)
 # Test ----
 
 # Define UI ----
-# Define UI ----
 ui <- fluidPage(
   titlePanel("Gender Workforce Distribution"),
   sidebarLayout(
@@ -706,83 +705,64 @@ ui <- fluidPage(
 
 # Define Server ----
 server <- function(input, output, session) {
-  # Reactive value to store clicked point info
-  clicked_point <- reactiveVal(NULL)
   
   output$employment_plot <- renderPlotly({
     # Filter data based on selected countries
     filtered_data <- gender_workforce %>%
       filter(country_name %in% input$selected_country)
     
+    # Calculate the mean for the public sector for each country
+    public_means <- filtered_data %>%
+      filter(indicator_name == "Females, as a share of public paid employees") %>%
+      group_by(country_name) %>%
+      summarize(public_mean = mean(value_percentage, na.rm = TRUE)) %>%
+      ungroup()
+    
+    # Calculate the mean for the private sector for each country
+    private_means <- filtered_data %>%
+      filter(indicator_name == "Females, as a share of private paid employees") %>%
+      group_by(country_name) %>%
+      summarize(private_mean = mean(value_percentage, na.rm = TRUE)) %>%
+      ungroup()
+    
     # Create the plot
     plot <- plot_ly(
-      data = filtered_data %>% filter(indicator_name == "Females, as a share of public paid employees"),
+      data = public_means,
       x = ~country_name,
-      y = ~value_percentage,
+      y = ~public_mean,
       type = 'bar',
-      color = I("#003366"),  # Color for public sector
-      text = ~paste(indicator_name, ": ", value_percentage, "%"), # Add hover text
+      color = I("#003366"),  # Color for public sector mean
+      text = ~paste("Public Mean: ", round(public_mean, 2), "%"), # Add hover text for the public mean
       hoverinfo = "text",  # Show hover info
-      name = "Public Sector",
+      name = "Public Sector Mean",
       showlegend = TRUE
     ) %>%
       add_trace(
-        data = filtered_data %>% filter(indicator_name == "Females, as a share of private paid employees"),
+        data = private_means,
         x = ~country_name,
-        y = ~value_percentage,
+        y = ~private_mean,
         type = "scatter",
         mode = "markers",
         marker = list(size = 10, color = "#B3242B"),
-        name = "Private Sector",
-        text = ~paste(indicator_name, ": ", value_percentage, "%"), # Add hover text for private sector
-        hoverinfo = "text",  # Show hover info
-        showlegend = FALSE # Hide the legend for scatter markers
+        name = "Private Sector Mean",
+        text = ~paste("Private Mean: ", round(private_mean, 2), "%"),
+        hoverinfo = "text",  # Show hover info for the private sector mean
+        showlegend = FALSE # Hide the legend for the mean dots
       ) %>%
       layout(
         barmode = "group",
-        title = "Female Employment by Sector",
+        title = "Female Employment by Sector (Mean)",
         xaxis = list(title = "Country"),
         yaxis = list(title = "Employment (%)"),
         legend = list(title = list(text = "Sector"))
       )
     
-    # Update text for clicked point
-    if (!is.null(clicked_point())) {
-      plot <- plot %>%
-        layout(
-          annotations = list(
-            x = clicked_point()$x,
-            y = clicked_point()$y,
-            text = clicked_point()$text,
-            showarrow = TRUE,
-            arrowhead = 7,
-            ax = 0,
-            ay = -40
-          )
-        )
-    }
-    
     return(plot)
-  })
-  
-  # Capture the click event
-  observeEvent(event_data("plotly_click"), {
-    # Extract clicked data point
-    click_data <- event_data("plotly_click")
-    
-    # Store the clicked point's info
-    clicked_point(list(
-      x = click_data$x,
-      y = click_data$y,
-      text = click_data$text
-    ))
   })
 }
 
 # Run the App ----
 shinyApp(ui, server)
-
-
 
  ###########################################################
 
