@@ -439,7 +439,7 @@ server <- function(input, output, session) {
   })
   # First Graph (Multiple Countries)
   output$firstGraph <- renderPlotly({
-    data_to_plot <- public_sector_emp_temp %>%
+    data_to_plot <- public_sector_emp %>%
       filter(country_name %in% input$countries_first)
     
     data_to_plot_long <- data_to_plot %>%
@@ -462,7 +462,7 @@ server <- function(input, output, session) {
   })
   # Second Graph (Single Country)
   output$secondGraph <- renderPlotly({
-    data_to_plot <- public_sector_emp %>%
+    data_to_plot <- public_sector_emp_temp %>%
       filter(country_name == input$country_second)  # Single country selection
     
     data_to_plot_long <- data_to_plot %>%
