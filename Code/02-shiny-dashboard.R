@@ -744,84 +744,65 @@ shinyApp(ui = ui, server = server)
 
 # Define UI ----
 ui <- fluidPage(
-  titlePanel("Gender Workforce Distribution"),
+  titlePanel("Gender Workforce Over Time"),
   sidebarLayout(
     sidebarPanel(
       selectInput(
-        "selected_country", 
-        "Select Country", 
+        inputId = "selected_country", 
+        label = "Select Country", 
         choices = unique(gender_workforce$country_name), 
         selected = unique(gender_workforce$country_name)[1], 
-        multiple = TRUE # Allow multiple country selection
+        multiple = FALSE # Allow single country selection
       )
     ),
     mainPanel(
-      plotlyOutput("employment_plot")
+      plotlyOutput(outputId = "employment_plot_overtime")
     )
   )
 )
 
 # Define Server ----
-server <- function(input, output, session) {
-  
-  output$employment_plot <- renderPlotly({
-    # Filter data based on selected countries
-    filtered_data <- gender_workforce %>%
-      filter(country_name %in% input$selected_country)
+server <- function(input, output) {
+  output$employment_plot_overtime <- renderPlotly({
+    # Filter the data for the selected country
+    filtered_data <- gender_workforce %>% 
+      filter(country_name == input$selected_country) # Ensure single country selection
     
-    # Calculate the mean for the public sector for each country
-    public_means <- filtered_data %>%
-      filter(indicator_name == "Females, as a share of public paid employees") %>%
-      group_by(country_name) %>%
-      summarize(public_mean = mean(value_percentage, na.rm = TRUE)) %>%
-      ungroup()
+    # Define a custom color palette
+    custom_colors <- c("Females, as a share of private paid employees" = "#003366", "Females, as a share of public paid employees" = "#B3242B")
     
-    # Calculate the mean for the private sector for each country
-    private_means <- filtered_data %>%
-      filter(indicator_name == "Females, as a share of private paid employees") %>%
-      group_by(country_name) %>%
-      summarize(private_mean = mean(value_percentage, na.rm = TRUE)) %>%
-      ungroup()
-    
-    # Create the plot
-    plot <- plot_ly(
-      data = public_means,
-      x = ~country_name,
-      y = ~public_mean,
-      type = 'bar',
-      color = I("#003366"),  # Color for public sector mean
-      text = ~paste("Public Mean: ", round(public_mean, 2), "%"), # Add hover text for the public mean
-      hoverinfo = "text",  # Show hover info
-      name = "Public Sector Mean",
-      showlegend = TRUE
-    ) %>%
-      add_trace(
-        data = private_means,
-        x = ~country_name,
-        y = ~private_mean,
-        type = "scatter",
-        mode = "markers",
-        marker = list(size = 10, color = "#B3242B"),
-        name = "Private Sector Mean",
-        text = ~paste("Private Mean: ", round(private_mean, 2), "%"),
-        hoverinfo = "text",  # Show hover info for the private sector mean
-        showlegend = FALSE # Hide the legend for the mean dots
+    # Create the Plotly graph
+    plot <- filtered_data %>%
+      plot_ly(
+        x = ~year,
+        y = ~value_percentage,             
+        color = ~indicator_name,
+        colors = custom_colors, # Apply custom colors
+        type = 'scatter',
+        mode = 'lines+markers',
+        hoverinfo = 'text',
+        text = ~paste(
+          "Country:", country_name,
+          "<br>Sector:", indicator_name,
+          "<br>Year:", year,
+          "<br>Female Employment:", value_percentage
+        )
       ) %>%
       layout(
-        barmode = "group",
-        title = "Female Employment by Sector (Mean)",
-        xaxis = list(title = "Country"),
-        yaxis = list(title = "Employment (%)"),
-        legend = list(title = list(text = "Sector"))
+        title = paste("Female Employment by Sector Over Time in", input$selected_country),
+        xaxis = list(title = "Year"),
+        yaxis = list(title = "Female Employment (%)"),
+        legend = list(title = list(text = "<b>Sector</b>")),
+        hovermode = "closest"
       )
     
-    return(plot)
+    plot
   })
 }
 
-# Run the App ----
+# Run App ----
+shinyApp(ui = ui, server = server)
 
-shinyApp(ui, server)
 
  ###########################################################
 
@@ -960,21 +941,60 @@ ui <- dashboardPage(
               )
       ),
       # Gender Workforce Graphs Tab
-      tabItem(tabName = "genderWorkforceGraphs",
-              fluidRow(
-                box(title = "Country Selection", status = "primary", solidHeader = TRUE, width = 12,
-                    selectInput("selected_country", 
-                                "Select Country", 
-                                choices = unique(gender_workforce$country_name), 
-                                selected = unique(gender_workforce$country_name)[1], 
-                                multiple = TRUE)
-                )
-              ),
-              fluidRow(
-                box(title = "Female Employment by Sector", status = "primary", solidHeader = TRUE, width = 12,
-                    plotlyOutput("employment_plot", height = "600px")
-                )
-              )
+      tabItem(
+        tabName = "genderWorkforceGraphs",
+        
+        # First Graph: Multiple Countries Selection
+        fluidRow(
+          box(
+            title = "Country Selection (Multiple Countries)",
+            status = "primary",
+            solidHeader = TRUE,
+            width = 12,
+            selectInput(
+              inputId = "countries_workforce", 
+              label = "Select Countries for Workforce Graph", 
+              choices = unique(public_sector_workforce$country_name), 
+              selected = unique(public_sector_workforce$country_name)[1], 
+              multiple = TRUE # Allow multiple countries selection
+            )
+          )
+        ),
+        fluidRow(
+          box(
+            title = "Female Employment by Sector (Multiple Countries)", 
+            status = "primary", 
+            solidHeader = TRUE, 
+            width = 12,
+            plotlyOutput(outputId = "employment_plot", height = "600px")
+          )
+        ),
+        
+        # Second Graph: Single Country Selection
+        fluidRow(
+          box(
+            title = "Country Selection (Single Country)",
+            status = "primary",
+            solidHeader = TRUE,
+            width = 12,
+            selectInput(
+              inputId = "selected_country", 
+              label = "Select Country for Second Graph", 
+              choices = unique(gender_workforce$country_name), 
+              selected = unique(gender_workforce$country_name)[1], 
+              multiple = FALSE # Allow single country selection
+            )
+          )
+        ),
+        fluidRow(
+          box(
+            title = "Gender Workforce Over Time (Single Country)", 
+            status = "primary", 
+            solidHeader = TRUE, 
+            width = 12,
+            plotlyOutput(outputId = "employment_plot_overtime", height = "600px")
+          )
+        )
       ),
       # Indicators Tab
       tabItem(tabName = "indicators",
@@ -1226,7 +1246,7 @@ server <- function(input, output, session) {
   output$employment_plot <- renderPlotly({
     # Filter data based on selected countries
     filtered_data <- gender_workforce %>%
-      filter(country_name %in% input$selected_country)
+      filter(country_name %in% input$countries_workforce)
     
     # Calculate the mean for the public sector for each country
     public_means <- filtered_data %>%
@@ -1281,6 +1301,43 @@ server <- function(input, output, session) {
     
     return(plot)
   })
+  # Second Graph: Female Employment by Sector Over Time (Single Country)
+  output$employment_plot_overtime <- renderPlotly({
+    # Filter the data for the selected country
+    filtered_data <- gender_workforce %>% 
+      filter(country_name == input$selected_country) # Ensure single country selection
+    
+    # Define a custom color palette
+    custom_colors <- c("Females, as a share of private paid employees" = "#003366", "Females, as a share of public paid employees" = "#B3242B")
+    
+    # Create the Plotly graph
+    plot <- filtered_data %>%
+      plot_ly(
+        x = ~year,
+        y = ~value_percentage,             
+        color = ~indicator_name,
+        colors = custom_colors, # Apply custom colors
+        type = 'scatter',
+        mode = 'lines+markers',
+        hoverinfo = 'text',
+        text = ~paste(
+          "Country:", country_name,
+          "<br>Sector:", indicator_name,
+          "<br>Year:", year,
+          "<br>Female Employment:", value_percentage
+        )
+      ) %>%
+      layout(
+        title = paste("Female Employment by Sector Over Time in", input$selected_country),
+        xaxis = list(title = "Year"),
+        yaxis = list(title = "Female Employment (%)"),
+        legend = list(title = list(text = "<b>Sector</b>")),
+        hovermode = "closest"
+      )
+    
+    plot
+  })
+  
   # Define the initial world map render
   output$worldMap <- renderLeaflet({
     leaflet(world_spdf) %>%
