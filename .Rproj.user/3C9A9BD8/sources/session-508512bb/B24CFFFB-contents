@@ -336,21 +336,60 @@ ui <- dashboardPage(
               )
       ),
       # Gender Workforce Graphs Tab
-      tabItem(tabName = "genderWorkforceGraphs",
-              fluidRow(
-                box(title = "Country Selection", status = "primary", solidHeader = TRUE, width = 12,
-                    selectInput("selected_country", 
-                                "Select Country", 
-                                choices = unique(gender_workforce$country_name), 
-                                selected = unique(gender_workforce$country_name)[1], 
-                                multiple = TRUE)
-                )
-              ),
-              fluidRow(
-                box(title = "Female Employment by Sector", status = "primary", solidHeader = TRUE, width = 12,
-                    plotlyOutput("employment_plot", height = "600px")
-                )
-              )
+      tabItem(
+        tabName = "genderWorkforceGraphs",
+        
+        # First Graph: Multiple Countries Selection
+        fluidRow(
+          box(
+            title = "Country Selection (Multiple Countries)",
+            status = "primary",
+            solidHeader = TRUE,
+            width = 12,
+            selectInput(
+              inputId = "countries_workforce", 
+              label = "Select Countries for Workforce Graph", 
+              choices = unique(public_sector_workforce$country_name), 
+              selected = unique(public_sector_workforce$country_name)[1], 
+              multiple = TRUE # Allow multiple countries selection
+            )
+          )
+        ),
+        fluidRow(
+          box(
+            title = "Female Employment by Sector (Multiple Countries)", 
+            status = "primary", 
+            solidHeader = TRUE, 
+            width = 12,
+            plotlyOutput(outputId = "employment_plot", height = "600px")
+          )
+        ),
+        
+        # Second Graph: Single Country Selection
+        fluidRow(
+          box(
+            title = "Country Selection (Single Country)",
+            status = "primary",
+            solidHeader = TRUE,
+            width = 12,
+            selectInput(
+              inputId = "selected_country", 
+              label = "Select Country for Second Graph", 
+              choices = unique(gender_workforce$country_name), 
+              selected = unique(gender_workforce$country_name)[1], 
+              multiple = FALSE # Allow single country selection
+            )
+          )
+        ),
+        fluidRow(
+          box(
+            title = "Gender Workforce Over Time (Single Country)", 
+            status = "primary", 
+            solidHeader = TRUE, 
+            width = 12,
+            plotlyOutput(outputId = "employment_plot_overtime", height = "600px")
+          )
+        )
       ),
       # Indicators Tab
       tabItem(tabName = "indicators",
@@ -602,7 +641,7 @@ server <- function(input, output, session) {
   output$employment_plot <- renderPlotly({
     # Filter data based on selected countries
     filtered_data <- gender_workforce %>%
-      filter(country_name %in% input$selected_country)
+      filter(country_name %in% input$countries_workforce)
     
     # Calculate the mean for the public sector for each country
     public_means <- filtered_data %>%
@@ -657,6 +696,43 @@ server <- function(input, output, session) {
     
     return(plot)
   })
+  # Second Graph: Female Employment by Sector Over Time (Single Country)
+  output$employment_plot_overtime <- renderPlotly({
+    # Filter the data for the selected country
+    filtered_data <- gender_workforce %>% 
+      filter(country_name == input$selected_country) # Ensure single country selection
+    
+    # Define a custom color palette
+    custom_colors <- c("Females, as a share of private paid employees" = "#003366", "Females, as a share of public paid employees" = "#B3242B")
+    
+    # Create the Plotly graph
+    plot <- filtered_data %>%
+      plot_ly(
+        x = ~year,
+        y = ~value_percentage,             
+        color = ~indicator_name,
+        colors = custom_colors, # Apply custom colors
+        type = 'scatter',
+        mode = 'lines+markers',
+        hoverinfo = 'text',
+        text = ~paste(
+          "Country:", country_name,
+          "<br>Sector:", indicator_name,
+          "<br>Year:", year,
+          "<br>Female Employment:", value_percentage
+        )
+      ) %>%
+      layout(
+        title = paste("Female Employment by Sector Over Time in", input$selected_country),
+        xaxis = list(title = "Year"),
+        yaxis = list(title = "Female Employment (%)"),
+        legend = list(title = list(text = "<b>Sector</b>")),
+        hovermode = "closest"
+      )
+    
+    plot
+  })
+  
   # Define the initial world map render
   output$worldMap <- renderLeaflet({
     leaflet(world_spdf) %>%
@@ -732,9 +808,6 @@ server <- function(input, output, session) {
 # Run the application 
 
 shinyApp(ui = ui, server = server)
-
-
-
 
 
 
