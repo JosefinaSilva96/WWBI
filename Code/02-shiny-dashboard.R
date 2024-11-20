@@ -155,7 +155,7 @@ public_sector_emp_temp <- public_sector_emp %>%
 
 # Keep the last year available for each country
 
-public_sector_emp_temp <- public_sector_emp_temp %>%
+public_sector_emp_temp_last <- public_sector_emp_temp %>%
   filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
   group_by(country_name) %>%                      # Group by country_name (or any other variable)
   filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
@@ -294,7 +294,7 @@ ui <- dashboardPage(
                 box(title = "Second Graph - Single Country Selection", status = "primary", solidHeader = TRUE, width = 12,
                     selectInput("country_second", 
                                 "Select Country for Second Graph", 
-                                choices = unique(public_sector_emp$country_name), 
+                                choices = unique(public_sector_emp_temp$country_name), 
                                 selected = NULL, 
                                 multiple = FALSE)
                 )
@@ -439,7 +439,7 @@ server <- function(input, output, session) {
   })
   # First Graph (Multiple Countries)
   output$firstGraph <- renderPlotly({
-    data_to_plot <- public_sector_emp %>%
+    data_to_plot <- public_sector_emp_temp_last %>%
       filter(country_name %in% input$countries_first)
     
     data_to_plot_long <- data_to_plot %>%
