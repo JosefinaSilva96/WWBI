@@ -182,6 +182,40 @@ public_sector_workforce <- public_sector_workforce %>%
   mutate(value_percentage = value * 100)
 
 
+# Create the new indicator 'Other' in the pivot longer data structure
+
+public_sector_workforce <- public_sector_workforce %>%
+  group_by(country_name, year) %>%  # Group by country and year
+  mutate(
+    other_value = 100 - sum(
+      value_percentage[indicator_name %in% c(
+        "Education workers, as a share of public total employees",
+        "Health workers, as a share of public total employees",
+        "Public Administration workers, as a share of public total employees"
+      )],
+      na.rm = TRUE
+    )
+  ) %>%
+  ungroup() %>%
+  bind_rows(
+    # Add the new 'Other' indicator to the dataset
+    gender_workforce %>%
+      group_by(country_name, year) %>%
+      summarize(
+        indicator_name = "Other",
+        value_percentage = 100 - sum(
+          value_percentage[indicator_name %in% c(
+            "Education workers, as a share of public total employees",
+            "Health workers, as a share of public total employees",
+            "Public Administration workers, as a share of public total employees"
+          )],
+          na.rm = TRUE
+        )
+      ) %>%
+      ungroup()
+  )
+
+
 # Filter the data for the specific indicator "Characteristics of the gender workforce"
 
 
@@ -570,7 +604,8 @@ server <- function(input, output, session) {
       colors = c(
         "Public Administration workers, as a share of public total employees" = "#568340", 
         "Education workers, as a share of public total employees" = "#B3242B", 
-        "Health workers, as a share of public total employees" = "#003366"
+        "Health workers, as a share of public total employees" = "#003366", 
+        "Other" = "#A9A9A9"
       )
     ) %>%
       layout(
@@ -625,7 +660,8 @@ server <- function(input, output, session) {
             colors = c(
               "Public Administration workers, as a share of public total employees" = "#568340",
               "Education workers, as a share of public total employees" = "#B3242B",
-              "Health workers, as a share of public total employees" = "#003366"
+              "Health workers, as a share of public total employees" = "#003366", 
+              "Other" = "#A9A9A9"
             )
     ) %>%
       layout(
