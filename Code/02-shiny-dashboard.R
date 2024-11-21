@@ -502,14 +502,14 @@ server <- function(input, output, session) {
         type = 'scatter', 
         mode = 'lines+markers', 
         marker = list(size = 8),
-        name = "Other Countries"
+        name = country_name
       ) %>%
       # Add the first country data with dashed line
       add_trace(
         data = first_country_data,
         x = ~year, 
         y = ~value, 
-        color = I("black"),  # Highlight the first country with black color
+        color = I("#B3242B"),  # Highlight the first country with black color
         type = 'scatter', 
         mode = 'lines+markers', 
         line = list(dash = 'dash'),  # Dashed line for the first country
