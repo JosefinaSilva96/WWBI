@@ -118,10 +118,10 @@ print(selected_data_long)
 
 # Filter the data for the specific indicator "Wage bill as a percentage of Public Expenditure"
 
-filtered_data <- data_wwbi[data_wwbi$indicator_name == "Wage bill as a percentage of Public Expenditure", ]
+wage_bill_publicexp <- data_wwbi[data_wwbi$indicator_name == "Wage bill as a percentage of Public Expenditure", ]
 
 
-filtered_data <- filtered_data %>%
+wage_bill_publicexp <- wage_bill_publicexp %>%
   pivot_longer(cols = starts_with("year_"), 
                names_to = "year", 
                values_to = "value") %>%
@@ -463,7 +463,7 @@ server <- function(input, output, session) {
       # Filter wage_bill_gdp dataset based on selected countries
       data <- wage_bill_gdp %>% filter(country_name %in% input$countries)
     } else {
-      data <- filtered_data %>% filter(country_name %in% input$countries)
+      data <- wage_bill_publicexp %>% filter(country_name %in% input$countries)
     }
     return(data)
   })
@@ -472,32 +472,59 @@ server <- function(input, output, session) {
   output$plot <- renderPlotly({
     data_to_plot <- selected_data()
     
-    max_year <- max(data_to_plot$year, na.rm = TRUE)
+    # Identify the first country selected by the user
+    first_country <- input$countries[1]  # Get the first selected country
+    first_country_data <- data_to_plot %>% filter(country_name == first_country)
     
+    # Separate the first country data from the others
+    other_countries_data <- data_to_plot %>% filter(country_name != first_country)
+    
+    # Get the last year data for annotation
+    max_year <- max(data_to_plot$year, na.rm = TRUE)
     last_year_data <- data_to_plot %>%
       group_by(country_name) %>%
       filter(year == max_year) %>%
       ungroup() %>%
       select(country_name, year, value)
     
+    # Plot the data with the first country having a distinct style
     title_text <- ifelse(input$indicator == "Wage bill as a percentage of GDP",
                          "Wage Bill as % of GDP Over Time",
                          "Wage Bill as % of Public Expenditure Over Time")
-    plot_mode <- ifelse(input$indicator == "Wage bill as a percentage of GDP", 'lines+markers', 'lines+markers')
     
-    plot <- plot_ly(data = data_to_plot, 
-                    x = ~year, 
-                    y = ~value, 
-                    color = ~country_name, 
-                    type = 'scatter', 
-                    mode = plot_mode,
-                    marker = list(size = 8)) %>%
-      layout(title = title_text,
-             xaxis = list(title = "Year", dtick = 2),
-             yaxis = list(title = ifelse(input$indicator == "Wage bill as a percentage of GDP", 
-                                         "Wage Bill (% of GDP)", "Wage Bill (%)")),
-             legend = list(title = list(text = "Country")))
+    plot <- plot_ly() %>%
+      # Add other countries data with normal lines
+      add_trace(
+        data = other_countries_data,
+        x = ~year, 
+        y = ~value, 
+        color = ~country_name, 
+        type = 'scatter', 
+        mode = 'lines+markers', 
+        marker = list(size = 8),
+        name = "Other Countries"
+      ) %>%
+      # Add the first country data with dashed line
+      add_trace(
+        data = first_country_data,
+        x = ~year, 
+        y = ~value, 
+        color = I("black"),  # Highlight the first country with black color
+        type = 'scatter', 
+        mode = 'lines+markers', 
+        line = list(dash = 'dash'),  # Dashed line for the first country
+        marker = list(size = 8),
+        name = first_country
+      ) %>%
+      layout(
+        title = title_text,
+        xaxis = list(title = "Year", dtick = 2),
+        yaxis = list(title = ifelse(input$indicator == "Wage bill as a percentage of GDP", 
+                                    "Wage Bill (% of GDP)", "Wage Bill (%)")),
+        legend = list(title = list(text = "Country"))
+      )
     
+    # Add annotation for the first country's last value
     for (i in 1:nrow(last_year_data)) {
       plot <- plot %>%
         add_annotations(
@@ -512,8 +539,10 @@ server <- function(input, output, session) {
         )
     }
     
-    plot 
+    plot
   })
+  
+  
   # First Graph (Multiple Countries)
   output$firstGraph <- renderPlotly({
     data_to_plot <- public_sector_emp_temp_last %>%
