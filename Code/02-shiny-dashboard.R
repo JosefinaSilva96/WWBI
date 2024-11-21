@@ -644,52 +644,57 @@ server <- function(input, output, session) {
     filtered_data <- gender_workforce %>%
       filter(country_name %in% input$countries_workforce)
     
-    # Calculate the mean for the public sector for each country
-    public_means <- filtered_data %>%
+    #Last year available
+    public_latest <- filtered_data %>%
       filter(indicator_name == "Females, as a share of public paid employees") %>%
       group_by(country_name) %>%
-      summarize(public_mean = mean(value_percentage, na.rm = TRUE)) %>%
+      filter(year == max(year, na.rm = TRUE)) %>%  # Keep only the most recent year
       ungroup()
     
-    # Calculate the mean for the private sector for each country
-    private_means <- filtered_data %>%
+    #Last year available
+    private_latest <- filtered_data %>%
       filter(indicator_name == "Females, as a share of private paid employees") %>%
       group_by(country_name) %>%
-      summarize(private_mean = mean(value_percentage, na.rm = TRUE)) %>%
+      filter(year == max(year, na.rm = TRUE)) %>%  # Keep only the most recent year
       ungroup()
     
     # Create the plot
     plot <- plot_ly(
-      data = public_means,
+      data = public_latest,
       x = ~country_name,
-      y = ~public_mean,
+      y = ~value_percentage,  # Use the percentage for the last year available
       type = 'bar',
-      color = I("#003366"),  # Color for public sector mean
-      text = ~paste("Public Mean: ", round(public_mean, 2), "%"), # Add hover text for the public mean
+      color = I("#003366"),  # Color for public sector
+      text = ~paste("Country: ", country_name,
+                    "<br>Last year available: ", year,
+                    "<br>Employment (%): ", round(value_percentage, 2)),  # Add detailed hover text
       hoverinfo = "text",  # Show hover info
-      name = "Public Sector Mean",
+      name = "Public Sector",
       showlegend = TRUE
     ) %>%
       add_trace(
-        data = private_means,
+        data = private_latest,
         x = ~country_name,
-        y = ~private_mean,
+        y = ~value_percentage,  # Use the percentage for the last year available
         type = "scatter",
         mode = "markers",
         marker = list(size = 10, color = "#B3242B"),
-        name = "Private Sector Mean",
-        text = ~paste("Private Mean: ", round(private_mean, 2), "%"),
-        hoverinfo = "text",  # Show hover info for the private sector mean
-        showlegend = FALSE # Hide the legend for the mean dots
+        name = "Private Sector",
+        text = ~paste("Country: ", country_name,
+                      "<br>Last year available: ", year,
+                      "<br>Employment (%): ", round(value_percentage, 2)),  # Add detailed hover text
+        hoverinfo = "text",  # Show hover info
+        showlegend = TRUE  # Show the legend
       ) %>%
       layout(
         barmode = "group",
-        title = "Female Employment by Sector (Mean)",
+        title = "Female Employment by Sector (Last Year Available)",
         xaxis = list(
-          title = "Country",
+          title = "Country (Last Year Available)",
           tickmode = 'array', 
-          tickvals = public_means$country_name,  # Explicitly set the tick values
-          ticktext = public_means$country_name   # Match tick values to countries
+          tickvals = public_latest$country_name,  # Explicitly set the tick values
+          ticktext = paste(public_latest$country_name, 
+                           "(", public_latest$year, ")")  # Append year to country names
         ),
         yaxis = list(title = "Employment (%)"),
         legend = list(title = list(text = "Sector"))
