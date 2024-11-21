@@ -168,7 +168,7 @@ public_sector_emp_temp_last <- public_sector_emp_temp %>%
 
 public_sector_workforce <- data_wwbi[data_wwbi$indicator_name %in% c("Education workers, as a share of public total employees", 
                                                                "Health workers, as a share of public total employees", 
-                                                               "Core Public Administration workers, as a share of public total employees"), ]
+                                                               "Public Administration workers, as a share of public total employees"), ]
 
 public_sector_workforce <- public_sector_workforce %>%
   pivot_longer(cols = starts_with("year_"), 
@@ -568,7 +568,7 @@ server <- function(input, output, session) {
       text = ~paste0(round(value_percentage, 1), "%"), # Add percentage labels
       textposition = "auto",
       colors = c(
-        "Core Public Administration workers, as a share of public total employees" = "#568340", 
+        "Public Administration workers, as a share of public total employees" = "#568340", 
         "Education workers, as a share of public total employees" = "#B3242B", 
         "Health workers, as a share of public total employees" = "#003366"
       )
@@ -623,7 +623,7 @@ server <- function(input, output, session) {
             text = ~paste0(round(value_percentage, 1), "%"),  # Add percentage as text
             textposition = "inside",
             colors = c(
-              "Core Public Administration workers, as a share of public total employees" = "#568340",
+              "Public Administration workers, as a share of public total employees" = "#568340",
               "Education workers, as a share of public total employees" = "#B3242B",
               "Health workers, as a share of public total employees" = "#003366"
             )
@@ -1246,7 +1246,7 @@ server <- function(input, output, session) {
       text = ~paste0(round(value_percentage, 1), "%"), # Add percentage labels
       textposition = "auto",
       colors = c(
-        "Core Public Administration workers, as a share of public total employees" = "#568340", 
+        "Public Administration workers, as a share of public total employees" = "#568340", 
         "Education workers, as a share of public total employees" = "#B3242B", 
         "Health workers, as a share of public total employees" = "#003366"
       )
@@ -1301,7 +1301,7 @@ server <- function(input, output, session) {
             text = ~paste0(round(value_percentage, 1), "%"),  # Add percentage as text
             textposition = "inside",
             colors = c(
-              "Core Public Administration workers, as a share of public total employees" = "#568340",
+              "Public Administration workers, as a share of public total employees" = "#568340",
               "Education workers, as a share of public total employees" = "#B3242B",
               "Health workers, as a share of public total employees" = "#003366"
             )
