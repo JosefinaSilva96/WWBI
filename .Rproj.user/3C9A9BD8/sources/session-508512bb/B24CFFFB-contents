@@ -182,35 +182,34 @@ public_sector_workforce <- public_sector_workforce %>%
   mutate(value_percentage = value * 100)
 
 
-# Create the new indicator 'Other' in the pivot longer data structure
-
+# Step 1: Calculate the 'Other' value for each country and year
 public_sector_workforce <- public_sector_workforce %>%
-  group_by(country_name, year) %>%  # Group by country and year
+  group_by(country_name, year) %>%
   mutate(
-    other_value = 100 - sum(
-      value_percentage[indicator_name %in% c(
+    # Calculate the value for 'Other' as 100 minus the sum of specific indicators
+    other_value = 100 - sum(value_percentage[indicator_name %in% c(
+      "Education workers, as a share of public total employees",
+      "Health workers, as a share of public total employees",
+      "Public Administration workers, as a share of public total employees"
+    )], na.rm = TRUE)
+  ) %>%
+  ungroup()
+
+# Step 2: Create a new dataset for the 'Other' indicator and update the value_percentage
+public_sector_workforce <- public_sector_workforce %>%
+  bind_rows(
+    public_sector_workforce %>%
+      # Filter rows for the specified indicators
+      filter(indicator_name %in% c(
         "Education workers, as a share of public total employees",
         "Health workers, as a share of public total employees",
         "Public Administration workers, as a share of public total employees"
-      )],
-      na.rm = TRUE
-    )
-  ) %>%
-  ungroup() %>%
-  bind_rows(
-    # Add the new 'Other' indicator to the dataset
-    gender_workforce %>%
+      )) %>%
       group_by(country_name, year) %>%
       summarize(
-        indicator_name = "Other",
-        value_percentage = 100 - sum(
-          value_percentage[indicator_name %in% c(
-            "Education workers, as a share of public total employees",
-            "Health workers, as a share of public total employees",
-            "Public Administration workers, as a share of public total employees"
-          )],
-          na.rm = TRUE
-        )
+        indicator_name = "Other",  # Set the indicator name to "Other"
+        value_percentage = first(other_value),  # Replace the value with the calculated 'other_value'
+        .groups = "drop"  # Drop the grouping after summarizing
       ) %>%
       ungroup()
   )
@@ -581,14 +580,13 @@ server <- function(input, output, session) {
     req(input$countries_first) # Ensure input is not null
     public_sector_workforce %>%
       filter(country_name %in% input$countries_first) %>%
-      group_by(country_name, indicator_name) %>%
-      summarise(
-        value_percentage = mean(value_percentage, na.rm = TRUE),
-        .groups = "drop"
-      )
+      group_by(country_name) %>%
+      slice_max(order_by = year, n = 1) %>% # Get the latest year available for each country
+      ungroup()
   })
   
   # Render the stacked bar graph
+  
   output$stackedBarGraph <- renderPlotly({
     data_to_plot <- filtered_workforce_data()
     req(nrow(data_to_plot) > 0) # Ensure there's data to plot
@@ -599,21 +597,25 @@ server <- function(input, output, session) {
       y = ~value_percentage,
       color = ~indicator_name,
       type = "bar",
-      text = ~paste0(round(value_percentage, 1), "%"), # Add percentage labels
+      text = ~paste(
+        "Country:", country_name,
+        "<br>Indicator:", indicator_name,
+        "<br>Value:", round(value_percentage, 1), "%"
+      ), # Detailed hover information
       textposition = "auto",
       colors = c(
         "Public Administration workers, as a share of public total employees" = "#568340", 
         "Education workers, as a share of public total employees" = "#B3242B", 
         "Health workers, as a share of public total employees" = "#003366", 
-        "Other" = "#A9A9A9"
+        "Other" = "#A9A9A9" # Gray for "Other"
       )
     ) %>%
       layout(
         barmode = "stack",
         title = "Public Workforce Distribution by Country",
         xaxis = list(title = "Country"),
-        yaxis = list(title = "Workforce Distribution (%)"),
-        legend = list(title = list(text = "Indicator"))
+        yaxis = list(title = "Workforce Distribution (%)", range = c(0, 100)),
+        legend = list(title = list(text = "<b>Indicator</b>"))
       )
   })
   
