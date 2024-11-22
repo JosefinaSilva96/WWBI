@@ -178,9 +178,18 @@ public_sector_emp_temp <- public_sector_emp_temp %>%
   mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
   filter(!is.na(value)) #2015 obs
 
+
+public_sector_emp <- public_sector_emp %>%
+  pivot_longer(cols = starts_with("year_"), 
+               names_to = "year", 
+               values_to = "value") %>%
+  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
+  filter(!is.na(value)) #2015 obs
+
+
 # Keep the last year available for each country
 
-public_sector_emp_temp_last <- public_sector_emp_temp %>%
+public_sector_emp_temp_last <- public_sector_emp %>%
   filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
   group_by(country_name) %>%                      # Group by country_name (or any other variable)
   filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
