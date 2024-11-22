@@ -31,12 +31,6 @@ data_path <- "C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/Data
 
 data_wwbi <- read_dta(file.path(data_path, "data_wwbi.dta"))
 
-#Load GDP pc IMF for countries
-
-gdp_pc <-  read_excel("C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/Data/Intermediate/IMF_GDP.xls", 
-                      sheet = "gdp") #228 obs
-
-
 
 # Load world spatial data
 
