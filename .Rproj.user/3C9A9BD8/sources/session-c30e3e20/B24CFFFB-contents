@@ -32,6 +32,10 @@ data_path <- "C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/Data
 data_wwbi <- read_dta(file.path(data_path, "data_wwbi.dta"))
 
 
+#Load gdp data base 
+
+data_gdp <- read_dta(file.path(data_path, "data_gdp.dta"))
+
 # Load world spatial data
 
 world_spdf <- ne_countries(scale = "medium", returnclass = "sf")
@@ -109,6 +113,19 @@ selected_data_long <- selected_data_long %>%
                values_to = "value") %>%
   mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
   filter(!is.na(value))  # Remove rows with NA values
+
+
+# Reshape the data using pivot_longer gdp data base 
+
+data_gdp <- data_gdp %>%
+  pivot_longer(cols = starts_with("year_"), 
+               names_to = "year", 
+               values_to = "value") %>%
+  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
+  filter(!is.na(value))  # Remove rows with NA values
+
+
+
 
 # View the reshaped data
 
