@@ -131,6 +131,7 @@ data_gdp <- data_gdp %>%
 
 print(selected_data_long)
 
+print(data_gdp)
 
 
 # Filter the data for the specific indicator "Wage bill as a percentage of Public Expenditure"
@@ -163,9 +164,14 @@ wage_bill_gdp <- wage_bill_gdp %>%
 # Filter the data for the specific indicator "Public sector employment, as a share of formal employment and paid employment "
 
 public_sector_emp <- data_wwbi[data_wwbi$indicator_name %in% c("Public sector employment, as a share of formal employment", 
+                                                               "Public sector employment, as a share of paid employment", 
+                                                               "Public sector employment, as a share of total employment"), ]
+
+public_sector_emp_temp <- data_wwbi[data_wwbi$indicator_name %in% c("Public sector employment, as a share of formal employment", 
                                                                "Public sector employment, as a share of paid employment"), ]
 
-public_sector_emp_temp <- public_sector_emp %>%
+
+public_sector_emp_temp <- public_sector_emp_temp %>%
   pivot_longer(cols = starts_with("year_"), 
                names_to = "year", 
                values_to = "value") %>%
@@ -252,6 +258,50 @@ gender_workforce <- gender_workforce %>%
 
 gender_workforce <- gender_workforce %>%
   mutate(value_percentage = value * 100)
+
+
+
+# Filter GDP data for the year 2015
+
+gdp_2015 <- data_gdp %>%
+  filter(year == 2015) %>%
+  select(country_name, value)
+
+
+# Keep the last year available for each country
+
+wage_bill_publicexp <- wage_bill_publicexp %>%
+  filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
+  group_by(country_name) %>%                      # Group by country_name (or any other variable)
+  filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
+  ungroup()                                      # Ungroup the data
+
+
+
+# Rename 'value' column to 'indicator_value' in data_indicators
+
+data_indicator_wb <- wage_bill_publicexp %>%
+  rename(indicator_value = value)
+
+# Rename 'value' column to 'gdp_value' in data_gdp
+
+gdp_2015 <- gdp_2015 %>%
+  rename(gdp_value = value)
+
+
+# Merge the datasets on 'country_name'
+
+
+merged_data <- data_indicator_wb %>%
+  left_join(gdp_2015, by = "country_name") %>%
+  select(country_name, indicator_name, country_code, indicator_value, gdp_value)
+
+
+# Add the log of GDP as a new column
+
+merged_data <- merged_data %>%
+  mutate(log_gdp = log(gdp_value))
+
 
 
 ## Shiny Dashboard ----
@@ -912,63 +962,97 @@ shinyApp(ui = ui, server = server)
 
 # Define UI ----
 ui <- fluidPage(
-  titlePanel("Gender Workforce Over Time"),
+  titlePanel("Dot Plot: Wage Bill vs. GDP per Capita (Log Scale)"),
+  
   sidebarLayout(
     sidebarPanel(
       selectInput(
-        inputId = "selected_country", 
-        label = "Select Country", 
-        choices = unique(gender_workforce$country_name), 
-        selected = unique(gender_workforce$country_name)[1], 
-        multiple = FALSE # Allow single country selection
+        inputId = "selected_countries",
+        label = "Select Countries:",
+        choices = unique(merged_data$country_name),
+        selected = unique(merged_data$country_name)[1:3], # Default selection
+        multiple = TRUE
       )
     ),
+    
     mainPanel(
-      plotlyOutput(outputId = "employment_plot_overtime")
+      plotlyOutput("dot_plot")
     )
   )
 )
 
 # Define Server ----
+
+# Server function
+
 server <- function(input, output) {
-  output$employment_plot_overtime <- renderPlotly({
-    # Filter the data for the selected country
-    filtered_data <- gender_workforce %>% 
-      filter(country_name == input$selected_country) # Ensure single country selection
+  
+  # Render the dot plot
+  output$dot_plot <- renderPlotly({
     
-    # Define a custom color palette
-    custom_colors <- c("Females, as a share of private paid employees" = "#003366", "Females, as a share of public paid employees" = "#B3242B")
+    # Filter merged_data based on selected countries
+    filtered_data <- merged_data %>%
+      filter(country_name %in% input$selected_countries)
     
-    # Create the Plotly graph
-    plot <- filtered_data %>%
-      plot_ly(
-        x = ~year,
-        y = ~value_percentage,             
-        color = ~indicator_name,
-        colors = custom_colors, # Apply custom colors
-        type = 'scatter',
-        mode = 'lines+markers',
-        hoverinfo = 'text',
-        text = ~paste(
-          "Country:", country_name,
-          "<br>Sector:", indicator_name,
-          "<br>Year:", year,
-          "<br>Female Employment:", value_percentage
+    # Get the first country for highlighting
+    first_country <- input$selected_countries[1]
+    
+    # Create color column: first country will have a different color
+    filtered_data <- filtered_data %>%
+      mutate(color = ifelse(country_name == first_country, "#B3242B", "#003366"))
+    
+    # Fit a linear model for the trendline (log_gdp vs indicator_value)
+    trendline_model <- lm(indicator_value ~ log_gdp, data = filtered_data)
+    
+    # Get fitted values for the trendline
+    trendline_values <- predict(trendline_model, newdata = filtered_data)
+    
+    # Create the plot
+    plot <- plot_ly() %>%
+      # Data points for countries
+      add_trace(
+        data = filtered_data,
+        x = ~log_gdp,
+        y = ~indicator_value,
+        type = "scatter",
+        mode = "markers+text",  # Add dots for countries
+        text = ~country_code,  # Display country code as label
+        textposition = "top center",  # Position labels above the dots
+        marker = list(
+          size = 10,
+          color = ~color,  # Use the color column for different colors
+          opacity = 0.7
         )
       ) %>%
+      # Trendline (only line, no dots for trendline)
+      add_trace(
+        x = filtered_data$log_gdp,
+        y = trendline_values,
+        type = "scatter",
+        mode = "lines",  # Only lines for the trendline
+        line = list(color = "gray", dash = "dash"),
+        name = "Trendline"  # This is used for the legend, but we will hide it
+      ) %>%
       layout(
-        title = paste("Female Employment by Sector Over Time in", input$selected_country),
-        xaxis = list(title = "Year"),
-        yaxis = list(title = "Female Employment (%)"),
-        legend = list(title = list(text = "<b>Sector</b>")),
-        hovermode = "closest"
+        title = "Wage Bill vs. Log(GDP per Capita)",
+        xaxis = list(
+          title = "Log(GDP per Capita, 2015)",  # Axis label for x-axis
+          showticklabels = TRUE  # Show tick labels on x-axis
+        ),
+        yaxis = list(
+          title = "Wage Bill",  # Axis label for y-axis
+          showticklabels = TRUE  # Show tick labels on y-axis
+        ),
+        showlegend = FALSE  # Hide the legend
       )
     
-    plot
+    return(plot)
   })
 }
 
+
 # Run App ----
+
 shinyApp(ui = ui, server = server)
 
 
