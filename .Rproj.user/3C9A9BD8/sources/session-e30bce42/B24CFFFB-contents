@@ -191,7 +191,7 @@ public_sector_emp <- public_sector_emp %>%
 
 public_sector_emp_temp_last <- public_sector_emp %>%
   filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
-  group_by(country_name) %>%                      # Group by country_name (or any other variable)
+  group_by(country_name, indicator_name) %>%                      # Group by country_name (or any other variable)
   filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
   ungroup()                                      # Ungroup the data
 
@@ -317,6 +317,7 @@ merged_data <- merged_data %>%
 
 
 # Define UI ----
+
 
 ui <- dashboardPage(
   skin = "black",
