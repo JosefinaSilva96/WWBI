@@ -347,6 +347,28 @@ tertiary_education <- tertiary_education %>%
 
 
 
+# Public sector wage premium 
+
+pubic_wage_premium <- data_wwbi[data_wwbi$indicator_name %in% c("Public sector wage premium (compared to all private employees)"), ]
+
+pubic_wage_premium <- pubic_wage_premium %>%
+  pivot_longer(cols = starts_with("year_"), 
+               names_to = "year", 
+               values_to = "value") %>%
+  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
+  filter(!is.na(value)) #1967 obs 
+
+
+pubic_wage_premium <- pubic_wage_premium %>%
+  mutate(value_percentage = value * 100)
+
+# Keep the last year available for each country
+
+pubic_wage_premium <- pubic_wage_premium %>%
+  filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
+  group_by(country_name,indicator_name) %>%                      # Group by country_name (or any other variable)
+  filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
+  ungroup()                                      # Ungroup the data
 
 
 
