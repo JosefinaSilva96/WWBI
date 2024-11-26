@@ -326,7 +326,7 @@ merged_data <- merged_data %>%
 tertiary_education <- data_wwbi[data_wwbi$indicator_name %in% c("Individuals with tertiary education as a share of public paid employees", 
                                                               "Individuals with tertiary education as a share of private paid employees"), ]
 
-gender_workforce <- gender_workforce %>%
+tertiary_education <- tertiary_education %>%
   pivot_longer(cols = starts_with("year_"), 
                names_to = "year", 
                values_to = "value") %>%
@@ -334,8 +334,21 @@ gender_workforce <- gender_workforce %>%
   filter(!is.na(value)) #1967 obs 
 
 
-gender_workforce <- gender_workforce %>%
+tertiary_education <- tertiary_education %>%
   mutate(value_percentage = value * 100)
+
+# Keep the last year available for each country
+
+tertiary_education <- tertiary_education %>%
+  filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
+  group_by(country_name,indicator_name) %>%                      # Group by country_name (or any other variable)
+  filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
+  ungroup()                                      # Ungroup the data
+
+
+
+
+
 
 
 
