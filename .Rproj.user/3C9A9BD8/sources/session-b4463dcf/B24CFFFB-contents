@@ -1106,7 +1106,59 @@ server <- function(input, output) {
 shinyApp(ui = ui, server = server)
 
 
- ###########################################################
+
+# Define the UI- Tertiary Education
+
+# Define the UI
+ui <- fluidPage(
+  titlePanel("Tertiary Education by Employment Sector and Country"),
+  
+  sidebarLayout(
+    sidebarPanel(
+      selectInput(
+        inputId = "selected_countries",
+        label = "Select Countries:",
+        choices = unique(tertiary_education$country_name),
+        selected = unique(tertiary_education$country_name)[1],  # Default selection
+        multiple = TRUE                                         # Allow multiple selections
+      )
+    ),
+    
+    mainPanel(
+      plotlyOutput("barPlot")  # Output the Plotly chart
+    )
+  )
+)
+
+# Define the server
+server <- function(input, output, session) {
+  
+  # Render the Plotly bar graph
+  output$barPlot <- renderPlotly({
+    # Filter data based on selected countries
+    filtered_data <- tertiary_education[tertiary_education$country_name %in% input$selected_countries, ]
+    
+    # Create the Plotly bar chart with specified colors
+    plot_ly(
+      data = filtered_data,
+      x = ~country_name,                      # X-axis: Country name
+      y = ~value_percentage,                  # Y-axis: Tertiary education percentages
+      color = ~indicator_name,                        # Different color for Public/Private
+      colors = c("Individuals with tertiary education as a share of public paid employees" = "#003366", "Individuals with tertiary education as a share of private paid employees" = "#B3242B"),  # Custom color mapping
+      type = 'bar',                           # Bar chart
+      barmode = 'group'                       # Group bars for Public/Private
+    ) %>%
+      layout(
+        title = "Tertiary Education by Sector and Country",
+        xaxis = list(title = "Country"),
+        yaxis = list(title = "Tertiary Education (%)"),
+        bargap = 0.2  # Adjust gap between bars
+      )
+  })
+}  
+
+# Run the Shiny app
+shinyApp(ui = ui, server = server)
 
 #Test 2 ----
 
