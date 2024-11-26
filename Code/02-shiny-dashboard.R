@@ -371,6 +371,35 @@ public_wage_premium <- pubic_wage_premium %>%
   ungroup()                                      # Ungroup the data
 
 
+#Public sector wage premium by education level (compared to private formal workers)
+
+
+public_wage_premium_educ <- data_wwbi[data_wwbi$indicator_name %in% c("Public sector wage premium, by education level: Tertiary Education (compared to formal wage employees)", 
+                                                                      "Public sector wage premium, by education level: Secondary Education (compared to formal wage employees)", 
+                                                                      "Public sector wage premium, by education level: Primary Education (compared to formal wage employees)", 
+                                                                      "Public sector wage premium, by education level: No Education (compared to formal wage employees)"), ]
+
+public_wage_premium_educ <- public_wage_premium_educ %>%
+  pivot_longer(cols = starts_with("year_"), 
+               names_to = "year", 
+               values_to = "value") %>%
+  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
+  filter(!is.na(value)) #1967 obs 
+
+
+public_wage_premium_educ <- public_wage_premium_educ %>%
+  mutate(value_percentage = value * 100)
+
+# Keep the last year available for each country
+
+public_wage_premium_educ <- public_wage_premium_educ %>%
+  filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
+  group_by(country_name,indicator_name) %>%                      # Group by country_name (or any other variable)
+  filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
+  ungroup()                                      # Ungroup the data
+
+
+
 
 
 
@@ -624,7 +653,7 @@ server <- function(input, output, session) {
     # Get the last year data for annotation
     max_year <- max(data_to_plot$year, na.rm = TRUE)
     last_year_data <- data_to_plot %>%
-      group_by(country_name) %>%
+      group_by(country_name, indicator_name) %>%
       filter(year == max_year) %>%
       ungroup() %>%
       select(country_name, year, value)
@@ -1240,6 +1269,69 @@ server <- function(input, output, session) {
 # Run the Shiny app
 shinyApp(ui = ui, server = server)
 
+# Define the UI- Public sector wage premium by education level (compared to private formal workers)
+
+# Define the UI
+ui <- fluidPage(
+  titlePanel("Public sector wage premium by education level (compared to private formal workers)"),
+  
+  sidebarLayout(
+    sidebarPanel(
+      selectInput(
+        inputId = "selected_countries",
+        label = "Select Countries:",
+        choices = unique(public_wage_premium_educ$country_name),
+        selected = unique(public_wage_premium_educ$country_name)[1],  # Default selection
+        multiple = FALSE                                        # Allow multiple selections
+      )
+    ),
+    
+    mainPanel(
+      plotlyOutput("barPlot")  # Output the Plotly chart
+    )
+  )
+)
+
+# Define the server
+server <- function(input, output, session) {
+  
+  # Render the Plotly bar graph
+  output$barPlot <- renderPlotly({
+    # Filter data based on selected countries
+    filtered_data <- public_wage_premium_educ[public_wage_premium_educ$country_name %in% input$selected_countries, ]
+    plot_ly(
+      data = filtered_data,
+      x = ~country_name,                         # X-axis: Country names (labels)
+      y = ~value_percentage,                     # Y-axis: Public sector wage premium by education level
+      color = ~indicator_name,                    # Color bars by indicator_name (Education level)
+      colors = c("Public sector wage premium, by education level: No Education (compared to formal wage employees)" = "#003366",
+                 "Public sector wage premium, by education level: Primary Education (compared to formal wage employees)" = "#B3242B", 
+                 "Public sector wage premium, by education level: Secondary Education (compared to formal wage employees)" = "#333333", 
+                 "Public sector wage premium, by education level: Tertiary Education (compared to formal wage employees)" = "#006400"),  # Custom color mapping
+      type = 'bar',                              # Bar chart type
+      text = ~paste('Country: ', country_name, '<br>', 'Value: ', value_percentage, '%'), # Tooltips
+      hoverinfo = 'text'                          # Show tooltip info
+    ) %>%
+      layout(
+        title = "Public Sector Wage Premium by Education Level (Compared to Private Formal Workers)",
+        xaxis = list(
+          title = "Country", 
+          tickangle = 45, 
+          tickmode = 'array', 
+          tickvals = filtered_data$country_name,  # Set the country names as ticks
+          ticktext = filtered_data$country_name   # Ensure the country names are displayed on the x-axis
+        ),
+        yaxis = list(title = "Wage Premium (%)"),  # Y-axis label
+        barmode = 'group',                         # Group bars by education level
+        bargap = 0.2,                              # Adjust gap between bars
+        showlegend = TRUE,                         # Show legend to distinguish between education levels
+        legend = list(title = list(text = "Education Level")) # Set title for the legend
+      )
+  })
+}
+
+# Run the Shiny app
+shinyApp(ui = ui, server = server)
 
 
 #Test 2 ----
