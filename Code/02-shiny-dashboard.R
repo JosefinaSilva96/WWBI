@@ -251,6 +251,16 @@ public_sector_workforce <- public_sector_workforce %>%
   )
 
 
+# Keep the last year available for each country
+
+public_sector_workforce <- public_sector_workforce %>%
+  filter(!is.na(value_percentage)) %>%               # Keep rows where `value_percentage` is not NA
+  group_by(country_name, indicator_name) %>%         # Group by country and indicator
+  filter(year == max(year, na.rm = TRUE)) %>%        # Get the last available year for each group
+  ungroup()                                          # Ungroup the data
+
+
+
 # Filter the data for the specific indicator "Characteristics of the gender workforce"
 
 
@@ -691,7 +701,7 @@ server <- function(input, output, session) {
     req(input$countries_first) # Ensure input is not null
     public_sector_workforce %>%
       filter(country_name %in% input$countries_first) %>%
-      group_by(country_name) %>%
+      group_by(country_name, indicator_name) %>%
       slice_max(order_by = year, n = 1) %>% # Get the latest year available for each country
       ungroup()
   })
@@ -971,6 +981,7 @@ shinyApp(ui = ui, server = server)
 # Test ----
 
 # Define UI ----
+
 ui <- fluidPage(
   titlePanel("Dot Plot: Wage Bill vs. GDP per Capita (Log Scale)"),
   
