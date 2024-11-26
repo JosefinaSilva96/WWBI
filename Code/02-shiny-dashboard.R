@@ -349,9 +349,9 @@ tertiary_education <- tertiary_education %>%
 
 # Public sector wage premium 
 
-pubic_wage_premium <- data_wwbi[data_wwbi$indicator_name %in% c("Public sector wage premium (compared to all private employees)"), ]
+public_wage_premium <- data_wwbi[data_wwbi$indicator_name %in% c("Public sector wage premium (compared to all private employees)"), ]
 
-pubic_wage_premium <- pubic_wage_premium %>%
+public_wage_premium <- public_wage_premium %>%
   pivot_longer(cols = starts_with("year_"), 
                names_to = "year", 
                values_to = "value") %>%
@@ -359,12 +359,12 @@ pubic_wage_premium <- pubic_wage_premium %>%
   filter(!is.na(value)) #1967 obs 
 
 
-pubic_wage_premium <- pubic_wage_premium %>%
+public_wage_premium <- pubic_wage_premium %>%
   mutate(value_percentage = value * 100)
 
 # Keep the last year available for each country
 
-pubic_wage_premium <- pubic_wage_premium %>%
+public_wage_premium <- pubic_wage_premium %>%
   filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
   group_by(country_name,indicator_name) %>%                      # Group by country_name (or any other variable)
   filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
@@ -1181,6 +1181,66 @@ server <- function(input, output, session) {
 
 # Run the Shiny app
 shinyApp(ui = ui, server = server)
+
+# Define the UI- Public sector wage premium
+
+# Define the UI
+
+ui <- fluidPage(
+  titlePanel("Public Sector Wage Premium (Compared to All Private Sector Workers)"),
+  
+  sidebarLayout(
+    sidebarPanel(
+      selectInput(
+        inputId = "selected_countries",
+        label = "Select Countries:",
+        choices = unique(public_wage_premium$country_name),
+        selected = unique(public_wage_premium$country_name)[1],  # Default selection
+        multiple = TRUE                                         # Allow multiple selections
+      )
+    ),
+    
+    mainPanel(
+      plotlyOutput("dotPlot")  # Output the Plotly chart
+    )
+  )
+)
+
+# Define the server
+server <- function(input, output, session) {
+  
+  # Render the Plotly dot plot
+  output$dotPlot <- renderPlotly({
+    # Filter data based on selected countries
+    filtered_data <- public_wage_premium[public_wage_premium$country_name %in% input$selected_countries, ]
+    
+    # Create a new column to assign color based on the first selected country
+    filtered_data$color <- ifelse(filtered_data$country_name == input$selected_countries[1], "red", "blue")
+    
+    # Create the Plotly dot plot
+    plot_ly(
+      data = filtered_data,
+      x = ~country_name,                          # X-axis: Country name
+      y = ~value_percentage,               # Y-axis: Wage premium percentage
+      color = ~color,                              # Color by the new color column
+      colors = c("#003366", "#B3242B"),                   # Custom color mapping
+      type = 'scatter',                           # Scatter plot (for dot plot)
+      mode = 'markers',                           # Markers to create dots
+      marker = list(size = 12)                    # Set dot size
+    ) %>%
+      layout(
+        title = "Public Sector Wage Premium (Compared to All Private Employees) by Country",
+        xaxis = list(title = "Country"),
+        yaxis = list(title = "Public Sector Wage Premium (%)"),
+        showlegend = FALSE                          # Optional: Hide legend
+      )
+  })
+}
+
+# Run the Shiny app
+shinyApp(ui = ui, server = server)
+
+
 
 #Test 2 ----
 
