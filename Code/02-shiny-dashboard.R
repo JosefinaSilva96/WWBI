@@ -321,6 +321,22 @@ merged_data <- data_indicator_wb %>%
 merged_data <- merged_data %>%
   mutate(log_gdp = log(gdp_value))
 
+# Tertiary education by sector 
+
+tertiary_education <- data_wwbi[data_wwbi$indicator_name %in% c("Individuals with tertiary education as a share of public paid employees", 
+                                                              "Individuals with tertiary education as a share of private paid employees"), ]
+
+gender_workforce <- gender_workforce %>%
+  pivot_longer(cols = starts_with("year_"), 
+               names_to = "year", 
+               values_to = "value") %>%
+  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
+  filter(!is.na(value)) #1967 obs 
+
+
+gender_workforce <- gender_workforce %>%
+  mutate(value_percentage = value * 100)
+
 
 
 ## Shiny Dashboard ----
