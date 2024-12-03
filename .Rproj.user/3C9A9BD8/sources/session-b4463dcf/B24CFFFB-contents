@@ -634,7 +634,7 @@ server <- function(input, output, session) {
       # Filter wage_bill_gdp dataset based on selected countries
       data <- wage_bill_gdp %>% filter(country_name %in% input$countries)
     } else {
-      data <- wage_bill_publicexp %>% filter(country_name %in% input$countries)
+      data <- filtered_data %>% filter(country_name %in% input$countries)
     }
     return(data)
   })
@@ -643,78 +643,48 @@ server <- function(input, output, session) {
   output$plot <- renderPlotly({
     data_to_plot <- selected_data()
     
-    # Identify the first country selected by the user
-    first_country <- input$countries[1]  # Get the first selected country
-    first_country_data <- data_to_plot %>% filter(country_name == first_country)
-    
-    # Separate the first country data from the others
-    other_countries_data <- data_to_plot %>% filter(country_name != first_country)
-    
-    # Get the last year data for annotation
     max_year <- max(data_to_plot$year, na.rm = TRUE)
+    
     last_year_data <- data_to_plot %>%
-      group_by(country_name, indicator_name) %>%
+      group_by(country_name) %>%
       filter(year == max_year) %>%
       ungroup() %>%
       select(country_name, year, value)
     
-    # Plot the data with the first country having a distinct style
     title_text <- ifelse(input$indicator == "Wage bill as a percentage of GDP",
                          "Wage Bill as % of GDP Over Time",
                          "Wage Bill as % of Public Expenditure Over Time")
+    plot_mode <- ifelse(input$indicator == "Wage bill as a percentage of GDP", 'lines+markers', 'lines+markers')
     
-    plot <- plot_ly() %>%
-      # Add other countries data with normal lines
-      add_trace(
-        data = other_countries_data,
-        x = ~year, 
-        y = ~value, 
-        color = ~country_name, 
-        type = 'scatter', 
-        mode = 'lines+markers', 
-        marker = list(size = 8),
-        name = ~country_name  # Use the country_name for legend
-      ) %>%
-      # Add the first country data with dashed line
-      add_trace(
-        data = first_country_data,
-        x = ~year, 
-        y = ~value, 
-        color = I("#B3242B"),  # Highlight the first country with specific color
-        type = 'scatter', 
-        mode = 'lines+markers', 
-        line = list(dash = 'dash'),  # Dashed line for the first country
-        marker = list(size = 8),
-        name = first_country  # Set the first country's name in the legend
-      ) %>%
-      layout(
-        title = title_text,
-        xaxis = list(title = "Year", dtick = 2),
-        yaxis = list(title = ifelse(input$indicator == "Wage bill as a percentage of GDP", 
-                                    "Wage Bill (% of GDP)", "Wage bill (% of public expenditure)
-")),
-        legend = list(title = list(text = "Country"))
-      )
+    plot <- plot_ly(data = data_to_plot, 
+                    x = ~year, 
+                    y = ~value, 
+                    color = ~country_name, 
+                    type = 'scatter', 
+                    mode = plot_mode,
+                    marker = list(size = 8)) %>%
+      layout(title = title_text,
+             xaxis = list(title = "Year", dtick = 2),
+             yaxis = list(title = ifelse(input$indicator == "Wage bill as a percentage of GDP", 
+                                         "Wage Bill (% of GDP)", "Wage Bill (%)")),
+             legend = list(title = list(text = "Country")))
     
-    # Add annotation for the first country's last value
-    last_year_first_country <- first_country_data %>% 
-      filter(year == max(first_country_data$year, na.rm = TRUE))  # Get data for the last year of the first country
+    for (i in 1:nrow(last_year_data)) {
+      plot <- plot %>%
+        add_annotations(
+          x = last_year_data$year[i], 
+          y = last_year_data$value[i],
+          text = paste(round(last_year_data$value[i], 2)),
+          showarrow = FALSE,
+          font = list(size = 12, color = "black"),
+          bgcolor = "white",
+          xanchor = "center",
+          yanchor = "bottom"
+        )
+    }
     
-    plot <- plot %>%
-      add_annotations(
-        x = last_year_first_country$year, 
-        y = last_year_first_country$value,
-        text = paste(round(last_year_first_country$value, 2)),  # Annotate value
-        showarrow = TRUE,  # Optional: set TRUE for arrows pointing to the point
-        font = list(size = 12, color = "black"),
-        bgcolor = "white",
-        xanchor = "center",
-        yanchor = "bottom"
-      )
-    
-    plot
+    plot 
   })
-  
   # First Graph (Multiple Countries)
   output$firstGraph <- renderPlotly({
     data_to_plot <- public_sector_emp_temp_last %>%
