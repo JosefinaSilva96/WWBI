@@ -1389,7 +1389,7 @@ ui <- dashboardPage(
               ),
               fluidRow(
                 box(title = "Dot Plot: Wage Bill vs. GDP per Capita (Log Scale)", status = "primary", solidHeader = TRUE, width = 12,
-                    plotlyOutput("dot_plot")
+                    plotlyOutput("plot_gdp")
                 )
               )
       ),
