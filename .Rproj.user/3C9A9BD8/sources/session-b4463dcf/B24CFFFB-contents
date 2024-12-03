@@ -1318,6 +1318,7 @@ ui <- dashboardPage(
       menuItem("Variable List", tabName = "variableList", icon = icon("table")),
       menuItem("Indicators Status", tabName = "indicators", icon = icon("globe")),
       menuItem("Wage Bill Graphs", tabName = "wageBillGraphs", icon = icon("chart-line")), 
+      menuItem("Wage Bill and GDP Graphs", tabName = "wageBillgdpGraphs", icon = icon("chart-line")),
       menuItem("Public Sector Graphs", tabName = "publicSectorGraphs", icon = icon("chart-line")), 
       menuItem("Public Sector Workforce Graphs", tabName = "publicSectorWorkforceGraphs", icon = icon("chart-line")), 
       menuItem("Gender Workforce Graphs", tabName = "genderWorkforceGraphs", icon = icon("chart-line"))
@@ -1372,6 +1373,23 @@ ui <- dashboardPage(
               fluidRow(
                 box(title = "Graph", status = "primary", solidHeader = TRUE, width = 12,
                     plotlyOutput("plot")
+                )
+              )
+      ),
+      # Wage Bill and GDP Graphs Tab
+      tabItem(tabName = "wageBillgdpGraphs",
+              fluidRow(
+                box(title = "Dot Plot: Wage Bill vs. GDP per Capita (Log Scale)", status = "primary", solidHeader = TRUE, width = 12,
+                    selectInput("countries_first", 
+                                "Select Countries for First Graph", 
+                                choices = unique(merged_data$country_name), 
+                                selected = NULL, 
+                                multiple = TRUE)
+                )
+              ),
+              fluidRow(
+                box(title = "Dot Plot: Wage Bill vs. GDP per Capita (Log Scale)", status = "primary", solidHeader = TRUE, width = 12,
+                    plotlyOutput("dot_plot")
                 )
               )
       ),
@@ -1454,7 +1472,7 @@ ui <- dashboardPage(
               label = "Select Countries for Workforce Graph", 
               choices = unique(public_sector_workforce$country_name), 
               selected = unique(public_sector_workforce$country_name)[1], 
-              multiple = TRUE # Allow multiple countries selection
+              multiple = TRUE
             )
           )
         ),
@@ -1480,7 +1498,7 @@ ui <- dashboardPage(
               label = "Select Country for Second Graph", 
               choices = unique(gender_workforce$country_name), 
               selected = unique(gender_workforce$country_name)[1], 
-              multiple = FALSE # Allow single country selection
+              multiple = FALSE 
             )
           )
         ),
@@ -1583,6 +1601,72 @@ server <- function(input, output, session) {
     
     plot 
   })
+  
+  #GDP graphs 
+  
+  # Render the dot plot
+  output$dot_plot <- renderPlotly({
+    
+    # Filter merged_data based on selected countries
+    filtered_data <- merged_data %>%
+      filter(country_name %in% input$selected_countries)
+    
+    # Get the first country for highlighting
+    first_country <- input$selected_countries[1]
+    
+    # Create color column: first country will have a different color
+    filtered_data <- filtered_data %>%
+      mutate(color = ifelse(country_name == first_country, "#B3242B", "#003366"))
+    
+    # Fit a linear model for the trendline (log_gdp vs indicator_value)
+    trendline_model <- lm(indicator_value ~ log_gdp, data = filtered_data)
+    
+    # Get fitted values for the trendline
+    trendline_values <- predict(trendline_model, newdata = filtered_data)
+    
+    # Create the plot
+    plot_gdp <- plot_ly() %>%
+      # Data points for countries
+      add_trace(
+        data = filtered_data,
+        x = ~log_gdp,
+        y = ~indicator_value,
+        type = "scatter",
+        mode = "markers+text",  # Add dots for countries
+        text = ~country_code,  # Display country code as label
+        textposition = "top center",  # Position labels above the dots
+        marker = list(
+          size = 10,
+          color = ~color,  # Use the color column for different colors
+          opacity = 0.7
+        )
+      ) %>%
+      # Trendline (only line, no dots for trendline)
+      add_trace(
+        x = filtered_data$log_gdp,
+        y = trendline_values,
+        type = "scatter",
+        mode = "lines",  # Only lines for the trendline
+        line = list(color = "gray", dash = "dash"),
+        name = "Trendline"  # This is used for the legend, but we will hide it
+      ) %>%
+      layout(
+        title = "Wage Bill vs. Log(GDP per Capita)",
+        xaxis = list(
+          title = "Log(GDP per Capita, 2015)",  # Axis label for x-axis
+          showticklabels = TRUE  # Show tick labels on x-axis
+        ),
+        yaxis = list(
+          title = "Wage Bill",  # Axis label for y-axis
+          showticklabels = TRUE  # Show tick labels on y-axis
+        ),
+        showlegend = FALSE  # Hide the legend
+      )
+    
+    return(plot)
+  })
+  
+  
   # First Graph (Multiple Countries)
   output$firstGraph <- renderPlotly({
     data_to_plot <- public_sector_emp_temp_last %>%
