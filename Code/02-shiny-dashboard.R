@@ -1380,11 +1380,11 @@ ui <- dashboardPage(
       tabItem(tabName = "wageBillgdpGraphs",
               fluidRow(
                 box(title = "Dot Plot: Wage Bill vs. GDP per Capita (Log Scale)", status = "primary", solidHeader = TRUE, width = 12,
-                    selectInput("countries_first", 
-                                "Select Countries for First Graph", 
-                                choices = unique(merged_data$country_name), 
-                                selected = NULL, 
-                                multiple = TRUE)
+                    inputId = "selected_countries",
+                    label = "Select Countries:",
+                    choices = unique(merged_data$country_name),
+                    selected = unique(merged_data$country_name)[1:3], # Default selection
+                    multiple = TRUE
                 )
               ),
               fluidRow(
