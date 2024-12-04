@@ -1900,7 +1900,7 @@ server <- function(input, output, session) {
         bargap = 0.2                          # Adjust gap between bars
       )
   })
- 
+ #
   # Define the initial world map render
   output$worldMap <- renderLeaflet({
     leaflet(world_spdf) %>%
