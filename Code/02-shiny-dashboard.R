@@ -251,15 +251,14 @@ public_sector_workforce <- public_sector_workforce %>%
   )
 
 
-# Keep the last year available for each country
+# Keep the first and  last year available for each country
 
-public_sector_workforce <- public_sector_workforce %>%
+public_sector_workforce_first_last <- public_sector_workforce %>%
   filter(!is.na(value_percentage)) %>%               # Keep rows where `value_percentage` is not NA
   group_by(country_name, indicator_name) %>%         # Group by country and indicator
-  filter(year == max(year, na.rm = TRUE)) %>%        # Get the last available year for each group
-  ungroup()                                          # Ungroup the data
-
-
+  filter(year == max(year, na.rm = TRUE) |           # Keep rows for the last year
+           year == min(year, na.rm = TRUE)) %>%      # Keep rows for the first year
+  ungroup()
 
 # Filter the data for the specific indicator "Characteristics of the gender workforce"
 
@@ -422,7 +421,6 @@ ui <- dashboardPage(
       menuItem("Public Sector Graphs", tabName = "publicSectorGraphs", icon = icon("chart-line")), 
       menuItem("Public Sector Workforce Graphs", tabName = "publicSectorWorkforceGraphs", icon = icon("chart-line")), 
       menuItem("Gender Workforce Graphs", tabName = "genderWorkforceGraphs", icon = icon("chart-line")), 
-      menuItem("Wage Bill Graphs", tabName = "wageBillGraphs", icon = icon("chart-line")), 
       menuItem("Tertiary Education Graphs", tabName = "educationGraphs", icon = icon("chart-line"))
     )
   ),
@@ -529,7 +527,7 @@ ui <- dashboardPage(
                 box(title = "Select Country (Second Graph)", status = "primary", solidHeader = TRUE, width = 12,
                     selectInput("selected_country", 
                                 "Select Country for Second Graph", 
-                                choices = unique(public_sector_workforce$country_name), 
+                                choices = unique(public_sector_workforce_first_last$country_name), 
                                 selected = NULL, 
                                 multiple = FALSE)
                 )
@@ -810,7 +808,7 @@ server <- function(input, output, session) {
   # Second Graph: Horizontal Stacked Bar Chart (Single Country)
   output$messageOutput <- renderUI({
     # Filter data for the selected country
-    filtered_data <- public_sector_workforce %>%
+    filtered_data <- public_sector_workforce_first_last %>%
       filter(country_name == input$selected_country)
     
     # Check if there is enough data
@@ -825,7 +823,7 @@ server <- function(input, output, session) {
     req(input$selected_country)
     
     # Filter data for the selected country
-    filtered_data <- public_sector_workforce %>%
+    filtered_data <- public_sector_workforce%>%
       filter(country_name == input$selected_country)
     
     # Find the first and last year available for the selected country
