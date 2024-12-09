@@ -653,7 +653,7 @@ ui <- dashboardPage(
                 )
               ),
               fluidRow(
-                box(title = "First Graph", status = "primary", solidHeader = TRUE, width = 12,
+                box(title = "Public Sector Wage Premium (Compared to All Private Employees) by Country", status = "primary", solidHeader = TRUE, width = 12,
                     plotlyOutput("dotPlot")
                 )
               )
@@ -1144,19 +1144,27 @@ server <- function(input, output, session) {
   #Public sector wage Premium
   # Render the Plotly dot plot
   output$dotPlot <- renderPlotly({
+    # Ensure countries are selected
+    req(input$countries_first)
+    
     # Filter data based on selected countries
-    filtered_data <- public_wage_premium[public_wage_premium$country_name %in% input$selected_countries, ]
+    filtered_data <- public_wage_premium[public_wage_premium$country_name %in% input$countries_first, ]
+    
+    # Ensure there's data to plot
+    if (nrow(filtered_data) == 0) {
+      return(NULL)  # Return nothing if no data is available
+    }
     
     # Create a new column to assign color based on the first selected country
-    filtered_data$color <- ifelse(filtered_data$country_name == input$selected_countries[1], "red", "blue")
+    filtered_data$color <- ifelse(filtered_data$country_name == input$countries_first[1], "red", "blue")
     
     # Create the Plotly dot plot
     plot_ly(
       data = filtered_data,
       x = ~country_name,                          # X-axis: Country name
-      y = ~value_percentage,               # Y-axis: Wage premium percentage
-      color = ~color,                              # Color by the new color column
-      colors = c("#003366", "#B3242B"),                   # Custom color mapping
+      y = ~value_percentage,                      # Y-axis: Wage premium percentage
+      color = ~color,                             # Color by the new color column
+      colors = c("#003366", "#B3242B"),           # Custom color mapping
       type = 'scatter',                           # Scatter plot (for dot plot)
       mode = 'markers',                           # Markers to create dots
       marker = list(size = 12)                    # Set dot size
@@ -1209,23 +1217,25 @@ server <- function(input, output, session) {
       addTiles() %>%
       setView(lng = 0, lat = 20, zoom = 2)  # Adjust view to show the world
   })
-  # Reactive expression to filter data based on selected countries
-  filtered_workforce_data <- reactive({
-    req(input$countries_workforce)  # Ensure countries are selected
-    public_sector_workforce %>%
-      filter(country_name %in% input$countries_workforce) %>%
-      group_by(country_name, indicator_name) %>%
-      summarise(value_percentage = mean(value_percentage, na.rm = TRUE), .groups = "drop")
+  
+  # Reactive expression to filter data based on selected indicator and year
+  filtered_data_for_map <- reactive({
+    req(input$indicatorSelect, input$yearSelect)  # Ensure indicator and year are selected
+    
+    # Construct the column name for the selected year
+    year_column <- paste0("year_", input$yearSelect)
+    
+    # Filter the dataset to get countries with data for the selected indicator and year
+    reported_countries <- data_wwbi %>%
+      filter(indicator_name == input$indicatorSelect, !is.na(.data[[year_column]])) %>%
+      pull(country_name)
+    
+    return(reported_countries)
   })
   
-  # Update the map based on indicator selection
+  # Update the map based on indicator and year selection
   observe({
-    req(input$indicatorSelect)
-    
-    # Filter the dataset to get countries that reported data
-    reported_countries <- data_wwbi %>%
-      filter(!is.na(.data[[paste0("year_", 2022)]])) %>%
-      pull(country_name)
+    reported_countries <- filtered_data_for_map()  # Get the filtered countries
     
     leafletProxy("worldMap") %>%
       clearShapes() %>%
@@ -1242,10 +1252,12 @@ server <- function(input, output, session) {
       )
   })
   
-  output$variableTable <- renderDT({
-    data_wwbi %>%
-      select(country_name, indicator_name, matches("^year_20(1[0-9]|2[0-2])"))
+  # Display the number of countries with data for the selected indicator and year
+  output$countryCount <- renderText({
+    reported_countries <- filtered_data_for_map()
+    paste("Number of countries with data for selected indicator and year:", length(reported_countries))
   })
+  
   # Render Data Table of variables
   output$variableTable <- renderDT({
     data_wwbi %>%
