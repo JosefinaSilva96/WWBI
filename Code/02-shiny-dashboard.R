@@ -418,7 +418,6 @@ public_wage_premium_educ <- public_wage_premium_educ %>%
 
 # Define UI ----
 
-
 ui <- dashboardPage(
   skin = "black",
   dashboardHeader(title = "WWB Indicators"),
@@ -434,7 +433,8 @@ ui <- dashboardPage(
       menuItem("Public Sector Workforce Graphs", tabName = "publicSectorWorkforceGraphs", icon = icon("chart-line")), 
       menuItem("Gender Workforce Graphs", tabName = "genderWorkforceGraphs", icon = icon("chart-line")), 
       menuItem("Tertiary Education Graphs", tabName = "educationGraphs", icon = icon("chart-line")),
-      menuItem("Public Sector Wage Premium", tabName = "publicsectorwagepremiumGraphs", icon = icon("chart-line"))
+      menuItem("Public Sector Wage Premium", tabName = "publicsectorwagepremiumGraphs", icon = icon("chart-line")),
+      menuItem("Public Sector Education Workers", tabName = "publicsectoreducationGraphs", icon = icon("chart-line"))
     )
   ),
   dashboardBody(
@@ -662,6 +662,34 @@ ui <- dashboardPage(
                 )
               )
       ),
+      # Public Sector Education Graphs Tab
+      tabItem(tabName = "publicsectoreducationGraphs",
+              fluidRow(
+                box(
+                  title = "Single-Country Selection", 
+                  status = "primary", 
+                  solidHeader = TRUE, 
+                  width = 12,
+                  selectInput(
+                    inputId = "selected_country", 
+                    label = "Select Country for Graph", 
+                    choices = unique(public_wage_premium_educ$country_name),
+                    selected = unique(public_wage_premium_educ$country_name)[1],  # Default selection
+                    multiple = FALSE                                             # Single selection only
+                  )
+                )
+              ),
+              fluidRow(
+                box(
+                  title = "Public Sector Wage Premium by Education Level (Compared to Private Formal Workers)", 
+                  status = "primary", 
+                  solidHeader = TRUE, 
+                  width = 12,
+                  plotlyOutput(outputId = "barPloteduc")
+                )
+              )
+      ),
+      
       # Indicators Tab
       tabItem(tabName = "indicators",
               fluidRow(
@@ -1142,7 +1170,41 @@ server <- function(input, output, session) {
         showlegend = FALSE                          # Optional: Hide legend
       )
   })
+  #Public sector wage premium by education level
   
+  # Render the Plotly bar graph
+  output$barPloteduc <- renderPlotly({
+    # Filter data based on selected country
+    filtered_data <- public_wage_premium_educ[public_wage_premium_educ$country_name == input$selected_country, ]
+    
+    plot_ly(
+      data = filtered_data,
+      x = ~indicator_name,                         # X-axis: Education levels
+      y = ~value_percentage,                      # Y-axis: Public sector wage premium
+      color = ~indicator_name,                    # Color bars by indicator_name (Education level)
+      colors = c("No Education" = "#003366",
+                 "Primary Education" = "#B3242B", 
+                 "Secondary Education" = "#333333", 
+                 "Tertiary Education" = "#006400"),  # Custom color mapping
+      type = 'bar'                                # Bar chart type
+    ) %>%
+      layout(
+        title = "Public Sector Wage Premium by Education Level (Compared to Private Formal Workers)",
+        xaxis = list(
+          title = "Education Level",              # X-axis title
+          tickangle = 0                           # Horizontal labels
+        ),
+        yaxis = list(
+          title = "Wage Premium (%)"              # Y-axis title
+        ),
+        barmode = 'group',                        # Group bars by education level
+        bargap = 0.2,                             # Adjust gap between bars
+        showlegend = TRUE,                        # Show legend to distinguish between education levels
+        legend = list(
+          title = list(text = "Education Level")  # Title for the legend
+        )
+      )
+  })
   # Define the initial world map render
   output$worldMap <- renderLeaflet({
     leaflet(world_spdf) %>%
