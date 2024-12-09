@@ -422,7 +422,8 @@ ui <- dashboardPage(
       menuItem("Public Sector Graphs", tabName = "publicSectorGraphs", icon = icon("chart-line")), 
       menuItem("Public Sector Workforce Graphs", tabName = "publicSectorWorkforceGraphs", icon = icon("chart-line")), 
       menuItem("Gender Workforce Graphs", tabName = "genderWorkforceGraphs", icon = icon("chart-line")), 
-      menuItem("Wage Bill Graphs", tabName = "wageBillGraphs", icon = icon("chart-line"))
+      menuItem("Wage Bill Graphs", tabName = "wageBillGraphs", icon = icon("chart-line")), 
+      menuItem("Tertiary Education Graphs", tabName = "educationGraphs", icon = icon("chart-line"))
     )
   ),
   dashboardBody(
@@ -595,6 +596,22 @@ ui <- dashboardPage(
             plotlyOutput(outputId = "employment_plot_overtime", height = "600px")
           )
         )
+      ),
+      # Tertiary Education Graphs Tab
+      tabItem(tabName = "educationGraphs",
+              fluidRow(
+                box(title = "Country Selection", status = "primary", solidHeader = TRUE, width = 12,
+                    selectInput("selected_countries", "Select Countries", 
+                                choices = unique(tertiary_education$country_name),
+                                selected = unique(tertiary_education$country_name)[1:3], # Default selection
+                                multiple = TRUE)
+                )
+              ),
+              fluidRow(
+                box(title = "Tertiary Education Graphs", status = "primary", solidHeader = TRUE, width = 12,
+                    plotlyOutput("barPlot", height = "600px")
+                )
+              )
       ),
       # Indicators Tab
       tabItem(tabName = "indicators",
@@ -947,6 +964,46 @@ server <- function(input, output, session) {
     
     plot
   })
+  
+  #Tertiary Education
+  # Render the Plotly bar graph
+  output$barPlot <- renderPlotly({
+    
+    # Check if countries are selected
+    if (is.null(input$selected_countries) || length(input$selected_countries) == 0) {
+      return(NULL)  # Do nothing if no countries are selected
+    }
+    
+    # Filter data based on selected countries
+    filtered_data <- tertiary_education %>%
+      filter(country_name %in% input$selected_countries)
+    
+    # Ensure the filtered dataset is not empty
+    if (nrow(filtered_data) == 0) {
+      return(NULL)  # Return nothing if the filtered dataset is empty
+    }
+    
+    # Create the Plotly bar chart
+    plot_ly(
+      data = filtered_data,
+      x = ~country_name,                      # X-axis: Country name
+      y = ~value_percentage,                  # Y-axis: Tertiary education percentages
+      color = ~indicator_name,                # Different color for Public/Private
+      colors = c(
+        "Individuals with tertiary education as a share of public paid employees" = "#003366", 
+        "Individuals with tertiary education as a share of private paid employees" = "#B3242B"
+      ),                                     # Custom color mapping
+      type = 'bar',                           # Bar chart
+      barmode = 'group'                       # Group bars for Public/Private
+    ) %>%
+      layout(
+        title = "Tertiary Education by Sector and Country",
+        xaxis = list(title = "Country"),      # Title for x-axis
+        yaxis = list(title = "Tertiary Education (%)"), # Title for y-axis
+        bargap = 0.2                          # Adjust gap between bars
+      )
+  })
+  
   
   # Define the initial world map render
   output$worldMap <- renderLeaflet({
