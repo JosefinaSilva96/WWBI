@@ -694,16 +694,13 @@ ui <- dashboardPage(
                 )
               ),
               fluidRow(
-                box(title = "Select Indicator", status = "primary", solidHeader = TRUE, width = 12,
-                    selectInput("indicatorSelect", "Choose Indicator", 
-                                choices = c("Wage bill (as % of public expenditure) over time", 
-                                            "Wage bill as a percentage of GDP", 
-                                            "Public sector employment as a share of total workforce"))
-                )
-              ),
-              fluidRow(
-                box(title = "World Map", status = "primary", solidHeader = TRUE, width = 12,
-                    leafletOutput("worldMap", height = 500)
+                box(title = "Indicator Selection", status = "primary", solidHeader = TRUE, width = 4,
+                    selectInput("indicatorSelect", "Select Indicator", 
+                                choices = unique(data_wwbi$indicator_name), selected = NULL)
+                ),
+                box(title = "Year Selection", status = "primary", solidHeader = TRUE, width = 4,
+                    selectInput("yearSelect", "Select Year", 
+                                choices = 2010:2022, selected = 2022)
                 )
               )
       )
