@@ -399,7 +399,18 @@ public_wage_premium_educ <- public_wage_premium_educ %>%
 
 
 
+public_wage_premium_educ <- public_wage_premium_educ %>%
+  mutate(indicator_name = ifelse(indicator_name == "Public sector wage premium, by education level: Tertiary Education (compared to formal wage employees)", "Tertiary Education", indicator_name))
 
+public_wage_premium_educ <- public_wage_premium_educ %>%
+  mutate(indicator_name = ifelse(indicator_name == "Public sector wage premium, by education level: Secondary Education (compared to formal wage employees)", "Secondary Education", indicator_name))
+
+public_wage_premium_educ <- public_wage_premium_educ %>%
+  mutate(indicator_name = ifelse(indicator_name == "Public sector wage premium, by education level: Primary Education (compared to formal wage employees)", "Primary Education", indicator_name))
+
+
+public_wage_premium_educ <- public_wage_premium_educ %>%
+  mutate(indicator_name = ifelse(indicator_name == "Public sector wage premium, by education level: No Education (compared to formal wage employees)", "No Education", indicator_name))
 
 
 ## Shiny Dashboard ----
@@ -478,20 +489,24 @@ ui <- dashboardPage(
                 )
               )
       ),
-      # Wage Bill and GDP 
-      tabItem(tabName = "wageBillgdpGraphs",
+      # Wage Bill Graphs Tab
+      tabItem(tabName = "wageBillGraphs",
               fluidRow(
-                box(title = "Multi-Country Selection", status = "primary", solidHeader = TRUE, width = 12,
-                    selectInput("countries_first", 
-                                "Select Countries for First Graph", 
-                                choices = unique(merged_data$country_name),
-                                selected = unique(merged_data$country_name)[1:3], # Default selection
+                box(title = "WWB Indicator Selection", status = "primary", solidHeader = TRUE, width = 4,
+                    selectInput("indicator", "Select a WWB Indicator", 
+                                choices = c("Wage bill (as % of public expenditure) over time", 
+                                            "Wage bill as a percentage of GDP"))
+                ),
+                box(title = "Country Selection", status = "primary", solidHeader = TRUE, width = 8,
+                    selectInput("countries", "Countries", 
+                                choices = unique(filtered_data$country_name), 
+                                selected = unique(filtered_data$country_name)[1], 
                                 multiple = TRUE)
                 )
               ),
               fluidRow(
-                box(title = "First Graph", status = "primary", solidHeader = TRUE, width = 12,
-                    plotlyOutput("dot_plot")
+                box(title = "Graph", status = "primary", solidHeader = TRUE, width = 12,
+                    plotlyOutput("plot")
                 )
               )
       ),
@@ -1454,19 +1469,17 @@ server <- function(input, output, session) {
       x = ~country_name,                         # X-axis: Country names (labels)
       y = ~value_percentage,                     # Y-axis: Public sector wage premium by education level
       color = ~indicator_name,                    # Color bars by indicator_name (Education level)
-      colors = c("Public sector wage premium, by education level: No Education (compared to formal wage employees)" = "#003366",
-                 "Public sector wage premium, by education level: Primary Education (compared to formal wage employees)" = "#B3242B", 
-                 "Public sector wage premium, by education level: Secondary Education (compared to formal wage employees)" = "#333333", 
-                 "Public sector wage premium, by education level: Tertiary Education (compared to formal wage employees)" = "#006400"),  # Custom color mapping
-      type = 'bar',                              # Bar chart type
-      text = ~paste('Country: ', country_name, '<br>', 'Value: ', value_percentage, '%'), # Tooltips
-      hoverinfo = 'text'                          # Show tooltip info
+      colors = c("No Education" = "#003366",
+                 "Primary Education" = "#B3242B", 
+                 "Secondary Education" = "#333333", 
+                 "Tertiary Education" = "#006400"),  # Custom color mapping
+      type = 'bar'                       # Show tooltip info
     ) %>%
       layout(
         title = "Public Sector Wage Premium by Education Level (Compared to Private Formal Workers)",
         xaxis = list(
           title = "Country", 
-          tickangle = 45, 
+          tickangle = 0, 
           tickmode = 'array', 
           tickvals = filtered_data$country_name,  # Set the country names as ticks
           ticktext = filtered_data$country_name   # Ensure the country names are displayed on the x-axis
