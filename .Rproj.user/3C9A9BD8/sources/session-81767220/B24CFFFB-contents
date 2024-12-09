@@ -49,6 +49,9 @@ selectInput("countrySelect", "Select Country",
             choices = unique(data_wwbi$country_name), 
             multiple = TRUE)
 
+world_spdf$name_long <- world_spdf$country_name
+
+
 #Countries 
 
 countries <- c(
@@ -694,15 +697,21 @@ ui <- dashboardPage(
                 )
               ),
               fluidRow(
-                box(title = "Indicator Selection", status = "primary", solidHeader = TRUE, width = 4,
-                    selectInput("indicatorSelect", "Select Indicator", 
-                                choices = unique(data_wwbi$indicator_name), selected = NULL)
-                ),
-                box(title = "Year Selection", status = "primary", solidHeader = TRUE, width = 4,
-                    selectInput("yearSelect", "Select Year", 
-                                choices = 2010:2022, selected = 2022)
-                )
-              )
+  box(title = "Indicator Selection", status = "primary", solidHeader = TRUE, width = 4,
+      selectInput("indicatorSelect", "Select Indicator", 
+                  choices = unique(data_wwbi$indicator_name), selected = NULL)
+  ),
+  box(title = "Year Selection", status = "primary", solidHeader = TRUE, width = 4,
+      selectInput("yearSelect", "Select Year", 
+                  choices = 2010:2022, selected = 2022)
+  )
+), 
+fluidRow(
+  box(title = "Country Count", status = "primary", solidHeader = TRUE, width = 12,
+      textOutput("countryCount")
+  )
+)
+
       )
     )
   )
@@ -1243,9 +1252,9 @@ server <- function(input, output, session) {
         color = "#FFFFFF",
         weight = 1,
         highlightOptions = highlightOptions(color = "#FFD700", weight = 2, fillOpacity = 0.9),
-        label = ~name,
+        label = ~country_name,
         labelOptions = labelOptions(style = list("font-weight" = "bold"), textsize = "12px", direction = "auto"),
-        popup = ~paste("<strong>Country:</strong>", name)
+        popup = ~paste("<strong>Country:</strong>", country_name)
       )
   })
   
