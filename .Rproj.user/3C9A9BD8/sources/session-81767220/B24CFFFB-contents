@@ -49,7 +49,7 @@ selectInput("countrySelect", "Select Country",
             choices = unique(data_wwbi$country_name), 
             multiple = TRUE)
 
-world_spdf$name_long <- world_spdf$country_name
+colnames(world_spdf)[colnames(world_spdf) == "name"] <- "country_name"
 
 
 #Countries 
@@ -710,6 +710,11 @@ fluidRow(
   box(title = "Country Count", status = "primary", solidHeader = TRUE, width = 12,
       textOutput("countryCount")
   )
+), 
+fluidRow(
+  box(title = "World Map", status = "primary", solidHeader = TRUE, width = 12,
+      leafletOutput("worldMap", height = "600px")
+  )
 )
 
       )
@@ -908,16 +913,15 @@ server <- function(input, output, session) {
   
   # Reactive expression to filter workforce data
   filtered_workforce_data <- reactive({
-    req(input$countries_first) # Ensure input is not null
+    req(input$countries_workforce) # Ensure input is not null
     public_sector_workforce %>%
-      filter(country_name %in% input$countries_first) %>%
+      filter(country_name %in% input$countries_workforce) %>%
       group_by(country_name, indicator_name) %>%
       slice_max(order_by = year, n = 1) %>% # Get the latest year available for each country
       ungroup()
   })
   
   # Render the stacked bar graph
-  
   output$stackedBarGraph <- renderPlotly({
     data_to_plot <- filtered_workforce_data()
     req(nrow(data_to_plot) > 0) # Ensure there's data to plot
@@ -949,7 +953,6 @@ server <- function(input, output, session) {
         legend = list(title = list(text = "<b>Indicator</b>"))
       )
   })
-  
   # Second Graph: Horizontal Stacked Bar Chart (Single Country)
   output$messageOutput <- renderUI({
     # Filter data for the selected country
@@ -1241,34 +1244,32 @@ server <- function(input, output, session) {
   
   # Update the map based on indicator and year selection
   observe({
-    reported_countries <- filtered_data_for_map()  # Get the filtered countries
+    reported_countries <- filtered_data_for_map()  # Filtered countries
+    print(reported_countries)  # Debugging step: Check reported countries
+    
+    # Normalize country names for matching
+    reported_countries <- tolower(trimws(reported_countries))
+    world_spdf$country_name <- tolower(trimws(world_spdf$country_name))
     
     leafletProxy("worldMap") %>%
       clearShapes() %>%
       addPolygons(
         data = world_spdf,
-        fillColor = ~ifelse(world_spdf$country_name %in% reported_countries, "#28a745", "#CCCCCC"),
+        fillColor = ~ifelse(country_name %in% reported_countries, "#28a745", "#FF6961"),
         fillOpacity = 0.7,
         color = "#FFFFFF",
         weight = 1,
         highlightOptions = highlightOptions(color = "#FFD700", weight = 2, fillOpacity = 0.9),
         label = ~country_name,
-        labelOptions = labelOptions(style = list("font-weight" = "bold"), textsize = "12px", direction = "auto"),
         popup = ~paste("<strong>Country:</strong>", country_name)
       )
   })
-  
   # Display the number of countries with data for the selected indicator and year
   output$countryCount <- renderText({
     reported_countries <- filtered_data_for_map()
     paste("Number of countries with data for selected indicator and year:", length(reported_countries))
   })
   
-  # Render Data Table of variables
-  output$variableTable <- renderDT({
-    data_wwbi %>%
-      select(country_name, indicator_name, matches("^year_20(1[0-9]|2[0-2])"))
-  })
   
   # Dummy outputs for widgets
   output$numberIndicatorsBox <- renderInfoBox({
