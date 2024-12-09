@@ -478,8 +478,8 @@ ui <- dashboardPage(
                 ),
                 box(title = "Country Selection", status = "primary", solidHeader = TRUE, width = 8,
                     selectInput("countries", "Countries", 
-                                choices = unique(filtered_data$country_name), 
-                                selected = unique(filtered_data$country_name)[1], 
+                                choices = unique(wage_bill_gdp$country_name), 
+                                selected = unique(wage_bill_gdp$country_name)[1], 
                                 multiple = TRUE)
                 )
               ),
@@ -489,27 +489,23 @@ ui <- dashboardPage(
                 )
               )
       ),
-      # Wage Bill Graphs Tab
-      tabItem(tabName = "wageBillGraphs",
+      # Wage Bill Graphs GDP Tab
+      tabItem(tabName = "wageBillgdpGraphs",
               fluidRow(
-                box(title = "WWB Indicator Selection", status = "primary", solidHeader = TRUE, width = 4,
-                    selectInput("indicator", "Select a WWB Indicator", 
-                                choices = c("Wage bill (as % of public expenditure) over time", 
-                                            "Wage bill as a percentage of GDP"))
-                ),
-                box(title = "Country Selection", status = "primary", solidHeader = TRUE, width = 8,
-                    selectInput("countries", "Countries", 
-                                choices = unique(filtered_data$country_name), 
-                                selected = unique(filtered_data$country_name)[1], 
+                box(title = "Dot Plot: Wage Bill vs. GDP per Capita (Log Scale)", status = "primary", solidHeader = TRUE, width = 4,
+                    selectInput("countries_first", 
+                                "Select Countries", 
+                                choices = unique(merged_data$country_name), 
+                                selected = NULL, 
                                 multiple = TRUE)
                 )
               ),
               fluidRow(
                 box(title = "Graph", status = "primary", solidHeader = TRUE, width = 12,
-                    plotlyOutput("plot")
+                    plotlyOutput("dot_plot")
                 )
               )
-      ),
+      ), 
       # Public Sector Graphs Tab
       tabItem(tabName = "publicSectorGraphs",
               fluidRow(
@@ -724,11 +720,11 @@ server <- function(input, output, session) {
   selected_data <- reactive({
     req(input$countries)  # Ensure 'countries' input is available
     
+    # Check which indicator was selected and filter corresponding data
     if (input$indicator == "Wage bill as a percentage of GDP") {
-      # Filter wage_bill_gdp dataset based on selected countries
       data <- wage_bill_gdp %>% filter(country_name %in% input$countries)
     } else {
-      data <- filtered_data %>% filter(country_name %in% input$countries)
+      data <- wage_bill_publicexp %>% filter(country_name %in% input$countries)
     }
     return(data)
   })
@@ -737,19 +733,21 @@ server <- function(input, output, session) {
   output$plot <- renderPlotly({
     data_to_plot <- selected_data()
     
+    # Get the maximum year in the filtered data
     max_year <- max(data_to_plot$year, na.rm = TRUE)
     
+    # Extract data for the last year
     last_year_data <- data_to_plot %>%
-      group_by(country_name) %>%
       filter(year == max_year) %>%
-      ungroup() %>%
       select(country_name, year, value)
     
+    # Define plot titles and plot mode based on selected indicator
     title_text <- ifelse(input$indicator == "Wage bill as a percentage of GDP",
                          "Wage Bill as % of GDP Over Time",
                          "Wage Bill as % of Public Expenditure Over Time")
-    plot_mode <- ifelse(input$indicator == "Wage bill as a percentage of GDP", 'lines+markers', 'lines+markers')
+    plot_mode <- 'lines+markers'  # Common plot mode for both indicators
     
+    # Create the Plotly plot
     plot <- plot_ly(data = data_to_plot, 
                     x = ~year, 
                     y = ~value, 
@@ -763,6 +761,7 @@ server <- function(input, output, session) {
                                          "Wage Bill (% of GDP)", "Wage Bill (%)")),
              legend = list(title = list(text = "Country")))
     
+    # Add annotations for the last year values
     for (i in 1:nrow(last_year_data)) {
       plot <- plot %>%
         add_annotations(
@@ -777,20 +776,19 @@ server <- function(input, output, session) {
         )
     }
     
-    plot 
+    plot  # Return the final plot
   })
-  #Wage Bill and GDP graph 
   # Render the dot plot
   output$dot_plot <- renderPlotly({
     
-    # Filter merged_data based on selected countries
+    # Ensure 'countries_first' is used correctly in filtering
     filtered_data <- merged_data %>%
-      filter(country_name %in% input$selected_countries)
+      filter(country_name %in% input$countries_first)  # Corrected input
     
-    # Get the first country for highlighting
-    first_country <- input$selected_countries[1]
+    # Get the first country for highlighting (if available)
+    first_country <- ifelse(length(input$countries_first) > 0, input$countries_first[1], NULL)
     
-    # Create color column: first country will have a different color
+    # If a first country exists, apply color coding
     filtered_data <- filtered_data %>%
       mutate(color = ifelse(country_name == first_country, "#B3242B", "#003366"))
     
@@ -809,7 +807,7 @@ server <- function(input, output, session) {
         y = ~indicator_value,
         type = "scatter",
         mode = "markers+text",  # Add dots for countries
-        text = ~country_code,  # Display country code as label
+        text = ~country_name,  # Display country name as label
         textposition = "top center",  # Position labels above the dots
         marker = list(
           size = 10,
