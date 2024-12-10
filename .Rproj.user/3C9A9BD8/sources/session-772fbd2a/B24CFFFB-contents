@@ -755,68 +755,102 @@ fluidRow(
 
 server <- function(input, output, session) {
   
-  # Reactive expression to select the appropriate dataset based on the indicator
-  selected_data <- reactive({
-    req(input$countries)  # Ensure 'countries' input is available
+    # Reactive expression to select the appropriate dataset based on the indicator
+    selected_data <- reactive({
+      req(input$countries)  # Ensure 'countries' input is available
+      
+      # Check which indicator was selected and filter corresponding data
+      if (input$indicator == "Wage bill as a percentage of GDP") {
+        data <- wage_bill_gdp %>% filter(country_name %in% input$countries)
+      } else {
+        data <- wage_bill_publicexp %>% filter(country_name %in% input$countries)
+      }
+      return(data)
+    })
     
-    # Check which indicator was selected and filter corresponding data
-    if (input$indicator == "Wage bill as a percentage of GDP") {
-      data <- wage_bill_gdp %>% filter(country_name %in% input$countries)
-    } else {
-      data <- wage_bill_publicexp %>% filter(country_name %in% input$countries)
-    }
-    return(data)
-  })
-  
-  # Render Plotly plot for the main indicator
-  output$plot <- renderPlotly({
-    data_to_plot <- selected_data()
+    # Render Plotly plot for the main indicator
+    output$plot <- renderPlotly({
+      data_to_plot <- selected_data()
+      
+      # Get the maximum year in the filtered data
+      max_year <- max(data_to_plot$year, na.rm = TRUE)
+      
+      # Extract data for the last year
+      last_year_data <- data_to_plot %>%
+        filter(year == max_year) %>%
+        select(country_name, year, value)
+      
+      # Define plot titles and plot mode based on selected indicator
+      title_text <- ifelse(input$indicator == "Wage bill as a percentage of GDP",
+                           "Wage Bill as % of GDP Over Time",
+                           "Wage Bill as % of Public Expenditure Over Time")
+      plot_mode <- 'lines+markers'  # Common plot mode for both indicators
+      
+      # Create the Plotly plot
+      plot <- plot_ly(data = data_to_plot, 
+                      x = ~year, 
+                      y = ~value, 
+                      color = ~country_name, 
+                      type = 'scatter', 
+                      mode = plot_mode,
+                      marker = list(size = 8)) %>%
+        layout(title = title_text,
+               xaxis = list(title = "Year", dtick = 2),
+               yaxis = list(title = ifelse(input$indicator == "Wage bill as a percentage of GDP", 
+                                           "Wage Bill (% of GDP)", "Wage Bill (%)")),
+               legend = list(title = list(text = "Country")))
+      
+      # Add annotations for the last year values
+      for (i in 1:nrow(last_year_data)) {
+        plot <- plot %>%
+          add_annotations(
+            x = last_year_data$year[i], 
+            y = last_year_data$value[i],
+            text = paste(round(last_year_data$value[i], 2)),
+            showarrow = FALSE,
+            font = list(size = 12, color = "black"),
+            bgcolor = "white",
+            xanchor = "center",
+            yanchor = "bottom"
+          )
+      }
+      
+      plot  # Return the final plot
+    })
     
-    # Get the maximum year in the filtered data
-    max_year <- max(data_to_plot$year, na.rm = TRUE)
-    
-    # Extract data for the last year
-    last_year_data <- data_to_plot %>%
-      filter(year == max_year) %>%
-      select(country_name, year, value)
-    
-    # Define plot titles and plot mode based on selected indicator
-    title_text <- ifelse(input$indicator == "Wage bill as a percentage of GDP",
-                         "Wage Bill as % of GDP Over Time",
-                         "Wage Bill as % of Public Expenditure Over Time")
-    plot_mode <- 'lines+markers'  # Common plot mode for both indicators
-    
-    # Create the Plotly plot
-    plot <- plot_ly(data = data_to_plot, 
-                    x = ~year, 
-                    y = ~value, 
-                    color = ~country_name, 
-                    type = 'scatter', 
-                    mode = plot_mode,
-                    marker = list(size = 8)) %>%
-      layout(title = title_text,
-             xaxis = list(title = "Year", dtick = 2),
-             yaxis = list(title = ifelse(input$indicator == "Wage bill as a percentage of GDP", 
-                                         "Wage Bill (% of GDP)", "Wage Bill (%)")),
-             legend = list(title = list(text = "Country")))
-    
-    # Add annotations for the last year values
-    for (i in 1:nrow(last_year_data)) {
-      plot <- plot %>%
-        add_annotations(
-          x = last_year_data$year[i], 
-          y = last_year_data$value[i],
-          text = paste(round(last_year_data$value[i], 2)),
-          showarrow = FALSE,
-          font = list(size = 12, color = "black"),
-          bgcolor = "white",
-          xanchor = "center",
-          yanchor = "bottom"
+    # Download PowerPoint handler
+    output$downloadPPT <- downloadHandler(
+      filename = function() {
+        paste0("Wage_Bill_Analysis_", Sys.Date(), ".pptx")
+      },
+      content = function(file) {
+        # Write to a temp file
+        temp_file <- tempfile(fileext = ".pptx")
+        ppt <- read_pptx()
+        ppt <- add_slide(ppt, layout = "Title and Content", master = "Office Theme")
+        ppt <- ph_with_vg(
+          ppt,
+          code = {
+            ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
+              geom_line(size = 1.2) +
+              geom_point(size = 3) +
+              labs(
+                title = ifelse(input$indicator == "Wage bill as a percentage of GDP",
+                               "Wage Bill as % of GDP Over Time",
+                               "Wage Bill as % of Public Expenditure Over Time"),
+                x = "Year",
+                y = ifelse(input$indicator == "Wage bill as a percentage of GDP", 
+                           "Wage Bill (% of GDP)", "Wage Bill (%)")
+              ) +
+              theme_minimal()
+          },
+          type = "body"
         )
-    }
+        print(ppt, target = temp_file)
+        file.copy(temp_file, file)
+      }
+    )
     
-    plot  # Return the final plot
-  })
   # Render the dot plot
   output$dot_plot <- renderPlotly({
     
