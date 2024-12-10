@@ -19,7 +19,8 @@ library(DT)
 library(rnaturalearth)
 library(sf)
 library(plotly)
-
+install.packages("officer")
+devtools::install_github("davidgohel/officer")
 
 ### INITIAL COMMANDS ----
 
