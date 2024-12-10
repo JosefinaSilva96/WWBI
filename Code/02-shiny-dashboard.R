@@ -19,8 +19,13 @@ library(DT)
 library(rnaturalearth)
 library(sf)
 library(plotly)
-install.packages("officer")
-devtools::install_github("davidgohel/officer")
+library(officer)
+library(flextable)
+library(rvg)
+library(viridis)
+library(here)
+library(glue)
+library(colourpicker)
 
 ### INITIAL COMMANDS ----
 
@@ -484,7 +489,8 @@ ui <- dashboardPage(
                     selectInput("countries", "Countries", 
                                 choices = unique(wage_bill_gdp$country_name), 
                                 selected = unique(wage_bill_gdp$country_name)[1], 
-                                multiple = TRUE)
+                                multiple = TRUE), 
+                    downloadButton("downloadPPT", "Download Graphs as PowerPoint")
                 )
               ),
               fluidRow(
