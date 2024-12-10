@@ -485,11 +485,19 @@ ui <- dashboardPage(
                                 choices = c("Wage bill (as % of public expenditure) over time", 
                                             "Wage bill as a percentage of GDP"))
                 ),
-                box(title = "Country Selection", status = "primary", solidHeader = TRUE, width = 8,
+                box(title = "Country and Graph Selection", status = "primary", solidHeader = TRUE, width = 8,
                     selectInput("countries", "Countries", 
                                 choices = unique(wage_bill_gdp$country_name), 
                                 selected = unique(wage_bill_gdp$country_name)[1], 
                                 multiple = TRUE), 
+                    
+                    # Checkbox group for graph selection
+                    checkboxGroupInput("graphs_to_download", "Select Graphs to Download", 
+                                       choices = list("Wage Bill (as % of public expenditure)" = "PublicExpenditure",
+                                                      "Wage Bill (as % of GDP)" = "GDP"),
+                                       selected = c("PublicExpenditure", "GDP")),
+                    
+                    # Download button
                     downloadButton("downloadWord", "Download Word Document")
                 )
               ),
@@ -544,6 +552,23 @@ ui <- dashboardPage(
               fluidRow(
                 box(title = "Second Graph", status = "primary", solidHeader = TRUE, width = 12,
                     plotlyOutput("secondGraph")
+                )
+              ),
+              # Add graph selection and download functionality
+              fluidRow(
+                box(
+                  title = "Download Selected Graphs",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  width = 12,
+                  checkboxGroupInput(
+                    "selected_graphs_public", 
+                    "Select Graphs to Download", 
+                    choices = c("First Graph: Multi-Country" = "firstGraph",
+                                "Second Graph: Single Country" = "secondGraph"),
+                    selected = c("firstGraph", "secondGraph") # Default to all selected
+                  ),
+                  downloadButton("downloadGraphsPublicWord", "Download Selected Graphs in Word")
                 )
               )
       ),
@@ -818,19 +843,29 @@ server <- function(input, output, session) {
       plot  # Return the final plot
     })
     
+    # Reactive expression to select the appropriate dataset based on the indicator
+    selected_data <- reactive({
+      req(input$countries)  # Ensure 'countries' input is available
+      
+      if (input$indicator == "Wage bill as a percentage of GDP") {
+        data <- wage_bill_gdp %>% filter(country_name %in% input$countries)
+      } else {
+        data <- wage_bill_publicexp %>% filter(country_name %in% input$countries)
+      }
+      return(data)
+    })
+    
+    # Create the download handler
     output$downloadWord <- downloadHandler(
       filename = function() {
         paste0("Wage_Bill_Analysis_", Sys.Date(), ".docx")
       },
       content = function(file) {
-        # Create a new Word document
-        doc <- read_docx()
+        doc <- read_docx()  # Start a new Word document
         
-        # List of graphs to add
-        graphs <- list()
-        
-        # Create graphs for each indicator (you can add as many as you want)
-        if (input$indicator == "Wage bill as a percentage of GDP") {
+        # Check which graphs the user selected to download
+        if ("GDP" %in% input$graphs_to_download) {
+          # Graph 1: Wage bill as % of GDP Over Time
           graph1 <- ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
             geom_line(size = 1.2) +
             geom_point(size = 3) +
@@ -840,10 +875,13 @@ server <- function(input, output, session) {
               y = "Wage Bill (% of GDP)"
             ) +
             theme_minimal()
-          graphs <- append(graphs, list(graph1))
+          
+          # Add Graph 1 to Word document
+          doc <- body_add_gg(doc, value = graph1, style = "centered")
         }
         
-        if (input$indicator == "Wage bill as a percentage of public expenditure") {
+        if ("PublicExpenditure" %in% input$graphs_to_download) {
+          # Graph 2: Wage bill as % of Public Expenditure Over Time
           graph2 <- ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
             geom_line(size = 1.2) +
             geom_point(size = 3) +
@@ -853,19 +891,16 @@ server <- function(input, output, session) {
               y = "Wage Bill (% of Public Expenditure)"
             ) +
             theme_minimal()
-          graphs <- append(graphs, list(graph2))
-        }
-        
-        # Add all graphs to the Word document
-        for (graph in graphs) {
-          doc <- body_add_gg(doc, value = graph, style = "centered")
-          doc <- body_add_par(doc, " ", style = "Normal")  # Optional: add space between graphs
+          
+          # Add Graph 2 to Word document
+          doc <- body_add_gg(doc, value = graph2, style = "centered")
         }
         
         # Save the Word document
         print(doc, target = file)
       }
     )
+
     
     
   # Render the dot plot
@@ -989,6 +1024,71 @@ server <- function(input, output, session) {
     
     plot
   })
+  #Word Graph
+  output$downloadGraphsWord <- downloadHandler(
+    filename = function() {
+      paste0("Selected_Graphs_", Sys.Date(), ".docx")
+    },
+    content = function(file) {
+      # Create a new Word document
+      doc <- read_docx()
+      
+      # Add selected graphs to the document
+      if ("firstGraph" %in% input$selected_graphs) {
+        # Render the first graph
+        data_to_plot <- public_sector_emp_temp_last %>%
+          filter(country_name %in% input$countries_first)
+        
+        data_to_plot_long <- data_to_plot %>%
+          select(country_name, indicator_name, year, value) %>%
+          mutate(indicator_name = factor(indicator_name))
+        
+        first_graph <- ggplot(data_to_plot_long, aes(x = country_name, y = value, color = indicator_name)) +
+          geom_point(size = 3) +
+          labs(
+            title = "Public Sector Employment (Multiple Countries)",
+            x = "Country",
+            y = "Value"
+          ) +
+          theme_minimal()
+        
+        # Add the first graph to the document
+        doc <- doc %>%
+          body_add_par("First Graph: Public Sector Employment (Multiple Countries)", style = "heading 1") %>%
+          body_add_gg(value = first_graph, width = 6, height = 4)
+      }
+      
+      if ("secondGraph" %in% input$selected_graphs) {
+        # Render the second graph
+        data_to_plot <- public_sector_emp_temp %>%
+          filter(country_name == input$country_second)
+        
+        data_to_plot_long <- data_to_plot %>%
+          select(year, indicator_name, value) %>%
+          mutate(indicator_name = factor(indicator_name))
+        
+        second_graph <- ggplot(data_to_plot_long, aes(x = year, y = value, color = indicator_name)) +
+          geom_line(size = 1) +
+          geom_point(size = 3) +
+          labs(
+            title = paste("Public Sector Employment in", input$country_second, "Over Time"),
+            x = "Year",
+            y = "Employment Value"
+          ) +
+          theme_minimal()
+        
+        # Add the second graph to the document
+        doc <- doc %>%
+          body_add_par("Second Graph: Public Sector Employment (Single Country)", style = "heading 1") %>%
+          body_add_gg(value = second_graph, width = 6, height = 4)
+      }
+      
+      # Save the document
+      print(doc, target = file)
+    }
+  )
+  
+  
   
   # Reactive expression to filter workforce data
   filtered_workforce_data <- reactive({
