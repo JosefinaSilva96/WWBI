@@ -443,7 +443,8 @@ ui <- dashboardPage(
       menuItem("Gender Workforce Graphs", tabName = "genderWorkforceGraphs", icon = icon("chart-line")), 
       menuItem("Tertiary Education Graphs", tabName = "educationGraphs", icon = icon("chart-line")),
       menuItem("Public Sector Wage Premium", tabName = "publicsectorwagepremiumGraphs", icon = icon("chart-line")),
-      menuItem("Public Sector Education Workers", tabName = "publicsectoreducationGraphs", icon = icon("chart-line"))
+      menuItem("Public Sector Education Workers", tabName = "publicsectoreducationGraphs", icon = icon("chart-line")), 
+      menuItem("Download All Graphs", tabName = "downloadAllGraphs", icon = icon("download")) 
     )
   ),
   dashboardBody(
@@ -741,6 +742,26 @@ ui <- dashboardPage(
                 )
               )
       ),
+      #Download graphs 
+      tabItem(tabName = "downloadAllGraphs",
+              fluidRow(
+                box(
+                  title = "Select Graphs to Download",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  width = 12,
+                  checkboxGroupInput(
+                    "selected_graphs_all", 
+                    "Select Graphs to Download", 
+                    choices = c("Wage Bill Graph" = "wageBillGraph",
+                                "First Graph: Multi-Country (Public Sector)" = "firstGraph",
+                                "Second Graph: Single Country (Public Sector)" = "secondGraph"),
+                    selected = c("wageBillGraph", "firstGraph", "secondGraph") # Default to all selected
+                  ),
+                  downloadButton("downloadAllGraphsWord", "Download Selected Graphs in Word")
+                )
+              )
+      ),
       
       # Indicators Tab
       tabItem(tabName = "indicators",
@@ -900,8 +921,6 @@ server <- function(input, output, session) {
         print(doc, target = file)
       }
     )
-
-    
     
   # Render the dot plot
   output$dot_plot <- renderPlotly({
@@ -1025,16 +1044,16 @@ server <- function(input, output, session) {
     plot
   })
   #Word Graph
-  output$downloadGraphsWord <- downloadHandler(
+  output$downloadGraphsPublicWord <- downloadHandler(
     filename = function() {
-      paste0("Selected_Graphs_", Sys.Date(), ".docx")
+      paste0("Public_Sector_Graphs_", Sys.Date(), ".docx")
     },
     content = function(file) {
       # Create a new Word document
       doc <- read_docx()
       
       # Add selected graphs to the document
-      if ("firstGraph" %in% input$selected_graphs) {
+      if ("firstGraph" %in% input$selected_graphs_public) {
         # Render the first graph
         data_to_plot <- public_sector_emp_temp_last %>%
           filter(country_name %in% input$countries_first)
@@ -1046,7 +1065,7 @@ server <- function(input, output, session) {
         first_graph <- ggplot(data_to_plot_long, aes(x = country_name, y = value, color = indicator_name)) +
           geom_point(size = 3) +
           labs(
-            title = "Public Sector Employment (Multiple Countries)",
+            title = "Public Sector Employment (Multi-Country)",
             x = "Country",
             y = "Value"
           ) +
@@ -1054,11 +1073,11 @@ server <- function(input, output, session) {
         
         # Add the first graph to the document
         doc <- doc %>%
-          body_add_par("First Graph: Public Sector Employment (Multiple Countries)", style = "heading 1") %>%
-          body_add_gg(value = first_graph, width = 6, height = 4)
+          body_add_par("First Graph: Public Sector Employment (Multi-Country)", style = "heading 1") %>%
+          body_add_gg(value = first_graph, width = 7, height = 4)
       }
       
-      if ("secondGraph" %in% input$selected_graphs) {
+      if ("secondGraph" %in% input$selected_graphs_public) {
         # Render the second graph
         data_to_plot <- public_sector_emp_temp %>%
           filter(country_name == input$country_second)
@@ -1080,15 +1099,13 @@ server <- function(input, output, session) {
         # Add the second graph to the document
         doc <- doc %>%
           body_add_par("Second Graph: Public Sector Employment (Single Country)", style = "heading 1") %>%
-          body_add_gg(value = second_graph, width = 6, height = 4)
+          body_add_gg(value = second_graph, width = 7, height = 4)
       }
       
       # Save the document
       print(doc, target = file)
     }
   )
-  
-  
   
   # Reactive expression to filter workforce data
   filtered_workforce_data <- reactive({
@@ -1399,6 +1416,90 @@ server <- function(input, output, session) {
         )
       )
   })
+  output$downloadAllGraphsWord <- downloadHandler(
+    filename = function() {
+      paste0("Selected_Graphs_", Sys.Date(), ".docx")
+    },
+    content = function(file) {
+      # Create a new Word document
+      doc <- read_docx()
+      
+      # Add graphs based on user selection
+      if ("wageBillGraph" %in% input$selected_graphs_all) {
+        # Render the Wage Bill Graph
+        wage_bill_graph <- ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
+          geom_line(size = 1.2) +
+          geom_point(size = 3) +
+          labs(
+            title = ifelse(input$indicator == "Wage bill as a percentage of GDP",
+                           "Wage Bill as % of GDP Over Time",
+                           "Wage Bill as % of Public Expenditure Over Time"),
+            x = "Year",
+            y = ifelse(input$indicator == "Wage bill as a percentage of GDP", 
+                       "Wage Bill (% of GDP)", "Wage Bill (%)")
+          ) +
+          theme_minimal()
+        
+        # Add Wage Bill Graph to the document
+        doc <- doc %>%
+          body_add_par("Wage Bill Graph", style = "heading 1") %>%
+          body_add_gg(value = wage_bill_graph, width = 6, height = 4)
+      }
+      
+      if ("firstGraph" %in% input$selected_graphs_all) {
+        # Render the First Public Sector Graph
+        data_to_plot <- public_sector_emp_temp_last %>%
+          filter(country_name %in% input$countries_first)
+        
+        data_to_plot_long <- data_to_plot %>%
+          select(country_name, indicator_name, year, value) %>%
+          mutate(indicator_name = factor(indicator_name))
+        
+        first_graph <- ggplot(data_to_plot_long, aes(x = country_name, y = value, color = indicator_name)) +
+          geom_point(size = 3) +
+          labs(
+            title = "Public Sector Employment (Multi-Country)",
+            x = "Country",
+            y = "Value"
+          ) +
+          theme_minimal()
+        
+        # Add First Public Sector Graph to the document
+        doc <- doc %>%
+          body_add_par("First Graph: Public Sector Employment (Multi-Country)", style = "heading 1") %>%
+          body_add_gg(value = first_graph, width = 6, height = 4)
+      }
+      
+      if ("secondGraph" %in% input$selected_graphs_all) {
+        # Render the Second Public Sector Graph
+        data_to_plot <- public_sector_emp_temp %>%
+          filter(country_name == input$country_second)
+        
+        data_to_plot_long <- data_to_plot %>%
+          select(year, indicator_name, value) %>%
+          mutate(indicator_name = factor(indicator_name))
+        
+        second_graph <- ggplot(data_to_plot_long, aes(x = year, y = value, color = indicator_name)) +
+          geom_line(size = 1) +
+          geom_point(size = 3) +
+          labs(
+            title = paste("Public Sector Employment in", input$country_second, "Over Time"),
+            x = "Year",
+            y = "Employment Value"
+          ) +
+          theme_minimal()
+        
+        # Add Second Public Sector Graph to the document
+        doc <- doc %>%
+          body_add_par("Second Graph: Public Sector Employment (Single Country)", style = "heading 1") %>%
+          body_add_gg(value = second_graph, width = 6, height = 4)
+      }
+      
+      # Save the document
+      print(doc, target = file)
+    }
+  )
+  
   # Define the initial world map render
   output$worldMap <- renderLeaflet({
     leaflet(world_spdf) %>%
