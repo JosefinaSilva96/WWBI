@@ -729,12 +729,7 @@ ui <- dashboardPage(
 ), 
 fluidRow(
   box(title = "Country Count", status = "primary", solidHeader = TRUE, width = 12,
-      textOutput("countryCount")  # Display the country count in this box
-  )
-),
-fluidRow(
-  column(12,
-         leafletOutput("worldMap", height = "600px")
+      textOutput("countryCount")  # Display the country count
   )
 ), 
 fluidRow(
@@ -1270,9 +1265,9 @@ server <- function(input, output, session) {
   
   # Observe and update the map
   observe({
-    req(input$indicatorSelect, input$yearSelect)
+    req(input$indicatorSelect, input$yearSelect)  # Ensure inputs are not null
     
-    # Ensure filtered data for the map
+    # Filter the data based on the selected indicator and year
     reported_countries <- filtered_data_for_map()
     
     # Debugging: If no countries are reported for the selected indicator
@@ -1293,7 +1288,7 @@ server <- function(input, output, session) {
       clearShapes() %>%
       addPolygons(
         data = world_data_merged,
-        fillColor = ~colorNumeric("Greens", domain = world_data_merged$value_percentage)(value_percentage),
+        fillColor = ~ifelse(is.na(value_percentage), "#FF6961", colorNumeric("Greens", domain = world_data_merged$value_percentage)(value_percentage)),
         fillOpacity = 0.7,
         color = "white",
         weight = 1,
@@ -1313,7 +1308,7 @@ server <- function(input, output, session) {
         )
       )
     
-    # Render the country count inside the box
+    # Render the country count
     output$countryCount <- renderText({
       paste("Total Countries with Data: ", total_countries_with_data)
     })
