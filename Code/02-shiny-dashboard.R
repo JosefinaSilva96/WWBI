@@ -490,7 +490,7 @@ ui <- dashboardPage(
                                 choices = unique(wage_bill_gdp$country_name), 
                                 selected = unique(wage_bill_gdp$country_name)[1], 
                                 multiple = TRUE), 
-                    downloadButton("downloadPPT", "Download Graphs as PowerPoint")
+                    downloadButton("downloadWord", "Download Word Document")
                 )
               ),
               fluidRow(
@@ -818,38 +818,55 @@ server <- function(input, output, session) {
       plot  # Return the final plot
     })
     
-    # Download PowerPoint handler
-    output$downloadPPT <- downloadHandler(
+    output$downloadWord <- downloadHandler(
       filename = function() {
-        paste0("Wage_Bill_Analysis_", Sys.Date(), ".pptx")
+        paste0("Wage_Bill_Analysis_", Sys.Date(), ".docx")
       },
       content = function(file) {
-        # Write to a temp file
-        temp_file <- tempfile(fileext = ".pptx")
-        ppt <- read_pptx()
-        ppt <- add_slide(ppt, layout = "Title and Content", master = "Office Theme")
-        ppt <- ph_with_vg(
-          ppt,
-          code = {
-            ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
-              geom_line(size = 1.2) +
-              geom_point(size = 3) +
-              labs(
-                title = ifelse(input$indicator == "Wage bill as a percentage of GDP",
-                               "Wage Bill as % of GDP Over Time",
-                               "Wage Bill as % of Public Expenditure Over Time"),
-                x = "Year",
-                y = ifelse(input$indicator == "Wage bill as a percentage of GDP", 
-                           "Wage Bill (% of GDP)", "Wage Bill (%)")
-              ) +
-              theme_minimal()
-          },
-          type = "body"
-        )
-        print(ppt, target = temp_file)
-        file.copy(temp_file, file)
+        # Create a new Word document
+        doc <- read_docx()
+        
+        # List of graphs to add
+        graphs <- list()
+        
+        # Create graphs for each indicator (you can add as many as you want)
+        if (input$indicator == "Wage bill as a percentage of GDP") {
+          graph1 <- ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
+            geom_line(size = 1.2) +
+            geom_point(size = 3) +
+            labs(
+              title = "Wage Bill as % of GDP Over Time",
+              x = "Year",
+              y = "Wage Bill (% of GDP)"
+            ) +
+            theme_minimal()
+          graphs <- append(graphs, list(graph1))
+        }
+        
+        if (input$indicator == "Wage bill as a percentage of public expenditure") {
+          graph2 <- ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
+            geom_line(size = 1.2) +
+            geom_point(size = 3) +
+            labs(
+              title = "Wage Bill as % of Public Expenditure Over Time",
+              x = "Year",
+              y = "Wage Bill (% of Public Expenditure)"
+            ) +
+            theme_minimal()
+          graphs <- append(graphs, list(graph2))
+        }
+        
+        # Add all graphs to the Word document
+        for (graph in graphs) {
+          doc <- body_add_gg(doc, value = graph, style = "centered")
+          doc <- body_add_par(doc, " ", style = "Normal")  # Optional: add space between graphs
+        }
+        
+        # Save the Word document
+        print(doc, target = file)
       }
     )
+    
     
   # Render the dot plot
   output$dot_plot <- renderPlotly({
