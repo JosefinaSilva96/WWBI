@@ -569,10 +569,11 @@ ui <- dashboardPage(
                                 "Second Graph: Single Country" = "secondGraph"),
                     selected = c("firstGraph", "secondGraph") # Default to all selected
                   ),
-                  downloadButton("downloadGraphsPublicWord", "Download Selected Graphs in Word")
+                  downloadButton("downloadGraphsWord", "Download Selected Graphs in Word")
                 )
               )
-      ),
+      )
+      ,
       # Public Sector Workforce Graphs Tab
       tabItem(
         tabName = "publicSectorWorkforceGraphs",
@@ -921,7 +922,7 @@ server <- function(input, output, session) {
         print(doc, target = file)
       }
     )
-    
+
   # Render the dot plot
   output$dot_plot <- renderPlotly({
     
@@ -990,12 +991,16 @@ server <- function(input, output, session) {
     
     data_to_plot_long <- data_to_plot %>%
       select(country_name, indicator_name, year, value) %>%
-      mutate(indicator_name = factor(indicator_name))
+      mutate(indicator_name = factor(indicator_name)) %>%
+      # Modify indicator labels for shorter text
+      mutate(indicator_label = recode(indicator_name, 
+                                      "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
+                                      "Public sector employment, as a share of paid employment" = "as a share of paid employment"))
     
     plot <- plot_ly(data = data_to_plot_long, 
                     x = ~country_name, 
                     y = ~value, 
-                    color = ~indicator_name, 
+                    color = ~indicator_label, 
                     type = 'scatter',
                     mode = 'markers',  
                     marker = list(size = 8)) %>%
@@ -1006,6 +1011,7 @@ server <- function(input, output, session) {
     
     plot
   })
+  
   # Second Graph (Single Country)
   output$secondGraph <- renderPlotly({
     data_to_plot <- public_sector_emp_temp %>%
@@ -1013,13 +1019,17 @@ server <- function(input, output, session) {
     
     data_to_plot_long <- data_to_plot %>%
       select(year, indicator_name, value) %>%
-      mutate(indicator_name = factor(indicator_name))
+      mutate(indicator_name = factor(indicator_name)) %>%
+      # Modify indicator labels for shorter text
+      mutate(indicator_label = recode(indicator_name, 
+                                      "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
+                                      "Public sector employment, as a share of paid employment" = "as a share of paid employment"))
     
     plot <- plot_ly(
       data = data_to_plot_long, 
       x = ~year, 
       y = ~value, 
-      color = ~indicator_name,  # Color each indicator differently
+      color = ~indicator_label,  # Color each indicator differently
       text = ~paste("Value:", round(value, 2)),  # Tooltip with value
       type = 'scatter', 
       mode = 'lines+markers',  # Add lines and markers
@@ -1043,66 +1053,83 @@ server <- function(input, output, session) {
     
     plot
   })
-  #Word Graph
-  output$downloadGraphsPublicWord <- downloadHandler(
+  
+  # Word Graph Download Handler
+  output$downloadGraphsWord <- downloadHandler(
     filename = function() {
-      paste0("Public_Sector_Graphs_", Sys.Date(), ".docx")
+      paste0("Public_Sector_Graphs", Sys.Date(), ".docx")
     },
     content = function(file) {
       # Create a new Word document
       doc <- read_docx()
       
-      # Add selected graphs to the document
+      # Check if the first graph is selected
       if ("firstGraph" %in% input$selected_graphs_public) {
         # Render the first graph
         data_to_plot <- public_sector_emp_temp_last %>%
           filter(country_name %in% input$countries_first)
         
-        data_to_plot_long <- data_to_plot %>%
-          select(country_name, indicator_name, year, value) %>%
-          mutate(indicator_name = factor(indicator_name))
-        
-        first_graph <- ggplot(data_to_plot_long, aes(x = country_name, y = value, color = indicator_name)) +
-          geom_point(size = 3) +
-          labs(
-            title = "Public Sector Employment (Multi-Country)",
-            x = "Country",
-            y = "Value"
-          ) +
-          theme_minimal()
-        
-        # Add the first graph to the document
-        doc <- doc %>%
-          body_add_par("First Graph: Public Sector Employment (Multi-Country)", style = "heading 1") %>%
-          body_add_gg(value = first_graph, width = 7, height = 4)
+        if (nrow(data_to_plot) > 0) {  # Ensure there is data to plot
+          data_to_plot_long <- data_to_plot %>%
+            select(country_name, indicator_name, year, value) %>%
+            mutate(indicator_label = recode(indicator_name, 
+                                            "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
+                                            "Public sector employment, as a share of paid employment" = "as a share of paid employment",
+                                            "Public sector employment, as a share of total employment" = "as a share of total employment"))
+          
+          first_graph <- ggplot(data_to_plot_long, aes(x = country_name, y = value, color = indicator_label)) +
+            geom_point(size = 3) +
+            labs(
+              title = "Public Sector Employment (Multiple Countries)",
+              x = "Country",
+              y = "Value"
+            ) +
+            theme_minimal()
+          
+          # Add the first graph to the document
+          doc <- doc %>%
+            body_add_par("First Graph: Public Sector Employment (Multiple Countries)", style = "heading 1") %>%
+            body_add_gg(value = first_graph, width = 6, height = 4)
+        } else {
+          doc <- doc %>%
+            body_add_par("No data available for First Graph.", style = "normal")
+        }
       }
       
+      # Check if the second graph is selected
       if ("secondGraph" %in% input$selected_graphs_public) {
         # Render the second graph
         data_to_plot <- public_sector_emp_temp %>%
           filter(country_name == input$country_second)
         
-        data_to_plot_long <- data_to_plot %>%
-          select(year, indicator_name, value) %>%
-          mutate(indicator_name = factor(indicator_name))
-        
-        second_graph <- ggplot(data_to_plot_long, aes(x = year, y = value, color = indicator_name)) +
-          geom_line(size = 1) +
-          geom_point(size = 3) +
-          labs(
-            title = paste("Public Sector Employment in", input$country_second, "Over Time"),
-            x = "Year",
-            y = "Employment Value"
-          ) +
-          theme_minimal()
-        
-        # Add the second graph to the document
-        doc <- doc %>%
-          body_add_par("Second Graph: Public Sector Employment (Single Country)", style = "heading 1") %>%
-          body_add_gg(value = second_graph, width = 7, height = 4)
+        if (nrow(data_to_plot) > 0) {  # Ensure there is data to plot
+          data_to_plot_long <- data_to_plot %>%
+            select(year, indicator_name, value) %>%
+            mutate(indicator_label = recode(indicator_name, 
+                                            "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
+                                            "Public sector employment, as a share of paid employment" = "as a share of paid employment"))
+          
+          second_graph <- ggplot(data_to_plot_long, aes(x = year, y = value, color = indicator_label)) +
+            geom_line(size = 1) +
+            geom_point(size = 3) +
+            labs(
+              title = paste("Public Sector Employment in", input$country_second, "Over Time"),
+              x = "Year",
+              y = "Employment Value"
+            ) +
+            theme_minimal()
+          
+          # Add the second graph to the document
+          doc <- doc %>%
+            body_add_par("Second Graph: Public Sector Employment (Single Country)", style = "heading 1") %>%
+            body_add_gg(value = second_graph, width = 6, height = 4)
+        } else {
+          doc <- doc %>%
+            body_add_par("No data available for Second Graph.", style = "normal")
+        }
       }
       
-      # Save the document
+      # Save the Word document
       print(doc, target = file)
     }
   )
