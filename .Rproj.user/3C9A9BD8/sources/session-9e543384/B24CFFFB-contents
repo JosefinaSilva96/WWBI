@@ -995,7 +995,8 @@ server <- function(input, output, session) {
       # Modify indicator labels for shorter text
       mutate(indicator_label = recode(indicator_name, 
                                       "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
-                                      "Public sector employment, as a share of paid employment" = "as a share of paid employment"))
+                                      "Public sector employment, as a share of paid employment" = "as a share of paid employment", 
+                                      "Public sector employment, as a share of total employment"="as a share of total employment" ))
     
     plot <- plot_ly(data = data_to_plot_long, 
                     x = ~country_name, 
@@ -1232,7 +1233,115 @@ server <- function(input, output, session) {
         legend = list(title = list(text = "Sector"))
       )
   })
-  
+  # Word Graph Download Handler
+  output$downloadGraphsWord <- downloadHandler(
+    filename = function() {
+      paste0("Public_Sector_Workforce_Graphs_", Sys.Date(), ".docx")
+    },
+    content = function(file) {
+      # Create a new Word document
+      doc <- read_docx()
+      
+      # Check if the first stacked bar graph is selected
+      if ("stackedBarGraph" %in% input$selected_graphs_public) {
+        # Render the first graph
+        data_to_plot <- filtered_workforce_data()
+        
+        if (nrow(data_to_plot) > 0) {  # Ensure there is data to plot
+          stacked_graph <- plot_ly(
+            data = data_to_plot,
+            x = ~country_name,
+            y = ~value_percentage,
+            color = ~indicator_name,
+            type = "bar",
+            text = ~paste(
+              "Country:", country_name,
+              "<br>Indicator:", indicator_name,
+              "<br>Value:", round(value_percentage, 1), "%"
+            ),
+            textposition = "auto",
+            colors = c(
+              "Public Administration workers, as a share of public total employees" = "#568340", 
+              "Education workers, as a share of public total employees" = "#B3242B", 
+              "Health workers, as a share of public total employees" = "#003366", 
+              "Other" = "#A9A9A9"
+            )
+          ) %>%
+            layout(
+              barmode = "stack",
+              title = "Public Workforce Distribution by Country",
+              xaxis = list(title = "Country"),
+              yaxis = list(title = "Workforce Distribution (%)", range = c(0, 100)),
+              legend = list(title = list(text = "<b>Indicator</b>"))
+            )
+          
+          # Add the first graph to the document
+          doc <- doc %>%
+            body_add_par("First Graph: Public Workforce Distribution by Country", style = "heading 1") %>%
+            body_add_gg(value = ggplotly(stacked_graph), width = 6, height = 4)
+        } else {
+          doc <- doc %>%
+            body_add_par("No data available for the Stacked Bar Graph.", style = "normal")
+        }
+      }
+      
+      # Check if the second horizontal stacked bar graph is selected
+      if ("horizontalStackedBar" %in% input$selected_graphs_public) {
+        # Render the second graph
+        req(input$selected_country)
+        filtered_data <- public_sector_workforce %>%
+          filter(country_name == input$selected_country)
+        
+        if (nrow(filtered_data) > 0) {  # Ensure there is data to plot
+          first_year <- min(filtered_data$year, na.rm = TRUE)
+          last_year <- max(filtered_data$year, na.rm = TRUE)
+          
+          data_to_plot <- filtered_data %>%
+            filter(year %in% c(first_year, last_year)) %>%
+            group_by(year, indicator_name) %>%
+            summarise(value_percentage = mean(value_percentage, na.rm = TRUE), .groups = "drop")
+          
+          horizontal_graph <- plot_ly(
+            data = data_to_plot,
+            x = ~value_percentage,
+            y = ~factor(year, levels = c(last_year, first_year)),
+            color = ~indicator_name,
+            type = "bar",
+            orientation = "h",
+            text = ~paste0(round(value_percentage, 1), "%"),
+            textposition = "inside",
+            colors = c(
+              "Public Administration workers, as a share of public total employees" = "#568340",
+              "Education workers, as a share of public total employees" = "#B3242B",
+              "Health workers, as a share of public total employees" = "#003366",
+              "Other" = "#A9A9A9"
+            )
+          ) %>%
+            layout(
+              barmode = "stack",
+              title = paste(
+                "Sectoral Distribution of Public Workforce in", input$selected_country,
+                "(", first_year, "&", last_year, ")"
+              ),
+              xaxis = list(title = "Percentage (%)"),
+              yaxis = list(title = "Year"),
+              legend = list(title = list(text = "Sector"))
+            )
+          
+          # Add the second graph to the document
+          doc <- doc %>%
+            body_add_par(paste("Horizontal Stacked Bar Graph for", input$selected_country), style = "heading 1") %>%
+            body_add_gg(value = ggplotly(horizontal_graph), width = 6, height = 4)
+        } else {
+          doc <- doc %>%
+            body_add_par("No data available for the Horizontal Stacked Bar Graph.", style = "normal")
+        }
+      }
+      
+      # Save the Word document
+      print(doc, target = file)
+    }
+  )
   #Gender Workforce 
   output$employment_plot <- renderPlotly({
     # Filter data based on selected countries

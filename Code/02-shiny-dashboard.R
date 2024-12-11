@@ -995,7 +995,8 @@ server <- function(input, output, session) {
       # Modify indicator labels for shorter text
       mutate(indicator_label = recode(indicator_name, 
                                       "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
-                                      "Public sector employment, as a share of paid employment" = "as a share of paid employment"))
+                                      "Public sector employment, as a share of paid employment" = "as a share of paid employment", 
+                                      "Public sector employment, as a share of total employment"="as a share of total employment" ))
     
     plot <- plot_ly(data = data_to_plot_long, 
                     x = ~country_name, 
