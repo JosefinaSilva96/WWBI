@@ -577,56 +577,85 @@ ui <- dashboardPage(
       # Public Sector Workforce Graphs Tab
       tabItem(
         tabName = "publicSectorWorkforceGraphs",
+        
+        # Country Selection for Stacked Bar Chart
         fluidRow(
           box(
-            title = "Country Selection",
+            title = "Country Selection for Stacked Bar Chart",
             status = "primary",
             solidHeader = TRUE,
             width = 12,
             selectInput(
               "countries_workforce",
               "Select Countries for Workforce Graph",
-              choices = unique(public_sector_workforce$country_name),
-              selected = unique(public_sector_workforce$country_name)[1],
-              multiple = TRUE
+              choices = unique(public_sector_workforce$country_name),  # Use updated dataset
+              selected = unique(public_sector_workforce$country_name)[1],  # Default selection
+              multiple = TRUE  # Allow multiple country selection
             )
           )
         ),
+        
+        # Stacked Bar Chart
         fluidRow(
           box(
-            title = "Stacked Bar Chart",
+            title = "Stacked Bar Chart: Public Workforce Distribution",
             status = "primary",
             solidHeader = TRUE,
             width = 12,
-            plotlyOutput("stackedBarGraph", height = "600px")
+            plotlyOutput("stackedBarGraph", height = "600px")  # Render first graph
           )
         ),
+        
+        # Country Selection for Horizontal Stacked Bar Chart
         fluidRow(
           box(
-            title = "Select Country (Second Graph)",
+            title = "Country Selection for Horizontal Stacked Bar Chart",
             status = "primary",
             solidHeader = TRUE,
             width = 12,
             selectInput(
               "selected_country",
               "Select Country for Second Graph",
-              choices = unique(public_sector_workforce_first_last$country_name),
+              choices = unique(public_sector_workforce$country_name),  # Ensure consistency with main dataset
               selected = NULL,
-              multiple = FALSE
+              multiple = FALSE  # Single country selection
             )
           )
         ),
+        
+        # Horizontal Stacked Bar Chart
         fluidRow(
           box(
-            title = "Second Graph: Horizontal Stacked Bar (Single Country)",
+            title = "Horizontal Stacked Bar Chart: Sectoral Distribution",
             status = "primary",
             solidHeader = TRUE,
             width = 12,
-            uiOutput("messageOutput"),
-            plotlyOutput("horizontalStackedBar")
+            uiOutput("messageOutput"),  # Display message if insufficient data
+            plotlyOutput("horizontalStackedBar", height = "600px")  # Render second graph
+          )
+        ),
+        
+        # Graph Selection and Download Functionality
+        fluidRow(
+          box(
+            title = "Download Selected Graphs",
+            status = "primary",
+            solidHeader = TRUE,
+            width = 12,
+            checkboxGroupInput(
+              "selected_graphs_public", 
+              "Select Graphs to Download", 
+              choices = c(
+                "First Graph: Multi-Country" = "firstGraph",
+                "Second Graph: Single Country" = "secondGraph"
+              ),
+              selected = c("firstGraph", "secondGraph")  # Default to all selected
+            ),
+            downloadButton("downloadGraphsWord", "Download Selected Graphs in Word")
           )
         )
       ),
+      
       # Gender Workforce Graphs Tab
       tabItem(
         tabName = "genderWorkforceGraphs",
@@ -796,6 +825,7 @@ fluidRow(
     )
   )
 )
+
 
 
 # Define Server ----
@@ -1134,21 +1164,22 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
-  
+  #Public Sector Workforce
+  # Public Sector Workforce
   # Reactive expression to filter workforce data
   filtered_workforce_data <- reactive({
-    req(input$countries_workforce) # Ensure input is not null
+    req(input$countries_workforce)  # Ensure input is not null
     public_sector_workforce %>%
       filter(country_name %in% input$countries_workforce) %>%
       group_by(country_name, indicator_name) %>%
-      slice_max(order_by = year, n = 1) %>% # Get the latest year available for each country
+      slice_max(order_by = year, n = 1) %>%  # Get the latest year available for each country
       ungroup()
   })
   
   # Render the stacked bar graph
   output$stackedBarGraph <- renderPlotly({
     data_to_plot <- filtered_workforce_data()
-    req(nrow(data_to_plot) > 0) # Ensure there's data to plot
+    req(nrow(data_to_plot) > 0)  # Ensure there's data to plot
     
     plot_ly(
       data = data_to_plot,
@@ -1160,13 +1191,13 @@ server <- function(input, output, session) {
         "Country:", country_name,
         "<br>Indicator:", indicator_name,
         "<br>Value:", round(value_percentage, 1), "%"
-      ), # Detailed hover information
+      ),  # Detailed hover information
       textposition = "auto",
       colors = c(
         "Public Administration workers, as a share of public total employees" = "#568340", 
         "Education workers, as a share of public total employees" = "#B3242B", 
         "Health workers, as a share of public total employees" = "#003366", 
-        "Other" = "#A9A9A9" # Gray for "Other"
+        "Other" = "#A9A9A9"  # Gray for "Other"
       )
     ) %>%
       layout(
@@ -1177,10 +1208,11 @@ server <- function(input, output, session) {
         legend = list(title = list(text = "<b>Indicator</b>"))
       )
   })
+  
   # Second Graph: Horizontal Stacked Bar Chart (Single Country)
   output$messageOutput <- renderUI({
     # Filter data for the selected country
-    filtered_data <- public_sector_workforce_first_last %>%
+    filtered_data <- public_sector_workforce %>%
       filter(country_name == input$selected_country)
     
     # Check if there is enough data
@@ -1195,7 +1227,7 @@ server <- function(input, output, session) {
     req(input$selected_country)
     
     # Filter data for the selected country
-    filtered_data <- public_sector_workforce%>%
+    filtered_data <- public_sector_workforce %>%
       filter(country_name == input$selected_country)
     
     # Find the first and last year available for the selected country
@@ -1233,6 +1265,92 @@ server <- function(input, output, session) {
         legend = list(title = list(text = "Sector"))
       )
   })
+  
+  # Word Graph Download Handler
+  output$downloadGraphsWord <- downloadHandler(
+    filename = function() {
+      paste0("Public_Sector_Workforce_Graphs_", Sys.Date(), ".docx")
+    },
+    content = function(file) {
+      # Create a new Word document
+      doc <- read_docx()
+      
+      # Check if the first graph is selected
+      if ("firstGraph" %in% input$selected_graphs_public) {
+        # Render the first graph
+        data_to_plot <- filtered_workforce_data()
+        if (nrow(data_to_plot) > 0) {
+          stacked_graph <- plot_ly(
+            data = data_to_plot,
+            x = ~country_name,
+            y = ~value_percentage,
+            color = ~indicator_name,
+            type = "bar",
+            text = ~paste(
+              "Country:", country_name,
+              "<br>Indicator:", indicator_name,
+              "<br>Value:", round(value_percentage, 1), "%"
+            ),
+            textposition = "auto",
+            colors = c(
+              "Public Administration workers, as a share of public total employees" = "#568340", 
+              "Education workers, as a share of public total employees" = "#B3242B", 
+              "Health workers, as a share of public total employees" = "#003366", 
+              "Other" = "#A9A9A9"
+            )
+          )
+          
+          # Add the first graph to the document
+          doc <- doc %>%
+            body_add_par("First Graph: Public Workforce Distribution by Country", style = "heading 1") %>%
+            body_add_gg(value = stacked_graph, width = 6, height = 4)
+        }
+      }
+      
+      # Check if the second graph is selected
+      if ("secondGraph" %in% input$selected_graphs_public) {
+        filtered_data <- public_sector_workforce %>%
+          filter(country_name == input$selected_country)
+        if (nrow(filtered_data) > 0) {
+          first_year <- min(filtered_data$year, na.rm = TRUE)
+          last_year <- max(filtered_data$year, na.rm = TRUE)
+          
+          if (is.finite(first_year) && is.finite(last_year)) {
+            data_to_plot <- filtered_data %>%
+              filter(year %in% c(first_year, last_year)) %>%
+              group_by(year, indicator_name) %>%
+              summarise(value_percentage = mean(value_percentage, na.rm = TRUE), .groups = "drop")
+            
+            horizontal_graph <- plot_ly(
+              data = data_to_plot,
+              x = ~value_percentage,
+              y = ~factor(year, levels = c(last_year, first_year)),
+              color = ~indicator_name,
+              type = "bar",
+              orientation = "h",
+              text = ~paste0(round(value_percentage, 1), "%"),
+              textposition = "inside",
+              colors = c(
+                "Public Administration workers, as a share of public total employees" = "#568340",
+                "Education workers, as a share of public total employees" = "#B3242B",
+                "Health workers, as a share of public total employees" = "#003366",
+                "Other" = "#A9A9A9"
+              )
+            )
+            
+            # Add the second graph to the document
+            doc <- doc %>%
+              body_add_par(paste("Horizontal Stacked Bar Graph for", input$selected_country), style = "heading 1") %>%
+              body_add_gg(value = horizontal_graph, width = 6, height = 4)
+          }
+        }
+      }
+      
+      # Save the Word document
+      print(doc, target = file)
+    }
+  )
+  
   
   #Gender Workforce 
   output$employment_plot <- renderPlotly({
