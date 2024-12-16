@@ -26,6 +26,7 @@ library(viridis)
 library(here)
 library(glue)
 library(colourpicker)
+library(rmarkdown)
 
 ### INITIAL COMMANDS ----
 
@@ -1165,7 +1166,6 @@ server <- function(input, output, session) {
     }
   )
   #Public Sector Workforce
-  # Public Sector Workforce
   # Reactive expression to filter workforce data
   filtered_workforce_data <- reactive({
     req(input$countries_workforce)  # Ensure input is not null
@@ -1693,7 +1693,7 @@ server <- function(input, output, session) {
       clearShapes() %>%
       addPolygons(
         data = world_data_merged,
-        fillColor = ~ifelse(is.na(value_percentage), "#FF6961", colorNumeric("Greens", domain = world_data_merged$value_percentage)(value_percentage)),
+        fillColor = ~ifelse(is.na(value_percentage), "#808080", colorNumeric("Greens", domain = world_data_merged$value_percentage)(value_percentage)),
         fillOpacity = 0.7,
         color = "white",
         weight = 1,
