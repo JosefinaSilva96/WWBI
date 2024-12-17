@@ -27,6 +27,7 @@ library(here)
 library(glue)
 library(colourpicker)
 library(rmarkdown)
+library(quarto)
 
 ### INITIAL COMMANDS ----
 
@@ -2698,5 +2699,90 @@ shinyApp(ui = ui, server = server)
 
 
 
-#Test repoort
+#Test report
 
+quarto_file <- "C:/WBG/GitHub/WWBI/Code/report_template_shiny_app.qmd" 
+
+# Sample data
+data <- data.frame(
+  country = c("Bangladesh", "Pakistan", "Indonesia", "Philippines"),
+  public_admin_workers = c(500, 600, 700, 800),
+  total_public_employees = c(1000, 1200, 1500, 1800)
+)
+
+# Country-specific text
+generate_country_text <- function(country) {
+  switch(country,
+         "Bangladesh" = "Bangladesh has a relatively low public sector wage compared to its peers. The country’s wage bill as a percentage of public expenditures has followed a relatively low and stable trend over the past decade. In 2010, the wage bill accounted for around 15 percent of public expenditures, but this gradually declined, reaching its lowest point of 11 percent in 2022. Compared to other countries in the region and global comparators, except for India, Bangladesh consistently allocates a smaller proportion of its budget to public sector wages. For instance, in 2022, Bangladesh’s wage bill stands at 10.9 percent, whereas countries like Pakistan, Indonesia, and the Philippines have much higher wage bills during the same period. This trend reflects Bangladesh’s cautious approach to public sector wage spending, but it also raises questions about whether this low level of spending affects the government's ability to effectively deliver public services.",
+         "Pakistan" = "Pakistan has faced significant challenges in managing its public sector wage bill. Over the past decade, the wage bill has been increasing, reaching 15.5 percent of public expenditures in 2022. This growth in wage spending has raised concerns about the sustainability of public sector compensation in Pakistan, especially in the context of the country's fiscal constraints and increasing public debt.",
+         "Indonesia" = "Indonesia's public sector wage bill has seen a steady increase over the past decade. In 2022, it accounted for 14.2 percent of public expenditures. While the government has made efforts to raise public sector wages to ensure a motivated workforce, there are concerns that rising wage bills could crowd out spending on essential public services such as education and health.",
+         "Philippines" = "The Philippines has maintained a moderate public sector wage bill relative to its peers. In 2022, public sector wages accounted for 12.8 percent of public expenditures. This relatively stable trend in wage spending has allowed the government to balance wage increases with investments in other critical areas such as infrastructure and social services.",
+         "Other" = "Data for this country is not available.")
+}
+
+# UI
+ui <- fluidPage(
+  selectInput("country", "Select Country:", choices = unique(data$country)),
+  downloadButton("download_report", "Download Report")
+)
+
+# Server
+server <- function(input, output) {
+  
+  # Reactive expression to generate the country-specific text, plot, and mean share
+  report_content <- reactive({
+    country_data <- data[data$country == input$country, ]
+    mean_share <- mean(country_data$public_admin_workers / country_data$total_public_employees)
+    
+    # Create the plot
+    plot <- ggplot(country_data, aes(x = country, y = public_admin_workers / total_public_employees)) +
+      geom_bar(stat = "identity") +
+      labs(title = paste("Public Administration Workers Share for", input$country))
+    
+    # Save the plot as an image in a temporary file
+    plot_filename <- tempfile(fileext = ".png")
+    ggsave(plot_filename, plot = plot)
+    
+    # Prepare the country-specific text for the report
+    country_text <- generate_country_text(input$country)
+    
+    return(list(text = country_text, plot_filename = plot_filename, mean_share = mean_share))
+  })
+  
+  # Generate and download the report
+  output$download_report <- downloadHandler(
+    filename = function() {
+      paste("report_", input$country, ".pdf", sep = "")
+    },
+    content = function(file) {
+      tryCatch({
+        # Define the path to your .qmd file
+        quarto_file <- "C:/WBG/GitHub/WWBI/Code/report_template_shiny_app.qmd"  # Ensure this is the correct path to your .qmd file
+        if (!file.exists(quarto_file)) {
+          stop("Quarto template file not found.")
+        }
+        
+        # Evaluate report_content() to get the latest values
+        content_data <- report_content()
+        
+        # Render the Quarto report using quarto_render()
+        quarto::quarto_render(
+          quarto_file, 
+          output_file = file,
+          params = list(
+            report_text = content_data$text,
+            plot_filename = content_data$plot_filename,
+            mean_share = content_data$mean_share
+          )
+        )
+        
+      }, error = function(e) {
+        showNotification(paste("Error: ", e$message), type = "error")
+      })
+    }
+  )
+}
+
+
+# Run the app
+shinyApp(ui = ui, server = server)
