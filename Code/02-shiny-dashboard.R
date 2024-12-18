@@ -2816,23 +2816,29 @@ server <- function(input, output, session) {
     },
     content = function(file) {
       tryCatch({
-        temp_dir <- tempdir()
         quarto_file <- "C:/WBG/GitHub/WWBI/Code/report_template_shiny_app.qmd"
+        
+        # Ensure the Quarto file exists
+        if (!file.exists(quarto_file)) {
+          stop("Quarto template file not found.")
+        }
+        
+        # Define a temporary file name for Quarto's output
+        temp_output <- tempfile(fileext = ".docx")
         
         # Render the Quarto report
         quarto::quarto_render(
           input = quarto_file,
+          output_file = basename(temp_output),  # Pass only the file name
           execute_params = list(
-            report_text = gsub("_", "\\_", report_content()$text, fixed = TRUE),
+            report_text = report_content()$text,
             plot_filename = report_content()$plot_filename,
             mean_share = report_content()$mean_share
-          ),
-          output_file = "report_template_shiny_app.docx",
-          output_dir = temp_dir
+          )
         )
         
-        # Move the file to the final location
-        file.rename(file.path(temp_dir, "report_template_shiny_app.docx"), file)
+        # Move the generated file to the target location
+        file.rename(temp_output, file)
       }, error = function(e) {
         showNotification(paste("Error:", e$message), type = "error")
       })
