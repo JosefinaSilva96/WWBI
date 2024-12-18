@@ -2,10 +2,9 @@
 title: "Country Report"
 format: docx
 params:
-  report_text: "Default text"
+  report_text: "Default report text."
   plot_filename: "default_plot.png"
   mean_share: 0.0
-
 ---
 
 ## Introduction

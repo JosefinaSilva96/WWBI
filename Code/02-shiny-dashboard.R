@@ -2718,12 +2718,14 @@ generate_country_text <- function(country) {
          "Other" = "Data for this country is not available.")
 }
 
+
+
 # User Interface
 ui <- fluidPage(
   titlePanel("Public Administration Workers Report"),
   sidebarLayout(
     sidebarPanel(
-      selectInput("country", "Select Country:", choices = unique(data$country)),
+      selectInput("country", "Select Country:", choices = NULL),
       downloadButton("download_report", "Download Report")
     ),
     mainPanel(
@@ -2736,13 +2738,23 @@ ui <- fluidPage(
 )
 
 # Server Logic
-
-server <- function(input, output) {
+server <- function(input, output, session) {
+  # Populate country choices dynamically
+  observe({
+    updateSelectInput(session, "country", choices = unique(data$country))
+  })
   
   # Generate Reactive Report Content
   report_content <- reactive({
+    req(input$country)  # Ensure input$country is selected
     country_data <- subset(data, country == input$country)
-    mean_share <- mean(country_data$public_admin_workers / country_data$total_public_employees, na.rm = TRUE)
+    
+    if (nrow(country_data) == 0) return(NULL)
+    
+    mean_share <- mean(
+      country_data$public_admin_workers / country_data$total_public_employees, 
+      na.rm = TRUE
+    )
     
     # Create the Plot
     plot <- ggplot(country_data, aes(x = country, y = public_admin_workers / total_public_employees)) +
@@ -2759,14 +2771,22 @@ server <- function(input, output) {
     ggsave(plot_filename, plot = plot, width = 7, height = 7)
     
     # Prepare the country-specific text
-    country_text <- generate_country_text(input$country)
+    country_text <- paste(
+      "Detailed report for", input$country, 
+      "showcasing public sector workforce trends."
+    )
     
     # Return a list of report components
-    list(text = country_text, plot_filename = plot_filename, mean_share = mean_share)
+    list(
+      text = country_text, 
+      plot_filename = plot_filename, 
+      mean_share = mean_share
+    )
   })
   
   # Render Plot
   output$country_plot <- renderPlot({
+    req(input$country)
     country_data <- subset(data, country == input$country)
     ggplot(country_data, aes(x = country, y = public_admin_workers / total_public_employees)) +
       geom_bar(stat = "identity", fill = "steelblue") +
@@ -2780,10 +2800,12 @@ server <- function(input, output) {
   
   # Display Text and Mean Share
   output$country_text <- renderText({
+    req(report_content())
     report_content()$text
   })
   
   output$mean_share <- renderText({
+    req(report_content())
     paste("Mean Share of Public Admin Workers:", round(report_content()$mean_share, 2))
   })
   
@@ -2794,31 +2816,28 @@ server <- function(input, output) {
     },
     content = function(file) {
       tryCatch({
-        quarto_file <- "path/to/report_template_shiny_app.qmd"
-        if (!file.exists(quarto_file)) {
-          stop("Quarto template file not found.")
-        }
+        temp_dir <- tempdir()
+        quarto_file <- "C:/WBG/GitHub/WWBI/Code/report_template_shiny_app.qmd"
         
-        # Get the content data
-        content_data <- report_content()
-        
-        # Render the report using Quarto
+        # Render the Quarto report
         quarto::quarto_render(
           input = quarto_file,
-          output_file = file,
           execute_params = list(
-            report_text = content_data$text,
-            plot_filename = content_data$plot_filename,
-            mean_share = content_data$mean_share
-          )
+            report_text = gsub("_", "\\_", report_content()$text, fixed = TRUE),
+            plot_filename = report_content()$plot_filename,
+            mean_share = report_content()$mean_share
+          ),
+          output_file = "report_template_shiny_app.docx",
+          output_dir = temp_dir
         )
+        
+        # Move the file to the final location
+        file.rename(file.path(temp_dir, "report_template_shiny_app.docx"), file)
       }, error = function(e) {
         showNotification(paste("Error:", e$message), type = "error")
       })
     }
   )
 }
-
-
 # Run the Application
 shinyApp(ui = ui, server = server)
