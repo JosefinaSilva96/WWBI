@@ -29,6 +29,7 @@ library(colourpicker)
 library(rmarkdown)
 library(quarto)
 library(tinytex)
+library(orca)
 ### INITIAL COMMANDS ----
 
 #Set data path 
@@ -1086,11 +1087,11 @@ server <- function(input, output, session) {
     
     plot
   })
+  #Word download
   
-  # Word Graph Download Handler
   output$downloadGraphsWord <- downloadHandler(
     filename = function() {
-      paste0("Public_Sector_Graphs", Sys.Date(), ".docx")
+      paste0("Public_Sector_Graphs_", Sys.Date(), ".docx")
     },
     content = function(file) {
       # Create a new Word document
@@ -1098,75 +1099,94 @@ server <- function(input, output, session) {
       
       # Check if the first graph is selected
       if ("firstGraph" %in% input$selected_graphs_public) {
-        # Render the first graph
+        # Generate first plotly graph
         data_to_plot <- public_sector_emp_temp_last %>%
           filter(country_name %in% input$countries_first)
         
-        if (nrow(data_to_plot) > 0) {  # Ensure there is data to plot
-          data_to_plot_long <- data_to_plot %>%
-            select(country_name, indicator_name, year, value) %>%
-            mutate(indicator_label = recode(indicator_name, 
-                                            "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
-                                            "Public sector employment, as a share of paid employment" = "as a share of paid employment",
-                                            "Public sector employment, as a share of total employment" = "as a share of total employment"))
-          
-          first_graph <- ggplot(data_to_plot_long, aes(x = country_name, y = value, color = indicator_label)) +
-            geom_point(size = 3) +
-            labs(
-              title = "Public Sector Employment (Multiple Countries)",
-              x = "Country",
-              y = "Value"
-            ) +
-            theme_minimal()
-          
-          # Add the first graph to the document
-          doc <- doc %>%
-            body_add_par("First Graph: Public Sector Employment (Multiple Countries)", style = "heading 1") %>%
-            body_add_gg(value = first_graph, width = 6, height = 4)
-        } else {
-          doc <- doc %>%
-            body_add_par("No data available for First Graph.", style = "normal")
-        }
+        data_to_plot_long <- data_to_plot %>%
+          select(country_name, indicator_name, year, value) %>%
+          mutate(indicator_name = factor(indicator_name)) %>%
+          mutate(indicator_label = recode(indicator_name, 
+                                          "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
+                                          "Public sector employment, as a share of paid employment" = "as a share of paid employment", 
+                                          "Public sector employment, as a share of total employment" = "as a share of total employment" ))
+        
+        first_graph <- plot_ly(data = data_to_plot_long, 
+                               x = ~country_name, 
+                               y = ~value, 
+                               color = ~indicator_label, 
+                               type = 'scatter',
+                               mode = 'markers',  
+                               marker = list(size = 8)) %>%
+          layout(title = "Public sector employment as a share of",
+                 xaxis = list(title = "Country", tickangle = 45),
+                 yaxis = list(title = "Value"),
+                 legend = list(title = list(text = "Indicator")))
+        
+        # Save first plot as image
+        tmp_file1 <- tempfile(fileext = ".png")
+        orca(first_graph, tmp_file1)
+        
+        doc <- doc %>%
+          body_add_par("First Graph: Multi-Country", style = "heading 1") %>%
+          body_add_img(src = tmp_file1, width = 6, height = 4)
       }
       
       # Check if the second graph is selected
       if ("secondGraph" %in% input$selected_graphs_public) {
-        # Render the second graph
+        # Generate second plotly graph
         data_to_plot <- public_sector_emp_temp %>%
-          filter(country_name == input$country_second)
+          filter(country_name == input$country_second)  # Single country selection
         
-        if (nrow(data_to_plot) > 0) {  # Ensure there is data to plot
-          data_to_plot_long <- data_to_plot %>%
-            select(year, indicator_name, value) %>%
-            mutate(indicator_label = recode(indicator_name, 
-                                            "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
-                                            "Public sector employment, as a share of paid employment" = "as a share of paid employment"))
-          
-          second_graph <- ggplot(data_to_plot_long, aes(x = year, y = value, color = indicator_label)) +
-            geom_line(size = 1) +
-            geom_point(size = 3) +
-            labs(
-              title = paste("Public Sector Employment in", input$country_second, "Over Time"),
-              x = "Year",
-              y = "Employment Value"
-            ) +
-            theme_minimal()
-          
-          # Add the second graph to the document
-          doc <- doc %>%
-            body_add_par("Second Graph: Public Sector Employment (Single Country)", style = "heading 1") %>%
-            body_add_gg(value = second_graph, width = 6, height = 4)
-        } else {
-          doc <- doc %>%
-            body_add_par("No data available for Second Graph.", style = "normal")
-        }
+        data_to_plot_long <- data_to_plot %>%
+          select(year, indicator_name, value) %>%
+          mutate(indicator_name = factor(indicator_name)) %>%
+          mutate(indicator_label = recode(indicator_name, 
+                                          "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
+                                          "Public sector employment, as a share of paid employment" = "as a share of paid employment"))
+        
+        second_graph <- plot_ly(
+          data = data_to_plot_long, 
+          x = ~year, 
+          y = ~value, 
+          color = ~indicator_label, 
+          text = ~paste("Value:", round(value, 2)), 
+          type = 'scatter', 
+          mode = 'lines+markers',  
+          marker = list(size = 8)
+        ) %>%
+          layout(
+            title = paste("Public Sector Employment in", input$country_second, "Over Time"),
+            xaxis = list(title = "Year", tickangle = 45, dtick = 2),
+            yaxis = list(title = "Employment Value"),
+            legend = list(title = list(text = "Indicator"))
+          ) %>%
+          add_annotations(
+            x = ~year, 
+            y = ~value, 
+            text = ~round(value, 2),
+            showarrow = FALSE, 
+            font = list(size = 12, color = "black"),
+            xanchor = "center", 
+            yanchor = "bottom"
+          )
+        
+        # Save second plot as image
+        tmp_file2 <- tempfile(fileext = ".png")
+        orca(second_graph, tmp_file2)
+        
+        doc <- doc %>%
+          body_add_par("Second Graph: Single Country", style = "heading 1") %>%
+          body_add_img(src = tmp_file2, width = 6, height = 4)
       }
       
       # Save the Word document
       print(doc, target = file)
     }
   )
+  
   #Public Sector Workforce
+  
   # Reactive expression to filter workforce data
   filtered_workforce_data <- reactive({
     req(input$countries_workforce)  # Ensure input is not null
@@ -1301,10 +1321,14 @@ server <- function(input, output, session) {
             )
           )
           
+          # Save the first graph as an image
+          tmp_file1 <- tempfile(fileext = ".png")
+          export(stacked_graph, file = tmp_file1)
+          
           # Add the first graph to the document
           doc <- doc %>%
             body_add_par("First Graph: Public Workforce Distribution by Country", style = "heading 1") %>%
-            body_add_gg(value = stacked_graph, width = 6, height = 4)
+            body_add_img(src = tmp_file1, width = 6, height = 4)
         }
       }
       
@@ -1339,10 +1363,14 @@ server <- function(input, output, session) {
               )
             )
             
+            # Save the second graph as an image
+            tmp_file2 <- tempfile(fileext = ".png")
+            export(horizontal_graph, file = tmp_file2)
+            
             # Add the second graph to the document
             doc <- doc %>%
               body_add_par(paste("Horizontal Stacked Bar Graph for", input$selected_country), style = "heading 1") %>%
-              body_add_gg(value = horizontal_graph, width = 6, height = 4)
+              body_add_img(src = tmp_file2, width = 6, height = 4)
           }
         }
       }
