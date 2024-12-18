@@ -2816,7 +2816,7 @@ server <- function(input, output, session) {
     },
     content = function(file) {
       tryCatch({
-        quarto_file <- "C:/WBG/GitHub/WWBI/Code/report_template_shiny_app.qmd"
+        quarto_file <- "C:WBG/GitHub/WWBI/Code/report_template_shiny_app.qmd"
         
         # Ensure the Quarto file exists
         if (!file.exists(quarto_file)) {

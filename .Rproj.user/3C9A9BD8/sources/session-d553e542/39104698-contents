@@ -1,18 +1,40 @@
 ---
-title: "Country Report"
-format: docx
+title: "Wage Bill Analysis"
+output: word_document
 params:
-  report_text: "Default report text."
-  plot_filename: "default_plot.png"
-  mean_share: 0.0
+  countries: !!r "input$countries"
+  indicator: !!r "input$indicator"
+  graphs_to_download: !!r "input$graphs_to_download"
 ---
 
-## Introduction
+# Report for Selected Countries
 
-This note presents evidence on public sector employment and compensation practices in Bangladesh using the Worldwide Bureaucracy Indicators (WWBI). The primary data source is the Labor Force Survey (LFS), conducted by the Bangladesh Bureau of Statistics (BBS), which offers extensive, nationally representative data over multiple years up to 2022.
+# Introduction 
+
+This note presents evidence on public sector employment and compensation practices in Bangladesh using the Worldwide Bureaucracy Indicators (WWBI) . The primary data source is the Labor Force Survey (LFS), conducted by the Bangladesh Bureau of Statistics (BBS), which offers extensive, nationally representative data over multiple years up to 2022. The LFS’s comprehensive coverage of employment and wage issues across both public and private sectors, along with its frequency and national representativeness, makes it an ideal source for this analysis.
+For international comparisons, the analysis includes a set of peer countries for benchmarking, with a particular focus on countries from the South Asia region and other aspirational peers. Information on these peers was also sourced from the WWBI.
+The public sector is typically a major source of employment in most countries. The provision of basic services such as education, health, citizen security and justice, among others, makes it a central actor in labor markets, with significant impacts on the aggregate results of employment, wages, informality, and other economic variables. Moreover, public employment is an indicator of the state participation in the entire economy, which has implications for macroeconomic balances, allocation efficiency and income distribution. Thus, this analysis comprehensively documents the size of public employment, its changes over time, and the characteristics of its workforce.
+
+
+
+## Indicator: `r params$indicator`
 
 ```{r}
-# Display report content and plot
-cat(params$report_text)
-cat(paste("\nMean Share of Public Admin Workers:", params$mean_share))
-knitr::include_graphics(params$plot_filename)
+# Include the graphs
+if ("GDP" %in% params$graphs_to_download) {
+  plot1 <- ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
+    geom_line(size = 1.2) +
+    geom_point(size = 3) +
+    labs(title = "Wage Bill as % of GDP Over Time", x = "Year", y = "Wage Bill (% of GDP)") +
+    theme_minimal()
+  print(plot1)
+}
+
+if ("PublicExpenditure" %in% params$graphs_to_download) {
+  plot2 <- ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
+    geom_line(size = 1.2) +
+    geom_point(size = 3) +
+    labs(title = "Wage Bill as % of Public Expenditure Over Time", x = "Year", y = "Wage Bill (% of Public Expenditure)") +
+    theme_minimal()
+  print(plot2)
+}
