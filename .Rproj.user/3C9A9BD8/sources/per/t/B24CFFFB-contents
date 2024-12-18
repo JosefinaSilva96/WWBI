@@ -28,7 +28,7 @@ library(glue)
 library(colourpicker)
 library(rmarkdown)
 library(quarto)
-
+library(tinytex)
 ### INITIAL COMMANDS ----
 
 #Set data path 
@@ -2736,12 +2736,13 @@ ui <- fluidPage(
 )
 
 # Server Logic
+
 server <- function(input, output) {
   
   # Generate Reactive Report Content
   report_content <- reactive({
     country_data <- subset(data, country == input$country)
-    mean_share <- mean(country_data$public_admin_workers / country_data$total_public_employees)
+    mean_share <- mean(country_data$public_admin_workers / country_data$total_public_employees, na.rm = TRUE)
     
     # Create the Plot
     plot <- ggplot(country_data, aes(x = country, y = public_admin_workers / total_public_employees)) +
@@ -2755,11 +2756,12 @@ server <- function(input, output) {
     
     # Save the plot as an image in a temporary file
     plot_filename <- tempfile(fileext = ".png")
-    ggsave(plot_filename, plot = plot)
+    ggsave(plot_filename, plot = plot, width = 7, height = 7)
     
     # Prepare the country-specific text
     country_text <- generate_country_text(input$country)
     
+    # Return a list of report components
     list(text = country_text, plot_filename = plot_filename, mean_share = mean_share)
   })
   
@@ -2780,6 +2782,7 @@ server <- function(input, output) {
   output$country_text <- renderText({
     report_content()$text
   })
+  
   output$mean_share <- renderText({
     paste("Mean Share of Public Admin Workers:", round(report_content()$mean_share, 2))
   })
@@ -2787,21 +2790,23 @@ server <- function(input, output) {
   # Generate and Download Report
   output$download_report <- downloadHandler(
     filename = function() {
-      paste("report_", input$country, ".pdf", sep = "")
+      paste("report_", input$country, ".docx", sep = "")
     },
     content = function(file) {
       tryCatch({
-        quarto_file <- "C:/WBG/GitHub/WWBI/Code/report_template_shiny_app.qmd"
+        quarto_file <- "path/to/report_template_shiny_app.qmd"
         if (!file.exists(quarto_file)) {
           stop("Quarto template file not found.")
         }
         
+        # Get the content data
         content_data <- report_content()
         
+        # Render the report using Quarto
         quarto::quarto_render(
-          quarto_file,
+          input = quarto_file,
           output_file = file,
-          params = list(
+          execute_params = list(
             report_text = content_data$text,
             plot_filename = content_data$plot_filename,
             mean_share = content_data$mean_share
@@ -2813,6 +2818,7 @@ server <- function(input, output) {
     }
   )
 }
+
 
 # Run the Application
 shinyApp(ui = ui, server = server)
