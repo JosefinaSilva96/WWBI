@@ -30,6 +30,8 @@ library(rmarkdown)
 library(quarto)
 library(tinytex)
 library(orca)
+
+
 ### INITIAL COMMANDS ----
 
 #Set data path 
@@ -561,22 +563,29 @@ ui <- dashboardPage(
               # Add graph selection and download functionality
               fluidRow(
                 box(
-                  title = "Download Selected Graphs",
+                  title = "Download Graphs",
                   status = "primary",
                   solidHeader = TRUE,
                   width = 12,
-                  checkboxGroupInput(
-                    "selected_graphs_public", 
-                    "Select Graphs to Download", 
-                    choices = c("First Graph: Multi-Country" = "firstGraph",
-                                "Second Graph: Single Country" = "secondGraph"),
-                    selected = c("firstGraph", "secondGraph") # Default to all selected
+                  column(
+                    width = 6,
+                    checkboxGroupInput(
+                      "selected_graphs_public", 
+                      "Select Graphs to Download:", 
+                      choices = c(
+                        "Multi-Country Graph" = "firstGraph",
+                        "Single-Country Graph" = "secondGraph"
+                      ),
+                      selected = c("firstGraph", "secondGraph") # Default: all selected
+                    )
                   ),
-                  downloadButton("downloadGraphsWord", "Download Selected Graphs in Word")
+                  column(
+                    width = 6,
+                    downloadButton("downloadGraphsWord", "Download Graphs as Word File", class = "btn-primary btn-block")
+                  )
                 )
               )
-      )
-      ,
+              ),
       # Public Sector Workforce Graphs Tab
       tabItem(
         tabName = "publicSectorWorkforceGraphs",
@@ -1087,100 +1096,34 @@ server <- function(input, output, session) {
     
     plot
   })
-  #Word download
   
+  #Word download
   output$downloadGraphsWord <- downloadHandler(
     filename = function() {
       paste0("Public_Sector_Graphs_", Sys.Date(), ".docx")
     },
     content = function(file) {
-      # Create a new Word document
+      # Generate the Word file with graphs
       doc <- read_docx()
       
-      # Check if the first graph is selected
       if ("firstGraph" %in% input$selected_graphs_public) {
-        # Generate first plotly graph
-        data_to_plot <- public_sector_emp_temp_last %>%
-          filter(country_name %in% input$countries_first)
-        
-        data_to_plot_long <- data_to_plot %>%
-          select(country_name, indicator_name, year, value) %>%
-          mutate(indicator_name = factor(indicator_name)) %>%
-          mutate(indicator_label = recode(indicator_name, 
-                                          "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
-                                          "Public sector employment, as a share of paid employment" = "as a share of paid employment", 
-                                          "Public sector employment, as a share of total employment" = "as a share of total employment" ))
-        
-        first_graph <- plot_ly(data = data_to_plot_long, 
-                               x = ~country_name, 
-                               y = ~value, 
-                               color = ~indicator_label, 
-                               type = 'scatter',
-                               mode = 'markers',  
-                               marker = list(size = 8)) %>%
-          layout(title = "Public sector employment as a share of",
-                 xaxis = list(title = "Country", tickangle = 45),
-                 yaxis = list(title = "Value"),
-                 legend = list(title = list(text = "Indicator")))
-        
-        # Save first plot as image
-        tmp_file1 <- tempfile(fileext = ".png")
-        orca(first_graph, tmp_file1)
-        
-        doc <- doc %>%
-          body_add_par("First Graph: Multi-Country", style = "heading 1") %>%
-          body_add_img(src = tmp_file1, width = 6, height = 4)
+        # Add ggplot graph 1
+        graph1 <- ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
+          geom_line(size = 1.2) +
+          labs(title = "Multi-Country Graph", x = "Year", y = "Value") +
+          theme_minimal()
+        doc <- body_add_gg(doc, value = graph1, style = "centered")
       }
       
-      # Check if the second graph is selected
       if ("secondGraph" %in% input$selected_graphs_public) {
-        # Generate second plotly graph
-        data_to_plot <- public_sector_emp_temp %>%
-          filter(country_name == input$country_second)  # Single country selection
-        
-        data_to_plot_long <- data_to_plot %>%
-          select(year, indicator_name, value) %>%
-          mutate(indicator_name = factor(indicator_name)) %>%
-          mutate(indicator_label = recode(indicator_name, 
-                                          "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
-                                          "Public sector employment, as a share of paid employment" = "as a share of paid employment"))
-        
-        second_graph <- plot_ly(
-          data = data_to_plot_long, 
-          x = ~year, 
-          y = ~value, 
-          color = ~indicator_label, 
-          text = ~paste("Value:", round(value, 2)), 
-          type = 'scatter', 
-          mode = 'lines+markers',  
-          marker = list(size = 8)
-        ) %>%
-          layout(
-            title = paste("Public Sector Employment in", input$country_second, "Over Time"),
-            xaxis = list(title = "Year", tickangle = 45, dtick = 2),
-            yaxis = list(title = "Employment Value"),
-            legend = list(title = list(text = "Indicator"))
-          ) %>%
-          add_annotations(
-            x = ~year, 
-            y = ~value, 
-            text = ~round(value, 2),
-            showarrow = FALSE, 
-            font = list(size = 12, color = "black"),
-            xanchor = "center", 
-            yanchor = "bottom"
-          )
-        
-        # Save second plot as image
-        tmp_file2 <- tempfile(fileext = ".png")
-        orca(second_graph, tmp_file2)
-        
-        doc <- doc %>%
-          body_add_par("Second Graph: Single Country", style = "heading 1") %>%
-          body_add_img(src = tmp_file2, width = 6, height = 4)
+        # Add ggplot graph 2
+        graph2 <- ggplot(single_country_data(), aes(x = year, y = value, color = indicator_name)) +
+          geom_line(size = 1.2) +
+          labs(title = "Single-Country Graph", x = "Year", y = "Value") +
+          theme_minimal()
+        doc <- body_add_gg(doc, value = graph2, style = "centered")
       }
       
-      # Save the Word document
       print(doc, target = file)
     }
   )
