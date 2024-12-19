@@ -185,6 +185,8 @@ public_sector_emp_temp <- data_wwbi[data_wwbi$indicator_name %in% c("Public sect
                                                                "Public sector employment, as a share of paid employment"), ]
 
 
+
+
 public_sector_emp_temp <- public_sector_emp_temp %>%
   pivot_longer(cols = starts_with("year_"), 
                names_to = "year", 
@@ -199,6 +201,29 @@ public_sector_emp <- public_sector_emp %>%
                values_to = "value") %>%
   mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
   filter(!is.na(value)) #2015 obs
+
+
+
+public_sector_emp_temp <- public_sector_emp_temp %>%
+  select(year, indicator_name, value, country_name) %>%
+  mutate(indicator_name = factor(indicator_name)) %>%
+  # Modify indicator labels for shorter text
+  mutate(indicator_label = recode(indicator_name, 
+                                  "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
+                                  "Public sector employment, as a share of paid employment" = "as a share of paid employment", 
+                                  "Public sector employment, as a share of total employment"= "as a share of total employment"))
+
+
+public_sector_emp <- public_sector_emp %>%
+  select(year, indicator_name, value, country_name) %>%
+  mutate(indicator_name = factor(indicator_name)) %>%
+  # Modify indicator labels for shorter text
+  mutate(indicator_label = recode(indicator_name, 
+                                  "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
+                                  "Public sector employment, as a share of paid employment" = "as a share of paid employment", 
+                                  "Public sector employment, as a share of total employment"= "as a share of total employment"))
+
+
 
 
 # Keep the last year available for each country
@@ -1180,8 +1205,6 @@ server <- function(input, output, session) {
     }
   )
   
-  
-  
   #Public Sector Workforce
   
   # Reactive expression to filter workforce data
@@ -1624,8 +1647,8 @@ server <- function(input, output, session) {
           filter(country_name %in% input$countries_first)
         
         data_to_plot_long <- data_to_plot %>%
-          select(country_name, indicator_name, year, value) %>%
-          mutate(indicator_name = factor(indicator_name))
+          select(country_name, indicator_label, year, value) %>%
+          mutate(indicator_name = factor(indicator_label))
         
         first_graph <- ggplot(data_to_plot_long, aes(x = country_name, y = value, color = indicator_name)) +
           geom_point(size = 3) +
@@ -1648,10 +1671,10 @@ server <- function(input, output, session) {
           filter(country_name == input$country_second)
         
         data_to_plot_long <- data_to_plot %>%
-          select(year, indicator_name, value) %>%
-          mutate(indicator_name = factor(indicator_name))
+          select(year, indicator_label, value) %>%
+          mutate(indicator_label = factor(indicator_label))
         
-        second_graph <- ggplot(data_to_plot_long, aes(x = year, y = value, color = indicator_name)) +
+        second_graph <- ggplot(data_to_plot_long, aes(x = year, y = value, color = indicator_label)) +
           geom_line(size = 1) +
           geom_point(size = 3) +
           labs(
