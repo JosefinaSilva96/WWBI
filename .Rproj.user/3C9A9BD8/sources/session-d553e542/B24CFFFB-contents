@@ -809,7 +809,7 @@ ui <- dashboardPage(
                 )
               )
       ),
-      #Download graphs 
+      # Download graphs
       tabItem(tabName = "downloadAllGraphs",
               fluidRow(
                 box(
@@ -822,8 +822,9 @@ ui <- dashboardPage(
                     "Select Graphs to Download", 
                     choices = c("Wage Bill Graph" = "wageBillGraph",
                                 "First Graph: Multi-Country (Public Sector)" = "firstGraph",
-                                "Second Graph: Single Country (Public Sector)" = "secondGraph"),
-                    selected = c("wageBillGraph", "firstGraph", "secondGraph") # Default to all selected
+                                "Second Graph: Single Country (Public Sector)" = "secondGraph",
+                                "Dot Plot: Wage Bill vs. Log(GDP per Capita)" = "dotPlot"),  # Add this line
+                    selected = c("wageBillGraph", "firstGraph", "secondGraph", "dotPlot")  # Default to all selected
                   ),
                   downloadButton("downloadAllGraphsWord", "Download Selected Graphs in Word")
                 )
@@ -1611,90 +1612,117 @@ server <- function(input, output, session) {
         )
       )
   })
-  output$downloadAllGraphsWord <- downloadHandler(
-    filename = function() {
-      paste0("Selected_Graphs_", Sys.Date(), ".docx")
-    },
-    content = function(file) {
-      # Create a new Word document
-      doc <- read_docx()
+ output$downloadAllGraphsWord <- downloadHandler(
+  filename = function() {
+    paste0("Selected_Graphs_", Sys.Date(), ".docx")
+  },
+  content = function(file) {
+    # Create a new Word document
+    doc <- read_docx()
+    
+    # Add graphs based on user selection
+    if ("wageBillGraph" %in% input$selected_graphs_all) {
+      # Render the Wage Bill Graph
+      wage_bill_graph <- ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
+        geom_line(size = 1.2) +
+        geom_point(size = 3) +
+        labs(
+          title = ifelse(input$indicator == "Wage bill as a percentage of GDP",
+                         "Wage Bill as % of GDP Over Time",
+                         "Wage Bill as % of Public Expenditure Over Time"),
+          x = "Year",
+          y = ifelse(input$indicator == "Wage bill as a percentage of GDP", 
+                     "Wage Bill (% of GDP)", "Wage Bill (%)")
+        ) +
+        theme_minimal()
       
-      # Add graphs based on user selection
-      if ("wageBillGraph" %in% input$selected_graphs_all) {
-        # Render the Wage Bill Graph
-        wage_bill_graph <- ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
-          geom_line(size = 1.2) +
-          geom_point(size = 3) +
-          labs(
-            title = ifelse(input$indicator == "Wage bill as a percentage of GDP",
-                           "Wage Bill as % of GDP Over Time",
-                           "Wage Bill as % of Public Expenditure Over Time"),
-            x = "Year",
-            y = ifelse(input$indicator == "Wage bill as a percentage of GDP", 
-                       "Wage Bill (% of GDP)", "Wage Bill (%)")
-          ) +
-          theme_minimal()
-        
-        # Add Wage Bill Graph to the document
-        doc <- doc %>%
-          body_add_par("Wage Bill Graph", style = "heading 1") %>%
-          body_add_gg(value = wage_bill_graph, width = 6, height = 4)
-      }
-      
-      if ("firstGraph" %in% input$selected_graphs_all) {
-        # Render the First Public Sector Graph
-        data_to_plot <- public_sector_emp_temp_last %>%
-          filter(country_name %in% input$countries_first)
-        
-        data_to_plot_long <- data_to_plot %>%
-          select(country_name, indicator_label, year, value) %>%
-          mutate(indicator_name = factor(indicator_label))
-        
-        first_graph <- ggplot(data_to_plot_long, aes(x = country_name, y = value, color = indicator_name)) +
-          geom_point(size = 3) +
-          labs(
-            title = "Public Sector Employment (Multi-Country)",
-            x = "Country",
-            y = "Value"
-          ) +
-          theme_minimal()
-        
-        # Add First Public Sector Graph to the document
-        doc <- doc %>%
-          body_add_par("First Graph: Public Sector Employment (Multi-Country)", style = "heading 1") %>%
-          body_add_gg(value = first_graph, width = 6, height = 4)
-      }
-      
-      if ("secondGraph" %in% input$selected_graphs_all) {
-        # Render the Second Public Sector Graph
-        data_to_plot <- public_sector_emp_temp %>%
-          filter(country_name == input$country_second)
-        
-        data_to_plot_long <- data_to_plot %>%
-          select(year, indicator_label, value) %>%
-          mutate(indicator_label = factor(indicator_label))
-        
-        second_graph <- ggplot(data_to_plot_long, aes(x = year, y = value, color = indicator_label)) +
-          geom_line(size = 1) +
-          geom_point(size = 3) +
-          labs(
-            title = paste("Public Sector Employment in", input$country_second, "Over Time"),
-            x = "Year",
-            y = "Employment Value"
-          ) +
-          theme_minimal()
-        
-        # Add Second Public Sector Graph to the document
-        doc <- doc %>%
-          body_add_par("Second Graph: Public Sector Employment (Single Country)", style = "heading 1") %>%
-          body_add_gg(value = second_graph, width = 6, height = 4)
-      }
-      
-      # Save the document
-      print(doc, target = file)
+      # Add Wage Bill Graph to the document
+      doc <- doc %>%
+        body_add_par("Wage Bill Graph", style = "heading 1") %>%
+        body_add_gg(value = wage_bill_graph, width = 6, height = 4)
     }
-  )
-  
+    
+    if ("firstGraph" %in% input$selected_graphs_all) {
+      # Render the First Public Sector Graph
+      data_to_plot <- public_sector_emp_temp_last %>%
+        filter(country_name %in% input$countries_first)
+      
+      data_to_plot_long <- data_to_plot %>%
+        select(country_name, indicator_label, year, value) %>%
+        mutate(indicator_name = factor(indicator_label))
+      
+      first_graph <- ggplot(data_to_plot_long, aes(x = country_name, y = value, color = indicator_name)) +
+        geom_point(size = 3) +
+        labs(
+          title = "Public Sector Employment (Multi-Country)",
+          x = "Country",
+          y = "Value"
+        ) +
+        theme_minimal()
+      
+      # Add First Public Sector Graph to the document
+      doc <- doc %>%
+        body_add_par("First Graph: Public Sector Employment (Multi-Country)", style = "heading 1") %>%
+        body_add_gg(value = first_graph, width = 6, height = 4)
+    }
+    
+    if ("secondGraph" %in% input$selected_graphs_all) {
+      # Render the Second Public Sector Graph
+      data_to_plot <- public_sector_emp_temp %>%
+        filter(country_name == input$country_second)
+      
+      data_to_plot_long <- data_to_plot %>%
+        select(year, indicator_label, value) %>%
+        mutate(indicator_label = factor(indicator_label))
+      
+      second_graph <- ggplot(data_to_plot_long, aes(x = year, y = value, color = indicator_label)) +
+        geom_line(size = 1) +
+        geom_point(size = 3) +
+        labs(
+          title = paste("Public Sector Employment in", input$country_second, "Over Time"),
+          x = "Year",
+          y = "Employment Value"
+        ) +
+        theme_minimal()
+      
+      # Add Second Public Sector Graph to the document
+      doc <- doc %>%
+        body_add_par("Second Graph: Public Sector Employment (Single Country)", style = "heading 1") %>%
+        body_add_gg(value = second_graph, width = 6, height = 4)
+    }
+    
+    if ("dotPlot" %in% input$selected_graphs_all) {
+      # Render the Dot Plot Graph
+      filtered_data <- merged_data %>%
+        filter(country_name %in% input$countries_first)  # Ensure countries_first is used
+      
+      first_country <- ifelse(length(input$countries_first) > 0, input$countries_first[1], NULL)
+      
+      filtered_data <- filtered_data %>%
+        mutate(color = ifelse(country_name == first_country, "#B3242B", "#003366"))
+      
+      dot_plot_graph <- ggplot(filtered_data, aes(x = log_gdp, y = indicator_value, label = country_name)) +
+        geom_point(aes(color = color), size = 3) +
+        geom_smooth(method = "lm", se = FALSE, color = "gray", linetype = "dashed") +
+        scale_color_identity() +
+        geom_text(nudge_y = 0.2, size = 3) +
+        labs(
+          title = "Wage Bill vs. Log(GDP per Capita)",
+          x = "Log(GDP per Capita, 2015)",
+          y = "Wage Bill"
+        ) +
+        theme_minimal()
+      
+      # Add Dot Plot Graph to the document
+      doc <- doc %>%
+        body_add_par("Dot Plot: Wage Bill vs. Log(GDP per Capita)", style = "heading 1") %>%
+        body_add_gg(value = dot_plot_graph, width = 6, height = 4)
+    }
+    
+    # Save the document
+    print(doc, target = file)
+  }
+)
   # Define the initial world map render
   output$worldMap <- renderLeaflet({
     leaflet(world_spdf) %>%
@@ -1800,7 +1828,7 @@ shinyApp(ui = ui, server = server)
 
 # Test ----
 
-# Define UI ----
+#Define UI
 
 ui <- fluidPage(
   titlePanel("Dot Plot: Wage Bill vs. GDP per Capita (Log Scale)"),
@@ -1811,9 +1839,10 @@ ui <- fluidPage(
         inputId = "selected_countries",
         label = "Select Countries:",
         choices = unique(merged_data$country_name),
-        selected = unique(merged_data$country_name)[1:3], # Default selection
+        selected = unique(merged_data$country_name)[1:3],
         multiple = TRUE
-      )
+      ),
+      downloadButton("downloadReport", "Download Report")
     ),
     
     mainPanel(
@@ -1822,75 +1851,104 @@ ui <- fluidPage(
   )
 )
 
-# Define Server ----
+#Define server ----
 
-# Server function
-
-server <- function(input, output) {
-  
-  # Render the dot plot
+server <- function(input, output, session) {
   output$dot_plot <- renderPlotly({
-    
-    # Filter merged_data based on selected countries
+    # Filter and prepare data
     filtered_data <- merged_data %>%
       filter(country_name %in% input$selected_countries)
     
-    # Get the first country for highlighting
     first_country <- input$selected_countries[1]
-    
-    # Create color column: first country will have a different color
     filtered_data <- filtered_data %>%
       mutate(color = ifelse(country_name == first_country, "#B3242B", "#003366"))
     
-    # Fit a linear model for the trendline (log_gdp vs indicator_value)
     trendline_model <- lm(indicator_value ~ log_gdp, data = filtered_data)
-    
-    # Get fitted values for the trendline
     trendline_values <- predict(trendline_model, newdata = filtered_data)
     
-    # Create the plot
     plot <- plot_ly() %>%
-      # Data points for countries
       add_trace(
         data = filtered_data,
         x = ~log_gdp,
         y = ~indicator_value,
         type = "scatter",
-        mode = "markers+text",  # Add dots for countries
-        text = ~country_code,  # Display country code as label
-        textposition = "top center",  # Position labels above the dots
-        marker = list(
-          size = 10,
-          color = ~color,  # Use the color column for different colors
-          opacity = 0.7
-        )
+        mode = "markers+text",
+        text = ~country_code,
+        textposition = "top center",
+        marker = list(size = 10, color = ~color, opacity = 0.7)
       ) %>%
-      # Trendline (only line, no dots for trendline)
       add_trace(
         x = filtered_data$log_gdp,
         y = trendline_values,
         type = "scatter",
-        mode = "lines",  # Only lines for the trendline
+        mode = "lines",
         line = list(color = "gray", dash = "dash"),
-        name = "Trendline"  # This is used for the legend, but we will hide it
+        name = "Trendline"
       ) %>%
       layout(
         title = "Wage Bill vs. Log(GDP per Capita)",
-        xaxis = list(
-          title = "Log(GDP per Capita, 2015)",  # Axis label for x-axis
-          showticklabels = TRUE  # Show tick labels on x-axis
-        ),
-        yaxis = list(
-          title = "Wage Bill",  # Axis label for y-axis
-          showticklabels = TRUE  # Show tick labels on y-axis
-        ),
-        showlegend = FALSE  # Hide the legend
+        xaxis = list(title = "Log(GDP per Capita, 2015)"),
+        yaxis = list(title = "Wage Bill"),
+        showlegend = FALSE
       )
+    
+    # Save the plot to a temporary file using kaleido
+    temp_file <- tempfile(fileext = ".png")
+    plotly::save_image(plot, file = temp_file, width = 800, height = 600)
+    assign("plot_path", temp_file, envir = .GlobalEnv)
     
     return(plot)
   })
+  # Download Quarto Report
+  output$downloadReport <- downloadHandler(
+    filename = function() {
+      paste("public_sector_report_", Sys.Date(), ".docx", sep = "")
+    },
+    content = function(file) {
+      # Save the graph as an HTML widget
+      tmp_file_html <- tempfile(fileext = ".html")
+      htmlwidgets::saveWidget(output$dot_plot(), tmp_file_html)
+      
+      # Save the HTML widget as a PNG file
+      tmp_file_png <- tempfile(fileext = ".png")
+      webshot::webshot(tmp_file_html, file = tmp_file_png, vwidth = 800, vheight = 600)
+      
+      # Write a Quarto document
+      quarto_content <- '
+      ---
+      title: "Public Sector Employment and Compensation"
+      format: docx
+      ---
+      
+      # Introduction
+      
+      This note presents evidence on public sector employment and compensation practices in Bangladesh using the Worldwide Bureaucracy Indicators (WWBI). The primary data source is the Labor Force Survey (LFS), conducted by the Bangladesh Bureau of Statistics (BBS), which offers extensive, nationally representative data over multiple years up to 2022. The LFS’s comprehensive coverage of employment and wage issues across both public and private sectors, along with its frequency and national representativeness, makes it an ideal source for this analysis.
+      
+      For international comparisons, the analysis includes a set of peer countries for benchmarking, with a particular focus on countries from the South Asia region and other aspirational peers. Information on these peers was also sourced from the WWBI.
+      
+      The public sector is typically a major source of employment in most countries. The provision of basic services such as education, health, citizen security and justice, among others, makes it a central actor in labor markets, with significant impacts on the aggregate results of employment, wages, informality, and other economic variables. Moreover, public employment is an indicator of the state participation in the entire economy, which has implications for macroeconomic balances, allocation efficiency, and income distribution. Thus, this analysis comprehensively documents the size of public employment, its changes over time, and the characteristics of its workforce.
+      
+      # Graph: Wage Bill vs. Log(GDP per Capita)
+      
+      ![Dot Plot](dot_plot.png)
+      '
+      
+      # Copy the PNG graph into the same directory
+      tmp_dir <- tempdir()
+      graph_path <- file.path(tmp_dir, "dot_plot.png")
+      file.copy(tmp_file_png, graph_path, overwrite = TRUE)
+      
+      # Write the Quarto file
+      quarto_file <- file.path(tmp_dir, "report.qmd")
+      writeLines(quarto_content, quarto_file)
+      
+      # Render the Quarto file into a Word document
+      quarto::quarto_render(input = quarto_file, output_file = file)
+    }
+  )
 }
 
+shinyApp(ui, server)
 
 # Run App ----
 
