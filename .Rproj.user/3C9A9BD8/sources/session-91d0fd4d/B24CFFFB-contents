@@ -103,6 +103,10 @@ countries <- c(
   "Republica Bolivariana de", "Vietnam", "Vanuatu", "Samoa", "Kosovo","South Africa",
   "Zambia", "Zimbabwe")
 
+#Drop pvalue in the indicator column
+
+data_wwbi <- data_wwbi[!grepl("^P-Value:", data_wwbi$indicator_name), ]
+
 # Extract available years and countries for select inputs
 
 years <- as.character(2000:2022)  # Years are 2000 to 2022 based on column names in your data
