@@ -478,6 +478,7 @@ ui <- dashboardPage(
       menuItem("Tertiary Education Graphs", tabName = "educationGraphs", icon = icon("chart-line")),
       menuItem("Public Sector Wage Premium", tabName = "publicsectorwagepremiumGraphs", icon = icon("chart-line")),
       menuItem("Public Sector Education Workers", tabName = "publicsectoreducationGraphs", icon = icon("chart-line")), 
+      menuItem("Wage Premium Gender", tabName = "wagepremiumGraphs", icon = icon("chart-line")), 
       menuItem("Download All Graphs", tabName = "downloadAllGraphs", icon = icon("download")) 
     )
   ),
@@ -813,6 +814,36 @@ ui <- dashboardPage(
                 )
               )
       ),
+      #Wage Premium Gender Graphs Tab
+      tabItem(tabName = "wagepremiumGraphs",
+              fluidRow(
+                box(title = "WWB Indicator Selection", status = "primary", solidHeader = TRUE, width = 4,
+                    selectInput("indicator", "Select a WWB Indicator", 
+                                choices = c("Wage bill (as % of public expenditure) over time", 
+                                            "Wage bill as a percentage of GDP"))
+                ),
+                box(title = "Country and Graph Selection", status = "primary", solidHeader = TRUE, width = 8,
+                    selectInput("countries", "Countries", 
+                                choices = unique(wage_bill_gdp$country_name), 
+                                selected = unique(wage_bill_gdp$country_name)[1], 
+                                multiple = TRUE), 
+                    
+                    # Checkbox group for graph selection
+                    checkboxGroupInput("graphs_to_download", "Select Graphs to Download", 
+                                       choices = list("Wage Bill (as % of public expenditure)" = "PublicExpenditure",
+                                                      "Wage Bill (as % of GDP)" = "GDP"),
+                                       selected = c("PublicExpenditure", "GDP")),
+                    
+                    # Download button
+                    downloadButton("downloadWord", "Download Word Document")
+                )
+              ),
+              fluidRow(
+                box(title = "Graph", status = "primary", solidHeader = TRUE, width = 12,
+                    plotlyOutput("plot")
+                )
+              )
+      ),
       # Download graphs
       tabItem(tabName = "downloadAllGraphs",
               fluidRow(
@@ -937,7 +968,7 @@ server <- function(input, output, session) {
       plot  # Return the final plot
     })
     
-    # Reactive expression to select the appropriate dataset based on the indicator
+    # Reactive expression to select the appropriate data set based on the indicator
     selected_data <- reactive({
       req(input$countries)  # Ensure 'countries' input is available
       
