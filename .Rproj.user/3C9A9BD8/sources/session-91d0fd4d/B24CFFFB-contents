@@ -460,59 +460,26 @@ public_wage_premium_educ <- public_wage_premium_educ %>%
 
 #Gender Wage premium ACA VOY                                                                                                                                                                                                                                                                     
 
-# Filter the data for the specific indicator "Public sector employment, as a share of formal employment and paid employment "
+# Filter the data for the specific indicator "Public sector wage premium, by gender: Female (compared to all private employees) and
+# Public sector wage premium, by gender: Male (compared to all private employees)"
 
-public_sector_emp <- data_wwbi[data_wwbi$indicator_name %in% c("Public sector employment, as a share of formal employment", 
-                                                               "Public sector employment, as a share of paid employment", 
-                                                               "Public sector employment, as a share of total employment"), ]
+gender_wage_premium <- data_wwbi[data_wwbi$indicator_name %in% c("Public sector wage premium, by gender: Female (compared to all private employees)", 
+                                                               "Public sector wage premium, by gender: Male (compared to all private employees)"), ]
 
-public_sector_emp_temp <- data_wwbi[data_wwbi$indicator_name %in% c("Public sector employment, as a share of formal employment", 
-                                                                    "Public sector employment, as a share of paid employment"), ]
-
-
-
-
-public_sector_emp_temp <- public_sector_emp_temp %>%
+gender_wage_premium <- gender_wage_premium %>%
   pivot_longer(cols = starts_with("year_"), 
                names_to = "year", 
                values_to = "value") %>%
   mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
-  filter(!is.na(value)) #2015 obs
+  filter(!is.na(value)) #1698 obs
 
-
-public_sector_emp <- public_sector_emp %>%
-  pivot_longer(cols = starts_with("year_"), 
-               names_to = "year", 
-               values_to = "value") %>%
-  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
-  filter(!is.na(value)) #2015 obs
-
-
-
-public_sector_emp_temp <- public_sector_emp_temp %>%
+gender_wage_premium <- gender_wage_premium %>%
   select(year, indicator_name, value, country_name) %>%
   mutate(indicator_name = factor(indicator_name)) %>%
   # Modify indicator labels for shorter text
   mutate(indicator_label = recode(indicator_name, 
-                                  "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
-                                  "Public sector employment, as a share of paid employment" = "as a share of paid employment", 
-                                  "Public sector employment, as a share of total employment"= "as a share of total employment"))
-
-
-public_sector_emp <- public_sector_emp %>%
-  select(year, indicator_name, value, country_name) %>%
-  mutate(indicator_name = factor(indicator_name)) %>%
-  # Modify indicator labels for shorter text
-  mutate(indicator_label = recode(indicator_name, 
-                                  "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
-                                  "Public sector employment, as a share of paid employment" = "as a share of paid employment", 
-                                  "Public sector employment, as a share of total employment"= "as a share of total employment"))
-
-
-
-
-
-
+                                  "Public sector wage premium, by gender: Female (compared to all private employees)" = "Female", 
+                                  "Public sector wage premium, by gender: Male (compared to all private employees)" = "Male"))
 
 
 
