@@ -482,6 +482,13 @@ gender_wage_premium <- gender_wage_premium %>%
                                   "Public sector wage premium, by gender: Male (compared to all private employees)" = "Male"))
 
 
+# Keep the last year available for each country
+
+gender_wage_premium_last <- gender_wage_premium %>%
+  filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
+  group_by(country_name, indicator_label) %>%                      # Group by country_name (or any other variable)
+  filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
+  ungroup()                                      # Ungroup the data
 
 
 
@@ -851,7 +858,7 @@ ui <- dashboardPage(
                 box(title = "First Graph - Multi-Country Selection", status = "primary", solidHeader = TRUE, width = 12,
                     selectInput("countries_first", 
                                 "Select Countries for First Graph", 
-                                choices = unique(gender_wage_premium$country_name), 
+                                choices = unique(gender_wage_premium_last$country_name), 
                                 selected = NULL, 
                                 multiple = TRUE)
                 )
@@ -865,7 +872,7 @@ ui <- dashboardPage(
                 box(title = "Second Graph - Single Country Selection", status = "primary", solidHeader = TRUE, width = 12,
                     selectInput("country_second", 
                                 "Select Country for Second Graph", 
-                                choices = unique(public_sector_emp_temp$country_name), 
+                                choices = unique(gender_wage_premium$country_name), 
                                 selected = NULL, 
                                 multiple = FALSE)
                 )
@@ -1495,6 +1502,7 @@ server <- function(input, output, session) {
   
   
   #Gender Workforce 
+  
   output$employment_plot <- renderPlotly({
     # Filter data based on selected countries
     filtered_data <- gender_workforce %>%
@@ -1596,6 +1604,7 @@ server <- function(input, output, session) {
   })
   
   #Tertiary Education
+  
   # Render the Plotly bar graph
   output$barPlot <- renderPlotly({
     
@@ -1635,6 +1644,7 @@ server <- function(input, output, session) {
   })
   
   #Public sector wage Premium
+  
   # Render the Plotly dot plot
   output$dotPlot <- renderPlotly({
     # Ensure countries are selected
@@ -1819,13 +1829,13 @@ server <- function(input, output, session) {
  
  # First Graph (Multiple Countries)
  output$firstGraphgender <- renderPlotly({
-   data_to_plot <- gender_wage_premium %>%
+   data_to_plot <- gender_wage_premium_last %>%
      filter(country_name %in% input$countries_first)
    
    data_to_plot_long <- data_to_plot %>%
      select(country_name, indicator_label, year, value) %>%
-     mutate(indicator_label = factor(indicator_label)) %>%
-     
+     mutate(indicator_label = factor(indicator_label)) # Fixed: Added missing parenthesis
+   
    plot <- plot_ly(data = data_to_plot_long, 
                    x = ~country_name, 
                    y = ~value, 
@@ -1833,13 +1843,133 @@ server <- function(input, output, session) {
                    type = 'scatter',
                    mode = 'markers',  
                    marker = list(size = 8)) %>%
-     layout(title = "Public sector wage premium, by gender",
+     layout(title = "Public sector wage premium, by gender (last year available)",
             xaxis = list(title = "Country", tickangle = 45),
             yaxis = list(title = "Value"),
             legend = list(title = list(text = "Indicator")))
    
    plot
  })
+ # Second Graph (Single Country) by time
+ 
+ output$secondGraphgender <- renderPlotly({
+   data_to_plot <- gender_wage_premium %>%
+     filter(country_name == input$country_second)  # Single country selection
+   
+   data_to_plot_long <- data_to_plot %>%
+     select(year, indicator_label, value) %>%
+     mutate(indicator_name = factor(indicator_label)) %>%
+   plot <- plot_ly(
+     data = data_to_plot_long, 
+     x = ~year, 
+     y = ~value, 
+     color = ~indicator_label,  # Color each indicator differently
+     text = ~paste("Value:", round(value, 2)),  # Tooltip with value
+     type = 'scatter', 
+     mode = 'lines+markers',  # Add lines and markers
+     marker = list(size = 8)  # Set marker size
+   ) %>%
+     layout(
+       title = paste("Public sector wage premium, by gender", input$country_second, "Over Time"),
+       xaxis = list(title = "Year", tickangle = 45, dtick = 2),
+       yaxis = list(title = "Wage Premium Value"),
+       legend = list(title = list(text = "Indicator"))
+     ) %>%
+     add_annotations(
+       x = ~year, 
+       y = ~value,  # Add offset to place annotation above the point
+       text = ~round(value, 2),  # Display value as annotation
+       showarrow = FALSE,  # Remove arrows
+       font = list(size = 12, color = "black"),
+       xanchor = "center",  # Center annotation horizontally
+       yanchor = "bottom"   # Position annotation above the point
+     )
+   
+   plot
+ })
+ output$downloadGraphsWord <- downloadHandler(
+   filename = function() {
+     paste0("Selected_Graphs_", Sys.Date(), ".docx")
+   },
+   content = function(file) {
+     # Create a new Word document
+     doc <- read_docx()
+     
+     # Add graphs based on user selection
+     if ("wageBillGraph" %in% input$selected_graphs_all) {
+       # Render the Wage Bill Graph
+       wage_bill_graph <- ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
+         geom_line(size = 1.2) +
+         geom_point(size = 3) +
+         labs(
+           title = ifelse(input$indicator == "Wage bill as a percentage of GDP",
+                          "Wage Bill as % of GDP Over Time",
+                          "Wage Bill as % of Public Expenditure Over Time"),
+           x = "Year",
+           y = ifelse(input$indicator == "Wage bill as a percentage of GDP", 
+                      "Wage Bill (% of GDP)", "Wage Bill (%)")
+         ) +
+         theme_minimal()
+       
+       # Add Wage Bill Graph to the document
+       doc <- doc %>%
+         body_add_par("Wage Bill Graph", style = "heading 1") %>%
+         body_add_gg(value = wage_bill_graph, width = 6, height = 4)
+     }
+     
+     if ("firstGraph" %in% input$selected_graphs_all) {
+       # Render the First Public Sector Graph
+       data_to_plot <- public_sector_emp_temp_last %>%
+         filter(country_name %in% input$countries_first)
+       
+       data_to_plot_long <- data_to_plot %>%
+         select(country_name, indicator_name, year, value) %>%
+         mutate(indicator_name = factor(indicator_name))
+       
+       first_graph <- ggplot(data_to_plot_long, aes(x = country_name, y = value, color = indicator_name)) +
+         geom_point(size = 3) +
+         labs(
+           title = "Public Sector Employment (Multi-Country)",
+           x = "Country",
+           y = "Value"
+         ) +
+         theme_minimal()
+       
+       # Add First Public Sector Graph to the document
+       doc <- doc %>%
+         body_add_par("First Graph: Public Sector Employment (Multi-Country)", style = "heading 1") %>%
+         body_add_gg(value = first_graph, width = 6, height = 4)
+     }
+     
+     if ("secondGraph" %in% input$selected_graphs_all) {
+       # Render the Second Public Sector Graph
+       data_to_plot <- public_sector_emp_temp %>%
+         filter(country_name == input$country_second)
+       
+       data_to_plot_long <- data_to_plot %>%
+         select(year, indicator_name, value) %>%
+         mutate(indicator_name = factor(indicator_name))
+       
+       second_graph <- ggplot(data_to_plot_long, aes(x = year, y = value, color = indicator_name)) +
+         geom_line(size = 1) +
+         geom_point(size = 3) +
+         labs(
+           title = paste("Wage Premium in", input$country_second, "Over Time"),
+           x = "Year",
+           y = "Wage premium Value"
+         ) +
+         theme_minimal()
+       
+       # Add Second Public Sector Graph to the document
+       doc <- doc %>%
+         body_add_par("Second Graph: Wage Premium over time (Single Country)", style = "heading 1") %>%
+         body_add_gg(value = second_graph, width = 6, height = 4)
+     }
+     
+     # Save the document
+     print(doc, target = file)
+   }
+ )
  
   # Define the initial world map render
   output$worldMap <- renderLeaflet({
