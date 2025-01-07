@@ -879,7 +879,7 @@ ui <- dashboardPage(
               ),
               fluidRow(
                 box(title = "Second Graph", status = "primary", solidHeader = TRUE, width = 12,
-                    plotlyOutput("secondGraph")
+                    plotlyOutput("secondGraphgender")
                 )
               ),
               # Add graph selection and download functionality
@@ -1850,15 +1850,15 @@ server <- function(input, output, session) {
    
    plot
  })
- # Second Graph (Single Country) by time
- 
+ # Second Graph (Single Country) by Time
  output$secondGraphgender <- renderPlotly({
    data_to_plot <- gender_wage_premium %>%
      filter(country_name == input$country_second)  # Single country selection
    
    data_to_plot_long <- data_to_plot %>%
      select(year, indicator_label, value) %>%
-     mutate(indicator_name = factor(indicator_label)) %>%
+     mutate(indicator_label = factor(indicator_label))  # Fixed: Ensure indicator_label is a factor
+   
    plot <- plot_ly(
      data = data_to_plot_long, 
      x = ~year, 
@@ -1870,15 +1870,18 @@ server <- function(input, output, session) {
      marker = list(size = 8)  # Set marker size
    ) %>%
      layout(
-       title = paste("Public sector wage premium, by gender", input$country_second, "Over Time"),
+       title = paste("Public sector wage premium, by gender in", input$country_second, "over time"),
        xaxis = list(title = "Year", tickangle = 45, dtick = 2),
        yaxis = list(title = "Wage Premium Value"),
        legend = list(title = list(text = "Indicator"))
-     ) %>%
+     )
+   
+   # Add annotations
+   plot <- plot %>%
      add_annotations(
-       x = ~year, 
-       y = ~value,  # Add offset to place annotation above the point
-       text = ~round(value, 2),  # Display value as annotation
+       x = data_to_plot_long$year, 
+       y = data_to_plot_long$value,  # Add offset to place annotation above the point
+       text = round(data_to_plot_long$value, 2),  # Display value as annotation
        showarrow = FALSE,  # Remove arrows
        font = list(size = 12, color = "black"),
        xanchor = "center",  # Center annotation horizontally
