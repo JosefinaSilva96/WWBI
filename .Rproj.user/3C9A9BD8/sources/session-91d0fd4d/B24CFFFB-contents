@@ -848,30 +848,56 @@ ui <- dashboardPage(
       #Wage Premium Gender Graphs Tab
       tabItem(tabName = "wagepremiumGraphs",
               fluidRow(
-                box(title = "WWB Indicator Selection", status = "primary", solidHeader = TRUE, width = 4,
-                    selectInput("indicator", "Select a WWB Indicator", 
-                                choices = c("Wage bill (as % of public expenditure) over time", 
-                                            "Wage bill as a percentage of GDP"))
-                ),
-                box(title = "Country and Graph Selection", status = "primary", solidHeader = TRUE, width = 8,
-                    selectInput("countries", "Countries", 
-                                choices = unique(wage_bill_gdp$country_name), 
-                                selected = unique(wage_bill_gdp$country_name)[1], 
-                                multiple = TRUE), 
-                    
-                    # Checkbox group for graph selection
-                    checkboxGroupInput("graphs_to_download", "Select Graphs to Download", 
-                                       choices = list("Wage Bill (as % of public expenditure)" = "PublicExpenditure",
-                                                      "Wage Bill (as % of GDP)" = "GDP"),
-                                       selected = c("PublicExpenditure", "GDP")),
-                    
-                    # Download button
-                    downloadButton("downloadWord", "Download Word Document")
+                box(title = "First Graph - Multi-Country Selection", status = "primary", solidHeader = TRUE, width = 12,
+                    selectInput("countries_first", 
+                                "Select Countries for First Graph", 
+                                choices = unique(gender_wage_premium$country_name), 
+                                selected = NULL, 
+                                multiple = TRUE)
                 )
               ),
               fluidRow(
-                box(title = "Graph", status = "primary", solidHeader = TRUE, width = 12,
-                    plotlyOutput("plot")
+                box(title = "First Graph", status = "primary", solidHeader = TRUE, width = 12,
+                    plotlyOutput("firstGraphgender")
+                )
+              ),
+              fluidRow(
+                box(title = "Second Graph - Single Country Selection", status = "primary", solidHeader = TRUE, width = 12,
+                    selectInput("country_second", 
+                                "Select Country for Second Graph", 
+                                choices = unique(public_sector_emp_temp$country_name), 
+                                selected = NULL, 
+                                multiple = FALSE)
+                )
+              ),
+              fluidRow(
+                box(title = "Second Graph", status = "primary", solidHeader = TRUE, width = 12,
+                    plotlyOutput("secondGraph")
+                )
+              ),
+              # Add graph selection and download functionality
+              fluidRow(
+                box(
+                  title = "Download Graphs",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  width = 12,
+                  column(
+                    width = 6,
+                    checkboxGroupInput(
+                      "selected_graphs_public", 
+                      "Select Graphs to Download:", 
+                      choices = c(
+                        "Multi-Country Graph" = "firstGraph",
+                        "Single-Country Graph" = "secondGraph"
+                      ),
+                      selected = c("firstGraph", "secondGraph") # Default: all selected
+                    )
+                  ),
+                  column(
+                    width = 6,
+                    downloadButton("downloadGraphsWord", "Download Graphs as Word File", class = "btn-primary btn-block")
+                  )
                 )
               )
       ),
@@ -1789,6 +1815,32 @@ server <- function(input, output, session) {
     print(doc, target = file)
   }
 )
+ #Public Sector Wage Premium by gender 
+ 
+ # First Graph (Multiple Countries)
+ output$firstGraphgender <- renderPlotly({
+   data_to_plot <- gender_wage_premium %>%
+     filter(country_name %in% input$countries_first)
+   
+   data_to_plot_long <- data_to_plot %>%
+     select(country_name, indicator_label, year, value) %>%
+     mutate(indicator_label = factor(indicator_label)) %>%
+     
+   plot <- plot_ly(data = data_to_plot_long, 
+                   x = ~country_name, 
+                   y = ~value, 
+                   color = ~indicator_label, 
+                   type = 'scatter',
+                   mode = 'markers',  
+                   marker = list(size = 8)) %>%
+     layout(title = "Public sector wage premium, by gender",
+            xaxis = list(title = "Country", tickangle = 45),
+            yaxis = list(title = "Value"),
+            legend = list(title = list(text = "Indicator")))
+   
+   plot
+ })
+ 
   # Define the initial world map render
   output$worldMap <- renderLeaflet({
     leaflet(world_spdf) %>%
