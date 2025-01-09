@@ -2080,7 +2080,7 @@ shinyApp(ui = ui, server = server)
 # Test ----
 
 #Define UI
-
+# Define UI
 ui <- fluidPage(
   titlePanel("Dot Plot: Wage Bill vs. GDP per Capita (Log Scale)"),
   
@@ -2102,10 +2102,12 @@ ui <- fluidPage(
   )
 )
 
-#Define server ----
-
+# Define server
+# Define server
 server <- function(input, output, session) {
-  output$dot_plot <- renderPlotly({
+  
+  # Reactive plot generation based on user input
+  plot_data <- reactive({
     # Filter and prepare data
     filtered_data <- merged_data %>%
       filter(country_name %in% input$selected_countries)
@@ -2143,67 +2145,68 @@ server <- function(input, output, session) {
         showlegend = FALSE
       )
     
-    # Save the plot to a temporary file using kaleido
-    temp_file <- tempfile(fileext = ".png")
-    plotly::save_image(plot, file = temp_file, width = 800, height = 600)
-    assign("plot_path", temp_file, envir = .GlobalEnv)
-    
     return(plot)
   })
+  
+  # Render the plot for the UI
+  output$dot_plot <- renderPlotly({
+    plot_data()
+  })
+  
   # Download Quarto Report
   output$downloadReport <- downloadHandler(
     filename = function() {
       paste("public_sector_report_", Sys.Date(), ".docx", sep = "")
     },
     content = function(file) {
-      # Save the graph as an HTML widget
+      # Save the plot to an HTML widget first
       tmp_file_html <- tempfile(fileext = ".html")
-      htmlwidgets::saveWidget(output$dot_plot(), tmp_file_html)
+      htmlwidgets::saveWidget(plot_data(), tmp_file_html)
       
       # Save the HTML widget as a PNG file
       tmp_file_png <- tempfile(fileext = ".png")
-      webshot::webshot(tmp_file_html, file = tmp_file_png, vwidth = 800, vheight = 600)
+      webshot2::webshot(tmp_file_html, file = tmp_file_png, vwidth = 800, vheight = 600)
       
-      # Write a Quarto document
+      # Write a Quarto document (do not specify output file path here)
       quarto_content <- '
-      ---
-      title: "Public Sector Employment and Compensation"
-      format: docx
-      ---
+    ---
+    title: "Public Sector Employment and Compensation"
+    format: docx
+    ---
+    
+    # Introduction
+    
+    This note presents evidence on public sector employment and compensation practices in Bangladesh using the Worldwide Bureaucracy Indicators (WWBI). The primary data source is the Labor Force Survey (LFS), conducted by the Bangladesh Bureau of Statistics (BBS), which offers extensive, nationally representative data over multiple years up to 2022. The LFS’s comprehensive coverage of employment and wage issues across both public and private sectors, along with its frequency and national representativeness, makes it an ideal source for this analysis.
+    
+    For international comparisons, the analysis includes a set of peer countries for benchmarking, with a particular focus on countries from the South Asia region and other aspirational peers. Information on these peers was also sourced from the WWBI.
+    
+    The public sector is typically a major source of employment in most countries. The provision of basic services such as education, health, citizen security and justice, among others, makes it a central actor in labor markets, with significant impacts on the aggregate results of employment, wages, informality, and other economic variables. Moreover, public employment is an indicator of the state participation in the entire economy, which has implications for macroeconomic balances, allocation efficiency, and income distribution. Thus, this analysis comprehensively documents the size of public employment, its changes over time, and the characteristics of its workforce.
+    
+    # Graph: Wage Bill vs. Log(GDP per Capita)
+    
+    ![Dot Plot](dot_plot.png)
+    '
       
-      # Introduction
-      
-      This note presents evidence on public sector employment and compensation practices in Bangladesh using the Worldwide Bureaucracy Indicators (WWBI). The primary data source is the Labor Force Survey (LFS), conducted by the Bangladesh Bureau of Statistics (BBS), which offers extensive, nationally representative data over multiple years up to 2022. The LFS’s comprehensive coverage of employment and wage issues across both public and private sectors, along with its frequency and national representativeness, makes it an ideal source for this analysis.
-      
-      For international comparisons, the analysis includes a set of peer countries for benchmarking, with a particular focus on countries from the South Asia region and other aspirational peers. Information on these peers was also sourced from the WWBI.
-      
-      The public sector is typically a major source of employment in most countries. The provision of basic services such as education, health, citizen security and justice, among others, makes it a central actor in labor markets, with significant impacts on the aggregate results of employment, wages, informality, and other economic variables. Moreover, public employment is an indicator of the state participation in the entire economy, which has implications for macroeconomic balances, allocation efficiency, and income distribution. Thus, this analysis comprehensively documents the size of public employment, its changes over time, and the characteristics of its workforce.
-      
-      # Graph: Wage Bill vs. Log(GDP per Capita)
-      
-      ![Dot Plot](dot_plot.png)
-      '
-      
-      # Copy the PNG graph into the same directory
+      # Save the Quarto file in a temporary directory
       tmp_dir <- tempdir()
-      graph_path <- file.path(tmp_dir, "dot_plot.png")
-      file.copy(tmp_file_png, graph_path, overwrite = TRUE)
-      
-      # Write the Quarto file
       quarto_file <- file.path(tmp_dir, "report.qmd")
       writeLines(quarto_content, quarto_file)
       
       # Render the Quarto file into a Word document
-      quarto::quarto_render(input = quarto_file, output_file = file)
+      quarto::quarto_render(input = quarto_file)
+      
+      # The rendered file will be in the same directory with a default name
+      rendered_file <- file.path(tmp_dir, "report.docx")
+      
+      # Move the rendered document to the destination specified by the user
+      file.copy(rendered_file, file, overwrite = TRUE)
     }
   )
 }
-
-shinyApp(ui, server)
-
-# Run App ----
-
+# Run the application
 shinyApp(ui = ui, server = server)
+
+
 
 
 
