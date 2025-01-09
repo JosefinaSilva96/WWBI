@@ -969,126 +969,128 @@ fluidRow(
 
 server <- function(input, output, session) {
   
-    # Reactive expression to select the appropriate dataset based on the indicator
-    selected_data <- reactive({
-      req(input$countries)  # Ensure 'countries' input is available
-      
-      # Check which indicator was selected and filter corresponding data
-      if (input$indicator == "Wage bill as a percentage of GDP") {
-        data <- wage_bill_gdp %>% filter(country_name %in% input$countries)
-      } else {
-        data <- wage_bill_publicexp %>% filter(country_name %in% input$countries)
-      }
-      return(data)
-    })
+  # Reactive expression to select the appropriate dataset based on the indicator
+  selected_data <- reactive({
+    req(input$countries)  # Ensure 'countries' input is available
     
-    # Render Plotly plot for the main indicator
-    output$plot <- renderPlotly({
-      data_to_plot <- selected_data()
-      
-      # Get the maximum year in the filtered data
-      max_year <- max(data_to_plot$year, na.rm = TRUE)
-      
-      # Extract data for the last year
-      last_year_data <- data_to_plot %>%
-        filter(year == max_year) %>%
-        select(country_name, year, value)
-      
-      # Define plot titles and plot mode based on selected indicator
-      title_text <- ifelse(input$indicator == "Wage bill as a percentage of GDP",
-                           "Wage Bill as % of GDP Over Time",
-                           "Wage Bill as % of Public Expenditure Over Time")
-      plot_mode <- 'lines+markers'  # Common plot mode for both indicators
-      
-      # Create the Plotly plot
-      plot <- plot_ly(data = data_to_plot, 
-                      x = ~year, 
-                      y = ~value, 
-                      color = ~country_name, 
-                      type = 'scatter', 
-                      mode = plot_mode,
-                      marker = list(size = 8)) %>%
-        layout(title = title_text,
-               xaxis = list(title = "Year", dtick = 2),
-               yaxis = list(title = ifelse(input$indicator == "Wage bill as a percentage of GDP", 
-                                           "Wage Bill (% of GDP)", "Wage Bill (%)")),
-               legend = list(title = list(text = "Country")))
-      
-      # Add annotations for the last year values
-      for (i in 1:nrow(last_year_data)) {
-        plot <- plot %>%
-          add_annotations(
-            x = last_year_data$year[i], 
-            y = last_year_data$value[i],
-            text = paste(round(last_year_data$value[i], 2)),
-            showarrow = FALSE,
-            font = list(size = 12, color = "black"),
-            bgcolor = "white",
-            xanchor = "center",
-            yanchor = "bottom"
-          )
-      }
-      
-      plot  # Return the final plot
-    })
+    # Check which indicator was selected and filter corresponding data
+    if (input$indicator == "Wage bill as a percentage of GDP") {
+      data <- wage_bill_gdp %>% filter(country_name %in% input$countries)
+    } else {
+      data <- wage_bill_publicexp %>% filter(country_name %in% input$countries)
+    }
+    return(data)
+  })
+  
+  # Render Plotly plot for the main indicator
+  output$plot <- renderPlotly({
+    data_to_plot <- selected_data()
     
-    # Reactive expression to select the appropriate data set based on the indicator
-    selected_data <- reactive({
-      req(input$countries)  # Ensure 'countries' input is available
-      
-      if (input$indicator == "Wage bill as a percentage of GDP") {
-        data <- wage_bill_gdp %>% filter(country_name %in% input$countries)
-      } else {
-        data <- wage_bill_publicexp %>% filter(country_name %in% input$countries)
-      }
-      return(data)
-    })
+    # Get the maximum year in the filtered data
+    max_year <- max(data_to_plot$year, na.rm = TRUE)
     
-    # Create the download handler
-    output$downloadWord <- downloadHandler(
-      filename = function() {
-        paste0("Wage_Bill_Analysis_", Sys.Date(), ".docx")
-      },
-      content = function(file) {
-        doc <- read_docx()  # Start a new Word document
+    # Extract data for the last year
+    last_year_data <- data_to_plot %>%
+      filter(year == max_year) %>%
+      select(country_name, year, value)
+    
+    # Define plot titles and plot mode based on selected indicator
+    title_text <- ifelse(input$indicator == "Wage bill as a percentage of GDP",
+                         "Wage Bill as % of GDP Over Time",
+                         "Wage Bill as % of Public Expenditure Over Time")
+    plot_mode <- 'lines+markers'  # Common plot mode for both indicators
+    
+    # Create the Plotly plot
+    plot <- plot_ly(data = data_to_plot, 
+                    x = ~year, 
+                    y = ~value, 
+                    color = ~country_name, 
+                    type = 'scatter', 
+                    mode = plot_mode,
+                    marker = list(size = 8)) %>%
+      layout(title = title_text,
+             xaxis = list(title = "Year", dtick = 2),
+             yaxis = list(title = ifelse(input$indicator == "Wage bill as a percentage of GDP", 
+                                         "Wage Bill (% of GDP)", "Wage Bill (%)")),
+             legend = list(title = list(text = "Country")))
+    
+    # Add annotations for the last year values
+    for (i in 1:nrow(last_year_data)) {
+      plot <- plot %>%
+        add_annotations(
+          x = last_year_data$year[i], 
+          y = last_year_data$value[i],
+          text = paste(round(last_year_data$value[i], 2)),
+          showarrow = FALSE,
+          font = list(size = 12, color = "black"),
+          bgcolor = "white",
+          xanchor = "center",
+          yanchor = "bottom"
+        )
+    }
+    
+    plot  # Return the final plot
+  })
+  
+  # Create the download handler for Word document with graphs
+  output$downloadWord <- downloadHandler(
+    filename = function() {
+      paste0("Wage_Bill_Analysis_", Sys.Date(), ".docx")
+    },
+    content = function(file) {
+      doc <- read_docx()  # Start a new Word document
+      
+      # Add a title to the Word document
+      doc <- doc %>% 
+        body_add_par("Wage Bill Analysis", style = "heading 1") %>%
+        body_add_par("This document contains an analysis of the wage bill as a percentage of GDP and public expenditure.")
+      
+      # Check which graphs the user selected to download
+      if ("GDP" %in% input$graphs_to_download) {
+        # Graph 1: Wage bill as % of GDP Over Time
+        graph1 <- ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
+          geom_line(size = 1.2) +
+          geom_point(size = 3) +
+          labs(
+            title = "Wage Bill as % of GDP Over Time",
+            x = "Year",
+            y = "Wage Bill (% of GDP)"
+          ) +
+          theme_minimal()
         
-        # Check which graphs the user selected to download
-        if ("GDP" %in% input$graphs_to_download) {
-          # Graph 1: Wage bill as % of GDP Over Time
-          graph1 <- ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
-            geom_line(size = 1.2) +
-            geom_point(size = 3) +
-            labs(
-              title = "Wage Bill as % of GDP Over Time",
-              x = "Year",
-              y = "Wage Bill (% of GDP)"
-            ) +
-            theme_minimal()
-          
-          # Add Graph 1 to Word document
-          doc <- body_add_gg(doc, value = graph1, style = "centered")
-        }
+        # Add Graph 1 to Word document
+        doc <- body_add_gg(doc, value = graph1, style = "centered")
         
-        if ("PublicExpenditure" %in% input$graphs_to_download) {
-          # Graph 2: Wage bill as % of Public Expenditure Over Time
-          graph2 <- ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
-            geom_line(size = 1.2) +
-            geom_point(size = 3) +
-            labs(
-              title = "Wage Bill as % of Public Expenditure Over Time",
-              x = "Year",
-              y = "Wage Bill (% of Public Expenditure)"
-            ) +
-            theme_minimal()
-          
-          # Add Graph 2 to Word document
-          doc <- body_add_gg(doc, value = graph2, style = "centered")
-        }
-        
-        # Save the Word document
-        print(doc, target = file)
+        # Add some text explanation
+        doc <- doc %>%
+          body_add_par("This graph shows the wage bill as a percentage of GDP over time for the selected countries.", style = "Normal")
       }
-    )
+      
+      if ("PublicExpenditure" %in% input$graphs_to_download) {
+        # Graph 2: Wage bill as % of Public Expenditure Over Time
+        graph2 <- ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
+          geom_line(size = 1.2) +
+          geom_point(size = 3) +
+          labs(
+            title = "Wage Bill as % of Public Expenditure Over Time",
+            x = "Year",
+            y = "Wage Bill (% of Public Expenditure)"
+          ) +
+          theme_minimal()
+        
+        # Add Graph 2 to Word document
+        doc <- body_add_gg(doc, value = graph2, style = "centered")
+        
+        # Add some text explanation
+        doc <- doc %>%
+          body_add_par("This graph shows the wage bill as a percentage of public expenditure over time for the selected countries.", style = "Normal")
+      }
+      
+      # Save the Word document
+      print(doc, target = file)
+    }
+  )
+
 
   # Render the dot plot
   output$dot_plot <- renderPlotly({
@@ -2103,11 +2105,10 @@ ui <- fluidPage(
 )
 
 # Define server
-# Define server
+
 server <- function(input, output, session) {
   
-  # Reactive plot generation based on user input
-  plot_data <- reactive({
+  output$dot_plot <- renderPlotly({
     # Filter and prepare data
     filtered_data <- merged_data %>%
       filter(country_name %in% input$selected_countries)
@@ -2145,12 +2146,16 @@ server <- function(input, output, session) {
         showlegend = FALSE
       )
     
+    # Save the plot to a PNG file using kaleido
+    tmp_file <- tempfile(fileext = ".png")
+    tmp_file <- gsub("\\\\", "/", tmp_file)  # Replace backslashes with forward slashes
+    
+    # Save the plot as an image
+    plotly::save_image(plot, file = tmp_file, width = 800, height = 600)
+    
+    assign("plot_path", tmp_file, envir = .GlobalEnv)
+    
     return(plot)
-  })
-  
-  # Render the plot for the UI
-  output$dot_plot <- renderPlotly({
-    plot_data()
   })
   
   # Download Quarto Report
@@ -2159,47 +2164,45 @@ server <- function(input, output, session) {
       paste("public_sector_report_", Sys.Date(), ".docx", sep = "")
     },
     content = function(file) {
-      # Save the plot to an HTML widget first
+      # Save the graph as an HTML widget
       tmp_file_html <- tempfile(fileext = ".html")
-      htmlwidgets::saveWidget(plot_data(), tmp_file_html)
+      htmlwidgets::saveWidget(output$dot_plot(), tmp_file_html)
       
       # Save the HTML widget as a PNG file
       tmp_file_png <- tempfile(fileext = ".png")
       webshot2::webshot(tmp_file_html, file = tmp_file_png, vwidth = 800, vheight = 600)
       
-      # Write a Quarto document (do not specify output file path here)
+      # Write a Quarto document
       quarto_content <- '
-    ---
-    title: "Public Sector Employment and Compensation"
-    format: docx
-    ---
-    
-    # Introduction
-    
-    This note presents evidence on public sector employment and compensation practices in Bangladesh using the Worldwide Bureaucracy Indicators (WWBI). The primary data source is the Labor Force Survey (LFS), conducted by the Bangladesh Bureau of Statistics (BBS), which offers extensive, nationally representative data over multiple years up to 2022. The LFS’s comprehensive coverage of employment and wage issues across both public and private sectors, along with its frequency and national representativeness, makes it an ideal source for this analysis.
-    
-    For international comparisons, the analysis includes a set of peer countries for benchmarking, with a particular focus on countries from the South Asia region and other aspirational peers. Information on these peers was also sourced from the WWBI.
-    
-    The public sector is typically a major source of employment in most countries. The provision of basic services such as education, health, citizen security and justice, among others, makes it a central actor in labor markets, with significant impacts on the aggregate results of employment, wages, informality, and other economic variables. Moreover, public employment is an indicator of the state participation in the entire economy, which has implications for macroeconomic balances, allocation efficiency, and income distribution. Thus, this analysis comprehensively documents the size of public employment, its changes over time, and the characteristics of its workforce.
-    
-    # Graph: Wage Bill vs. Log(GDP per Capita)
-    
-    ![Dot Plot](dot_plot.png)
-    '
+      ---
+      title: "Public Sector Employment and Compensation"
+      format: docx
+      ---
       
-      # Save the Quarto file in a temporary directory
+      # Introduction
+      
+      This note presents evidence on public sector employment and compensation practices in Bangladesh using the Worldwide Bureaucracy Indicators (WWBI). The primary data source is the Labor Force Survey (LFS), conducted by the Bangladesh Bureau of Statistics (BBS), which offers extensive, nationally representative data over multiple years up to 2022. The LFS’s comprehensive coverage of employment and wage issues across both public and private sectors, along with its frequency and national representativeness, makes it an ideal source for this analysis.
+      
+      For international comparisons, the analysis includes a set of peer countries for benchmarking, with a particular focus on countries from the South Asia region and other aspirational peers. Information on these peers was also sourced from the WWBI.
+      
+      The public sector is typically a major source of employment in most countries. The provision of basic services such as education, health, citizen security and justice, among others, makes it a central actor in labor markets, with significant impacts on the aggregate results of employment, wages, informality, and other economic variables. Moreover, public employment is an indicator of the state participation in the entire economy, which has implications for macroeconomic balances, allocation efficiency, and income distribution. Thus, this analysis comprehensively documents the size of public employment, its changes over time, and the characteristics of its workforce.
+      
+      # Graph: Wage Bill vs. Log(GDP per Capita)
+      
+      ![Dot Plot](dot_plot.png)
+      '
+      
+      # Copy the PNG graph into the same directory
       tmp_dir <- tempdir()
+      graph_path <- file.path(tmp_dir, "dot_plot.png")
+      file.copy(tmp_file_png, graph_path, overwrite = TRUE)
+      
+      # Write the Quarto file
       quarto_file <- file.path(tmp_dir, "report.qmd")
       writeLines(quarto_content, quarto_file)
       
       # Render the Quarto file into a Word document
-      quarto::quarto_render(input = quarto_file)
-      
-      # The rendered file will be in the same directory with a default name
-      rendered_file <- file.path(tmp_dir, "report.docx")
-      
-      # Move the rendered document to the destination specified by the user
-      file.copy(rendered_file, file, overwrite = TRUE)
+      quarto::quarto_render(input = quarto_file, output_file = file)
     }
   )
 }
@@ -2455,6 +2458,4 @@ server <- function(input, output) {
 }
 
 shinyApp(ui = ui, server = server)
-
-
 
