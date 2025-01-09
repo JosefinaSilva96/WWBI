@@ -494,6 +494,7 @@ gender_wage_premium_last <- gender_wage_premium %>%
 
 
 
+
 ## Shiny Dashboard ----
 
 
@@ -552,52 +553,106 @@ ui <- dashboardPage(
               )
       ),
       # Wage Bill Graphs Tab
-      tabItem(tabName = "wageBillGraphs",
-              fluidRow(
-                box(title = "WWB Indicator Selection", status = "primary", solidHeader = TRUE, width = 4,
-                    selectInput("indicator", "Select a WWB Indicator", 
-                                choices = c("Wage bill (as % of public expenditure) over time", 
-                                            "Wage bill as a percentage of GDP"))
-                ),
-                box(title = "Country and Graph Selection", status = "primary", solidHeader = TRUE, width = 8,
-                    selectInput("countries", "Countries", 
-                                choices = unique(wage_bill_gdp$country_name), 
-                                selected = unique(wage_bill_gdp$country_name)[1], 
-                                multiple = TRUE), 
-                    
-                    # Checkbox group for graph selection
-                    checkboxGroupInput("graphs_to_download", "Select Graphs to Download", 
-                                       choices = list("Wage Bill (as % of public expenditure)" = "PublicExpenditure",
-                                                      "Wage Bill (as % of GDP)" = "GDP"),
-                                       selected = c("PublicExpenditure", "GDP")),
-                    
-                    # Download button
-                    downloadButton("downloadWord", "Download Word Document")
-                )
-              ),
-              fluidRow(
-                box(title = "Graph", status = "primary", solidHeader = TRUE, width = 12,
-                    plotlyOutput("plot")
-                )
+      tabItem(
+        tabName = "wageBillGraphs",
+        fluidRow(
+          box(
+            title = "WWB Indicator Selection",
+            status = "primary",
+            solidHeader = TRUE,
+            width = 4,
+            selectInput(
+              "indicator",
+              "Select a WWB Indicator",
+              choices = c(
+                "Wage bill (as % of public expenditure) over time",
+                "Wage bill as a percentage of GDP"
               )
+            )
+          ),
+          box(
+            title = "Country and Graph Selection",
+            status = "primary",
+            solidHeader = TRUE,
+            width = 8,
+            selectInput(
+              "countries",
+              "Countries",
+              choices = unique(wage_bill_gdp$country_name),
+              selected = unique(wage_bill_gdp$country_name)[1],
+              multiple = TRUE
+            ),
+            # Checkbox group for graph selection
+            checkboxGroupInput(
+              "graphs_to_download",
+              "Select Graphs to Download",
+              choices = list(
+                "Wage Bill (as % of public expenditure)" = "PublicExpenditure",
+                "Wage Bill (as % of GDP)" = "GDP"
+              ),
+              selected = c("PublicExpenditure", "GDP")
+            ),
+            # Download button
+            downloadButton("downloadWord", "Download Word Document")
+          )
+        ),
+        fluidRow(
+          box(
+            title = "Graph",
+            status = "primary",
+            solidHeader = TRUE,
+            width = 12,
+            plotlyOutput("plot")
+          )
+        )
       ),
+      
       # Wage Bill Graphs GDP Tab
-      tabItem(tabName = "wageBillgdpGraphs",
-              fluidRow(
-                box(title = "Dot Plot: Wage Bill vs. GDP per Capita (Log Scale)", status = "primary", solidHeader = TRUE, width = 4,
-                    selectInput("countries_first", 
-                                "Select Countries", 
-                                choices = unique(merged_data$country_name), 
-                                selected = NULL, 
-                                multiple = TRUE)
-                )
-              ),
-              fluidRow(
-                box(title = "Graph", status = "primary", solidHeader = TRUE, width = 12,
-                    plotlyOutput("dot_plot")
-                )
-              )
-      ), 
+      tabItem(
+        tabName = "wageBillgdpGraphs",
+        
+        # Header row with description
+        fluidRow(
+          box(
+            title = "Dot Plot: Wage Bill vs. GDP per Capita (Log Scale)", 
+            status = "primary", 
+            solidHeader = TRUE, 
+            width = 12,
+            p("This visualization explores the relationship between wage bill (as an indicator) and GDP per capita (log scale). 
+         You can select specific countries to highlight and observe their trends.")
+          )
+        ),
+        
+        # Row for country selection
+        fluidRow(
+          box(
+            title = "Select Countries to Highlight", 
+            status = "primary", 
+            solidHeader = TRUE, 
+            width = 4,
+            selectInput(
+              "countries_first", 
+              label = "Select Countries:", 
+              choices = unique(merged_data$country_name), 
+              selected = NULL, 
+              multiple = TRUE,
+              width = "100%"
+            )
+          )
+        ),
+        
+        # Row for displaying the plot
+        fluidRow(
+          box(
+            title = "Dot Plot Visualization", 
+            status = "primary", 
+            solidHeader = TRUE, 
+            width = 12,
+            plotlyOutput("dot_plot", height = "500px")
+          )
+        )
+      ),
+      
       # Public Sector Graphs Tab
       tabItem(tabName = "publicSectorGraphs",
               fluidRow(
@@ -1033,17 +1088,47 @@ server <- function(input, output, session) {
   })
   
   # Create the download handler for Word document with graphs
+  
   output$downloadWord <- downloadHandler(
     filename = function() {
       paste0("Wage_Bill_Analysis_", Sys.Date(), ".docx")
     },
     content = function(file) {
+      # Debugging: Ensure the input is being passed correctly
+      print(input$countries) 
+      
+      # Extract the first selected country
+      if (!is.null(input$countries) && length(input$countries) > 0) {
+        countries <- input$countries[1]  # Take the first country
+      } else {
+        countries <- "Unknown Country"  # Fallback in case no country is selected
+      }
+      
+      # Dynamic title with the first country
+      report_title <- paste("Wage Bill Analysis Report -", countries)
+      
       doc <- read_docx()  # Start a new Word document
       
-      # Add a title to the Word document
-      doc <- doc %>% 
-        body_add_par("Wage Bill Analysis", style = "heading 1") %>%
-        body_add_par("This document contains an analysis of the wage bill as a percentage of GDP and public expenditure.")
+      # Define the style for the title with a specific color and bold
+      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)  # Custom color and bold text
+      
+      # Apply the custom title style with color and bold
+      doc <- doc %>%
+        body_add_fpar(
+          fpar(ftext(report_title, prop = title_style))  # Apply custom title style with dynamic title
+        )
+      
+      # Add the introduction heading without numbering
+      doc <- doc %>%
+        body_add_par("Introduction", style = "heading 2") %>%  # Use heading style without numbering
+        body_add_par("This note presents evidence on public sector employment and compensation practices in Bangladesh using the Worldwide Bureaucracy Indicators (WWBI). The primary data source is the Labor Force Survey (LFS), conducted by the Bangladesh Bureau of Statistics (BBS), which offers extensive, nationally representative data over multiple years up to 2022. The LFS’s comprehensive coverage of employment and wage issues across both public and private sectors, along with its frequency and national representativeness, makes it an ideal source for this analysis.
+For international comparisons, the analysis includes a set of peer countries for benchmarking, with a particular focus on countries from the South Asia region and other aspirational peers. Information on these peers was also sourced from the WWBI.
+The public sector is typically a major source of employment in most countries. The provision of basic services such as education, health, citizen security and justice, among others, makes it a central actor in labor markets, with significant impacts on the aggregate results of employment, wages, informality, and other economic variables. Moreover, public employment is an indicator of the state participation in the entire economy, which has implications for macroeconomic balances, allocation efficiency and income distribution. Thus, this analysis comprehensively documents the size of public employment, its changes over time, and the characteristics of its workforce.")
+      
+      # List of key indicators in the introduction
+      doc <- doc %>%
+        body_add_par("- Wage Bill as a Percentage of GDP", style = "Normal") %>%
+        body_add_par("- Wage Bill as a Percentage of Public Expenditure", style = "Normal")
       
       # Check which graphs the user selected to download
       if ("GDP" %in% input$graphs_to_download) {
@@ -1090,14 +1175,12 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
-
-
   # Render the dot plot
   output$dot_plot <- renderPlotly({
     
     # Ensure 'countries_first' is used correctly in filtering
     filtered_data <- merged_data %>%
-      filter(country_name %in% input$countries_first)  # Corrected input
+      filter(country_name %in% input$countries_first)
     
     # Get the first country for highlighting (if available)
     first_country <- ifelse(length(input$countries_first) > 0, input$countries_first[1], NULL)
@@ -1120,39 +1203,133 @@ server <- function(input, output, session) {
         x = ~log_gdp,
         y = ~indicator_value,
         type = "scatter",
-        mode = "markers+text",  # Add dots for countries
-        text = ~country_name,  # Display country name as label
-        textposition = "top center",  # Position labels above the dots
+        mode = "markers+text",
+        text = ~country_name,
+        textposition = "top center",
         marker = list(
           size = 10,
-          color = ~color,  # Use the color column for different colors
+          color = ~color,
           opacity = 0.7
         )
       ) %>%
-      # Trendline (only line, no dots for trendline)
+      # Trendline
       add_trace(
         x = filtered_data$log_gdp,
         y = trendline_values,
         type = "scatter",
-        mode = "lines",  # Only lines for the trendline
+        mode = "lines",
         line = list(color = "gray", dash = "dash"),
-        name = "Trendline"  # This is used for the legend, but we will hide it
+        name = "Trendline"
       ) %>%
       layout(
         title = "Wage Bill vs. Log(GDP per Capita)",
-        xaxis = list(
-          title = "Log(GDP per Capita, 2015)",  # Axis label for x-axis
-          showticklabels = TRUE  # Show tick labels on x-axis
-        ),
-        yaxis = list(
-          title = "Wage Bill",  # Axis label for y-axis
-          showticklabels = TRUE  # Show tick labels on y-axis
-        ),
-        showlegend = FALSE  # Hide the legend
+        xaxis = list(title = "Log(GDP per Capita, 2015)", showticklabels = TRUE),
+        yaxis = list(title = "Wage Bill", showticklabels = TRUE),
+        showlegend = FALSE
       )
     
     return(plot)
   })
+  
+  # Generate static ggplot for the dot plot
+  generate_dot_plot <- function(filtered_data, first_country) {
+    ggplot(filtered_data, aes(x = log_gdp, y = indicator_value)) +
+      geom_point(aes(color = color), size = 3, alpha = 0.7) +
+      geom_smooth(method = "lm", formula = y ~ x, se = FALSE, linetype = "dashed", color = "gray") +
+      geom_text(aes(label = country_name), vjust = -0.5, size = 3) +
+      scale_color_identity() +
+      labs(
+        title = "Wage Bill vs. Log(GDP per Capita)",
+        x = "Log(GDP per Capita, 2015)",
+        y = "Wage Bill"
+      ) +
+      theme_minimal()
+  }
+  
+  # Download Word Report
+  output$downloadWord <- downloadHandler(
+    filename = function() {
+      paste0("Wage_Bill_Analysis_", Sys.Date(), ".docx")
+    },
+    content = function(file) {
+      # Extract the first selected country
+      selected_country <- if (!is.null(input$countries) && length(input$countries) > 0) {
+        input$countries[1]
+      } else {
+        "Unknown Country"
+      }
+      
+      # Dynamic title with the first country
+      report_title <- paste("Wage Bill Analysis Report -", selected_country)
+      
+      doc <- read_docx()  # Start a new Word document
+      
+      # Define the style for the title
+      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
+      
+      # Apply the custom title style
+      doc <- doc %>%
+        body_add_fpar(fpar(ftext(report_title, prop = title_style)))
+      
+      # Add the introduction
+      doc <- doc %>%
+        body_add_par("Introduction", style = "heading 2") %>%
+        body_add_par("This note presents evidence on public sector employment and compensation practices ...", style = "Normal") %>%
+        body_add_par("- Wage Bill as a Percentage of GDP", style = "Normal") %>%
+        body_add_par("- Wage Bill as a Percentage of Public Expenditure", style = "Normal")
+      
+      # Check which graphs the user selected
+      if ("GDP" %in% input$graphs_to_download) {
+        graph1 <- ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
+          geom_line(size = 1.2) +
+          geom_point(size = 3) +
+          labs(
+            title = "Wage Bill as % of GDP Over Time",
+            x = "Year",
+            y = "Wage Bill (% of GDP)"
+          ) +
+          theme_minimal()
+        
+        doc <- body_add_gg(doc, value = graph1, style = "centered")
+        doc <- doc %>%
+          body_add_par("This graph shows the wage bill as a percentage of GDP over time for the selected countries.", style = "Normal")
+      }
+      
+      if ("PublicExpenditure" %in% input$graphs_to_download) {
+        graph2 <- ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
+          geom_line(size = 1.2) +
+          geom_point(size = 3) +
+          labs(
+            title = "Wage Bill as % of Public Expenditure Over Time",
+            x = "Year",
+            y = "Wage Bill (% of Public Expenditure)"
+          ) +
+          theme_minimal()
+        
+        doc <- body_add_gg(doc, value = graph2, style = "centered")
+        doc <- doc %>%
+          body_add_par("This graph shows the wage bill as a percentage of public expenditure over time for the selected countries.", style = "Normal")
+      }
+      
+      if ("dot_plot" %in% input$graphs_to_download) {
+        filtered_data <- merged_data %>%
+          filter(country_name %in% input$countries_first)
+        
+        first_country <- ifelse(length(input$countries_first) > 0, input$countries_first[1], NULL)
+        
+        filtered_data <- filtered_data %>%
+          mutate(color = ifelse(country_name == first_country, "#B3242B", "#003366"))
+        
+        dot_plot <- generate_dot_plot(filtered_data, first_country)
+        
+        doc <- body_add_gg(doc, value = dot_plot, style = "centered")
+        doc <- doc %>%
+          body_add_par("This plot shows the relationship between wage bill and log(GDP per capita) for the selected countries.", style = "Normal")
+      }
+      
+      print(doc, target = file)
+    }
+  )
   # First Graph (Multiple Countries)
   output$firstGraph <- renderPlotly({
     data_to_plot <- public_sector_emp_temp_last %>%
