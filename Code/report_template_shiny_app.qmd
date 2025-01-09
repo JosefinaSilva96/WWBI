@@ -1,8 +1,12 @@
 ---
 title: "Public Sector Wage Premium Report"
 output:
-  pdf_document: default
   html_document: default
+params:
+  countries: "N/A"
+  year_range: "N/A"
+  first_graph_path: "N/A"
+  second_graph_path: "N/A"
 ---
 
 ## Introduction
@@ -11,18 +15,15 @@ This report presents an analysis of the public sector wage premium by gender, ba
 
 ## Selected Countries and Year Range
 
-- **Countries**: {{countries}}
-- **Year Range**: {{year_range}}
+- **Countries**: `r params$countries`
+- **Year Range**: `r params$year_range`
 
 ## Graphs
 
 ### First Graph: Public Sector Wage Premium by Gender
 
-```{r}
-# Placeholder for the first graph
+![](`r params$first_graph_path`)
 
-first_graph
+### Second Graph: Time Series for Selected Country
 
-# Placeholder for the second graph
-
-second_graph
+![](`r params$second_graph_path`)
