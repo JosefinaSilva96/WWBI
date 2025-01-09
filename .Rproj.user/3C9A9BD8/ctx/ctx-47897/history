@@ -1,0 +1,512 @@
+# Filter and prepare data
+filtered_data <- merged_data %>%
+filter(country_name %in% input$selected_countries)
+first_country <- input$selected_countries[1]
+filtered_data <- filtered_data %>%
+mutate(color = ifelse(country_name == first_country, "#B3242B", "#003366"))
+trendline_model <- lm(indicator_value ~ log_gdp, data = filtered_data)
+trendline_values <- predict(trendline_model, newdata = filtered_data)
+plot <- plot_ly() %>%
+add_trace(
+data = filtered_data,
+x = ~log_gdp,
+y = ~indicator_value,
+type = "scatter",
+mode = "markers+text",
+text = ~country_code,
+textposition = "top center",
+marker = list(size = 10, color = ~color, opacity = 0.7)
+) %>%
+add_trace(
+x = filtered_data$log_gdp,
+y = trendline_values,
+type = "scatter",
+mode = "lines",
+line = list(color = "gray", dash = "dash"),
+name = "Trendline"
+) %>%
+layout(
+title = "Wage Bill vs. Log(GDP per Capita)",
+xaxis = list(title = "Log(GDP per Capita, 2015)"),
+yaxis = list(title = "Wage Bill"),
+showlegend = FALSE
+)
+# Save the plot to a temporary file using kaleido
+temp_file <- tempfile(fileext = ".png")
+plotly::save_image(plot, file = temp_file, width = 800, height = 600)
+assign("plot_path", temp_file, envir = .GlobalEnv)
+return(plot)
+})
+# Download Quarto Report
+output$downloadReport <- downloadHandler(
+filename = function() {
+paste("public_sector_report_", Sys.Date(), ".docx", sep = "")
+},
+content = function(file) {
+# Save the graph as an HTML widget
+tmp_file_html <- tempfile(fileext = ".html")
+htmlwidgets::saveWidget(output$dot_plot(), tmp_file_html)
+# Save the HTML widget as a PNG file
+tmp_file_png <- tempfile(fileext = ".png")
+webshot::webshot(tmp_file_html, file = tmp_file_png, vwidth = 800, vheight = 600)
+# Write a Quarto document
+quarto_content <- '
+---
+title: "Public Sector Employment and Compensation"
+format: docx
+---
+# Introduction
+This note presents evidence on public sector employment and compensation practices in Bangladesh using the Worldwide Bureaucracy Indicators (WWBI). The primary data source is the Labor Force Survey (LFS), conducted by the Bangladesh Bureau of Statistics (BBS), which offers extensive, nationally representative data over multiple years up to 2022. The LFS’s comprehensive coverage of employment and wage issues across both public and private sectors, along with its frequency and national representativeness, makes it an ideal source for this analysis.
+For international comparisons, the analysis includes a set of peer countries for benchmarking, with a particular focus on countries from the South Asia region and other aspirational peers. Information on these peers was also sourced from the WWBI.
+The public sector is typically a major source of employment in most countries. The provision of basic services such as education, health, citizen security and justice, among others, makes it a central actor in labor markets, with significant impacts on the aggregate results of employment, wages, informality, and other economic variables. Moreover, public employment is an indicator of the state participation in the entire economy, which has implications for macroeconomic balances, allocation efficiency, and income distribution. Thus, this analysis comprehensively documents the size of public employment, its changes over time, and the characteristics of its workforce.
+# Graph: Wage Bill vs. Log(GDP per Capita)
+![Dot Plot](dot_plot.png)
+'
+# Copy the PNG graph into the same directory
+tmp_dir <- tempdir()
+graph_path <- file.path(tmp_dir, "dot_plot.png")
+file.copy(tmp_file_png, graph_path, overwrite = TRUE)
+# Write the Quarto file
+quarto_file <- file.path(tmp_dir, "report.qmd")
+writeLines(quarto_content, quarto_file)
+# Render the Quarto file into a Word document
+quarto::quarto_render(input = quarto_file, output_file = file)
+}
+)
+}
+shinyApp(ui, server)
+# Sample Data
+data <- data.frame(
+country = c("Bangladesh", "Pakistan", "Indonesia", "Philippines"),
+public_admin_workers = c(500, 600, 700, 800),
+total_public_employees = c(1000, 1200, 1500, 1800)
+)
+# Generate Country-Specific Text
+generate_country_text <- function(country) {
+switch(country,
+"Bangladesh" = "Bangladesh has a relatively low public sector wage compared to its peers. The country’s wage bill as a percentage of public expenditures has followed a relatively low and stable trend over the past decade. In 2010, the wage bill accounted for around 15 percent of public expenditures, but this gradually declined, reaching its lowest point of 11 percent in 2022. Compared to other countries in the region and global comparators, except for India, Bangladesh consistently allocates a smaller proportion of its budget to public sector wages. For instance, in 2022, Bangladesh’s wage bill stands at 10.9 percent, whereas countries like Pakistan, Indonesia, and the Philippines have much higher wage bills during the same period. This trend reflects Bangladesh’s cautious approach to public sector wage spending, but it also raises questions about whether this low level of spending affects the government's ability to effectively deliver public services.",
+"Pakistan" = "Pakistan has faced significant challenges in managing its public sector wage bill. Over the past decade, the wage bill has been increasing, reaching 15.5 percent of public expenditures in 2022. This growth in wage spending has raised concerns about the sustainability of public sector compensation in Pakistan, especially in the context of the country's fiscal constraints and increasing public debt.",
+"Indonesia" = "Indonesia's public sector wage bill has seen a steady increase over the past decade. In 2022, it accounted for 14.2 percent of public expenditures. While the government has made efforts to raise public sector wages to ensure a motivated workforce, there are concerns that rising wage bills could crowd out spending on essential public services such as education and health.",
+"Philippines" = "The Philippines has maintained a moderate public sector wage bill relative to its peers. In 2022, public sector wages accounted for 12.8 percent of public expenditures. This relatively stable trend in wage spending has allowed the government to balance wage increases with investments in other critical areas such as infrastructure and social services.",
+"Other" = "Data for this country is not available.")
+}
+# User Interface
+ui <- fluidPage(
+titlePanel("Public Administration Workers Report"),
+sidebarLayout(
+sidebarPanel(
+selectInput("country", "Select Country:", choices = NULL),
+downloadButton("download_report", "Download Report")
+),
+mainPanel(
+h3("Selected Country Information"),
+plotOutput("country_plot"),
+textOutput("country_text"),
+verbatimTextOutput("mean_share")
+)
+)
+)
+# Server Logic
+server <- function(input, output, session) {
+# Populate country choices dynamically
+observe({
+updateSelectInput(session, "country", choices = unique(data$country))
+})
+# Generate Reactive Report Content
+report_content <- reactive({
+req(input$country)  # Ensure input$country is selected
+country_data <- subset(data, country == input$country)
+if (nrow(country_data) == 0) return(NULL)
+mean_share <- mean(
+country_data$public_admin_workers / country_data$total_public_employees,
+na.rm = TRUE
+)
+# Create the Plot
+plot <- ggplot(country_data, aes(x = country, y = public_admin_workers / total_public_employees)) +
+geom_bar(stat = "identity", fill = "steelblue") +
+labs(
+title = paste("Public Administration Workers Share for", input$country),
+y = "Share of Public Employees",
+x = "Country"
+) +
+theme_minimal()
+# Save the plot as an image in a temporary file
+plot_filename <- tempfile(fileext = ".png")
+ggsave(plot_filename, plot = plot, width = 7, height = 7)
+# Prepare the country-specific text
+country_text <- paste(
+"Detailed report for", input$country,
+"showcasing public sector workforce trends."
+)
+# Return a list of report components
+list(
+text = country_text,
+plot_filename = plot_filename,
+mean_share = mean_share
+)
+})
+# Render Plot
+output$country_plot <- renderPlot({
+req(input$country)
+country_data <- subset(data, country == input$country)
+ggplot(country_data, aes(x = country, y = public_admin_workers / total_public_employees)) +
+geom_bar(stat = "identity", fill = "steelblue") +
+labs(
+title = paste("Public Administration Workers Share for", input$country),
+y = "Share of Public Employees",
+x = "Country"
+) +
+theme_minimal()
+})
+# Display Text and Mean Share
+output$country_text <- renderText({
+req(report_content())
+report_content()$text
+})
+output$mean_share <- renderText({
+req(report_content())
+paste("Mean Share of Public Admin Workers:", round(report_content()$mean_share, 2))
+})
+# Generate and Download Report
+output$download_report <- downloadHandler(
+filename = function() {
+paste("report_", input$country, ".docx", sep = "")
+},
+content = function(file) {
+tryCatch({
+quarto_file <- "C:WBG/GitHub/WWBI/Code/report_template_shiny_app.qmd"
+# Ensure the Quarto file exists
+if (!file.exists(quarto_file)) {
+stop("Quarto template file not found.")
+}
+# Define a temporary file name for Quarto's output
+temp_output <- tempfile(fileext = ".docx")
+# Render the Quarto report
+quarto::quarto_render(
+input = quarto_file,
+output_file = basename(temp_output),  # Pass only the file name
+execute_params = list(
+report_text = report_content()$text,
+plot_filename = report_content()$plot_filename,
+mean_share = report_content()$mean_share
+)
+)
+# Move the generated file to the target location
+file.rename(temp_output, file)
+}, error = function(e) {
+showNotification(paste("Error:", e$message), type = "error")
+})
+}
+)
+}
+# Run the Application
+shinyApp(ui = ui, server = server)
+ui <- fluidPage(
+titlePanel("Public Sector Wage Premium"),
+sidebarLayout(
+sidebarPanel(
+selectInput("countries_first", "Select Countries:", choices = c("USA", "Canada"), multiple = TRUE),
+selectInput("country_second", "Select Country:", choices = c("USA", "Canada")),
+sliderInput("year_range", "Select Year Range:", min = 2000, max = 2022, value = c(2010, 2020)),
+downloadButton("download_report", "Download Report")
+),
+mainPanel(
+plotlyOutput("firstGraphgender"),
+plotlyOutput("secondGraphgender")
+)
+)
+)
+server <- function(input, output) {
+# Generate the first graph
+output$firstGraphgender <- renderPlotly({
+plot_ly(x = ~input$countries_first, y = ~runif(length(input$countries_first)), type = 'bar')
+})
+# Generate the second graph
+output$secondGraphgender <- renderPlotly({
+plot_ly(x = seq(input$year_range[1], input$year_range[2]), y = runif(diff(input$year_range) + 1), type = 'scatter', mode = 'lines')
+})
+# Allow downloading of the Quarto document
+output$download_report <- downloadHandler(
+filename = function() {
+paste("Wage_Premium_Report_", Sys.Date(), ".pdf", sep = "")
+},
+content = function(file) {
+# Save graphs to temporary variables
+first_graph <- plotly::plotly_image(output$firstGraphgender())
+second_graph <- plotly::plotly_image(output$secondGraphgender())
+# Define parameters to pass to Quarto
+params <- list(
+countries = paste(input$countries_first, collapse = ", "),
+year_range = paste(input$year_range, collapse = " - "),
+first_graph = first_graph,
+second_graph = second_graph
+)
+# Render the Quarto document
+rmarkdown::render(
+input = "template.qmd",
+output_file = file,
+params = params,
+envir = new.env(parent = globalenv()) # Isolate the environment
+)
+}
+)
+}
+server <- function(input, output) {
+# Generate the first graph
+output$firstGraphgender <- renderPlotly({
+plot_ly(x = ~input$countries_first, y = ~runif(length(input$countries_first)), type = 'bar')
+})
+# Generate the second graph
+output$secondGraphgender <- renderPlotly({
+plot_ly(x = seq(input$year_range[1], input$year_range[2]), y = runif(diff(input$year_range) + 1), type = 'scatter', mode = 'lines')
+})
+# Allow downloading of the Quarto document
+output$download_report <- downloadHandler(
+filename = function() {
+paste("Wage_Premium_Report_", Sys.Date(), ".pdf", sep = "")
+},
+content = function(file) {
+# Save graphs to temporary variables
+first_graph <- plotly::plotly_image(output$firstGraphgender())
+second_graph <- plotly::plotly_image(output$secondGraphgender())
+# Define parameters to pass to Quarto
+params <- list(
+countries = paste(input$countries_first, collapse = ", "),
+year_range = paste(input$year_range, collapse = " - "),
+first_graph = first_graph,
+second_graph = second_graph
+)
+# Render the Quarto document
+rmarkdown::render(
+input = "report_template_shiny_app.qmd",
+output_file = file,
+params = params,
+envir = new.env(parent = globalenv()) # Isolate the environment
+)
+}
+)
+}
+shinyApp(ui = ui, server = server)
+ui <- fluidPage(
+titlePanel("Public Sector Wage Premium"),
+sidebarLayout(
+sidebarPanel(
+selectInput("countries_first", "Select Countries:", choices = c("USA", "Canada"), multiple = TRUE),
+selectInput("country_second", "Select Country:", choices = c("USA", "Canada")),
+sliderInput("year_range", "Select Year Range:", min = 2000, max = 2022, value = c(2010, 2020)),
+downloadButton("download_report", "Download Report")
+),
+mainPanel(
+plotlyOutput("firstGraphgender"),
+plotlyOutput("secondGraphgender")
+)
+)
+)
+server <- function(input, output) {
+# Generate the first graph
+first_graph <- reactive({
+plot_ly(x = ~input$countries_first, y = ~runif(length(input$countries_first)), type = 'bar')
+})
+output$firstGraphgender <- renderPlotly({
+first_graph()
+})
+# Generate the second graph
+second_graph <- reactive({
+plot_ly(x = seq(input$year_range[1], input$year_range[2]), y = runif(diff(input$year_range) + 1),
+type = 'scatter', mode = 'lines')
+})
+output$secondGraphgender <- renderPlotly({
+second_graph()
+})
+# Allow downloading of the Quarto document
+output$download_report <- downloadHandler(
+filename = function() {
+paste("Wage_Premium_Report_", Sys.Date(), ".html", sep = "")
+},
+content = function(file) {
+# Save graphs as images
+temp_file_1 <- tempfile(fileext = ".png")
+temp_file_2 <- tempfile(fileext = ".png")
+# Export plots as static images
+orca(first_graph(), temp_file_1)
+orca(second_graph(), temp_file_2)
+# Define parameters to pass to Quarto
+params <- list(
+countries = paste(input$countries_first, collapse = ", "),
+year_range = paste(input$year_range, collapse = " - "),
+first_graph_path = temp_file_1,
+second_graph_path = temp_file_2
+)
+# Render the Quarto document
+rmarkdown::render(
+input = "report_template_shiny_app.qmd",
+output_file = file,
+params = params,
+envir = new.env(parent = globalenv()) # Isolate the environment
+)
+}
+)
+}
+shinyApp(ui = ui, server = server)
+install.packages("plotly")
+library(haven)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(labelled)
+library(data.table)
+library(ggplot2)
+library(shinydashboard)
+library(shiny)
+library(shinythemes)
+library(DT)
+library(maps)
+library(mapdata)
+library(leaflet)
+library(DT)
+library(rnaturalearth)
+library(sf)
+library(plotly)
+library(officer)
+library(flextable)
+library(rvg)
+library(viridis)
+library(here)
+library(glue)
+library(colourpicker)
+library(rmarkdown)
+library(quarto)
+library(tinytex)
+library(orca)
+p <- plot_ly(x = 1:10, y = rnorm(10), type = 'scatter', mode = 'lines')
+save_image(p, "test_plot.png")
+reticulate::py_config()
+install.packages("reticulate")  # Install reticulate if not already installed
+reticulate::py_install("kaleido")
+reticulate::py_run_string("import kaleido")
+reticulate::py_last_error()
+reticulate::use_python("C:/Users/wb631166/OneDrive - WBG/Documents/.virtualenvs/r-reticulate/Scripts/python.exe", required = TRUE)
+reticulate::py_install("kaleido")
+reticulate::py_run_string("import kaleido")
+reticulate::conda_create("r-kaleido-env")
+#23358
+library(reticulate)
+use_python("C:/Users/wb631166/AppData/Roaming/Python/Python311/python.exe", required = TRUE)
+use_python("C:/wbg/Anaconda3/python.exe", required = TRUE)
+library(reticulate)
+use_python("C:/wbg/Anaconda3/python.exe", required = TRUE)
+py_config()
+library(plotly)
+library(haven)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(labelled)
+library(data.table)
+library(ggplot2)
+library(shinydashboard)
+library(shiny)
+library(shinythemes)
+library(DT)
+library(maps)
+library(mapdata)
+library(leaflet)
+library(DT)
+library(rnaturalearth)
+library(sf)
+library(plotly)
+library(officer)
+library(flextable)
+library(rvg)
+library(viridis)
+library(here)
+library(glue)
+library(colourpicker)
+library(rmarkdown)
+library(quarto)
+library(tinytex)
+library(orca)
+# Create a simple plotly chart
+fig <- plot_ly(x = c(1, 2, 3), y = c(4, 5, 6), type = 'scatter', mode = 'lines')
+export(fig, file = "plot.png", engine = "kaleido")
+orca(fig, "plot.png")
+fig %>% plotly::export("plot.png", engine = "kaleido")
+fig %>% plotly::to_image(format = "png", width = 800, height = 600) %>%
+writeBin("plot.png")
+use_python("C:/wbg/Anaconda3/python.exe", required = TRUE)
+# Define UI
+ui <- fluidPage(
+titlePanel("Automated Word Document Creation"),
+sidebarLayout(
+sidebarPanel(
+downloadButton("download_doc", "Download Word Document")
+),
+mainPanel(
+plotlyOutput("plot")
+)
+)
+)
+# Define server logic
+server <- function(input, output) {
+# Generate a simple plotly plot
+output$plot <- renderPlotly({
+plot_ly(x = c(1, 2, 3), y = c(4, 5, 6), type = 'scatter', mode = 'lines')
+})
+# Create the Word document when the user clicks the download button
+output$download_doc <- downloadHandler(
+filename = function() {
+paste("Report-", Sys.Date(), ".docx", sep = "")
+},
+content = function(file) {
+# Create a new Word document
+doc <- officer::read_docx()
+# Add an introduction text
+doc <- doc %>%
+body_add_par("This is an automated report.", style = "heading 1") %>%
+body_add_par("Below is a plot generated using the Shiny app.")
+# Add the plot
+# Save plot as image and add to Word document
+img_path <- tempfile(fileext = ".png")
+plotly::export(output$plot(), img_path)
+doc <- doc %>% body_add_img(src = img_path, width = 6, height = 4)
+# Save the document
+print(doc, target = file)
+}
+)
+}
+# Run the application
+shinyApp(ui = ui, server = server)
+# Define server logic
+server <- function(input, output) {
+# Create a plotly plot and save it as an object
+plot_obj <- plot_ly(x = c(1, 2, 3), y = c(4, 5, 6), type = 'scatter', mode = 'lines')
+# Render the plot in the UI
+output$plot <- renderPlotly({
+plot_obj
+})
+# Create the Word document when the user clicks the download button
+output$download_doc <- downloadHandler(
+filename = function() {
+paste("Report-", Sys.Date(), ".docx", sep = "")
+},
+content = function(file) {
+# Create a new Word document
+doc <- officer::read_docx()
+# Add an introduction text
+doc <- doc %>%
+body_add_par("This is an automated report.", style = "heading 1") %>%
+body_add_par("Below is a plot generated using the Shiny app.")
+# Save the plot as an image using plotly::to_image
+img_path <- tempfile(fileext = ".png")
+img <- plotly::to_image(plot_obj, format = "png", width = 800, height = 600)
+writeBin(img, img_path)
+# Add the image to the Word document
+doc <- doc %>% body_add_img(src = img_path, width = 6, height = 4)
+# Save the document
+print(doc, target = file)
+}
+)
+}
+# Run the application
+shinyApp(ui = ui, server = server)
+install.packages("plotly")
