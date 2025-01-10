@@ -1126,8 +1126,8 @@ The public sector is typically a major source of employment in most countries. T
       
       # Check which graphs the user selected to download
       if ("GDP" %in% input$graphs_to_download) {
-        # Graph 1: Wage bill as % of GDP Over Time
-        graph1 <- ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
+        graph1_data <- selected_data()[selected_data()$indicator == "Wage Bill as % of GDP", ]
+        graph1 <- ggplot(graph1_data, aes(x = year, y = value, color = country_name)) +
           geom_line(size = 1.2) +
           geom_point(size = 3) +
           labs(
@@ -1136,18 +1136,11 @@ The public sector is typically a major source of employment in most countries. T
             y = "Wage Bill (% of GDP)"
           ) +
           theme_minimal()
-        
-        # Add Graph 1 to Word document
         doc <- body_add_gg(doc, value = graph1, style = "centered")
-        
-        # Add some text explanation
-        doc <- doc %>%
-          body_add_par("This graph shows the wage bill as a percentage of GDP over time for the selected countries.", style = "Normal")
       }
-      
       if ("PublicExpenditure" %in% input$graphs_to_download) {
-        # Graph 2: Wage bill as % of Public Expenditure Over Time
-        graph2 <- ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
+        graph2_data <- selected_data()[selected_data()$indicator == "Wage Bill as % of Public Expenditure", ]
+        graph2 <- ggplot(graph2_data, aes(x = year, y = value, color = country_name)) +
           geom_line(size = 1.2) +
           geom_point(size = 3) +
           labs(
@@ -1156,7 +1149,7 @@ The public sector is typically a major source of employment in most countries. T
             y = "Wage Bill (% of Public Expenditure)"
           ) +
           theme_minimal()
-        
+      
         # Add Graph 2 to Word document
         doc <- body_add_gg(doc, value = graph2, style = "centered")
         
