@@ -1170,87 +1170,63 @@ The public sector is typically a major source of employment in most countries. T
     }
   )
   # Render the dot plot
+ 
+  # Reactive expression for filtered data
+  filtered_data <- reactive({
+    req(input$countries_first)  # Ensure countries are selected
+    merged_data %>%
+      filter(country_name %in% input$countries_first)
+  })
+  
   # Render the dot plot
   output$dot_plot <- renderPlotly({
-    # Ensure input$countries_first exists and has selected values
-    req(input$countries_first)
+    data <- filtered_data()  # Use reactive filtered data
     
-    # Filter the data based on the selected countries
-    filtered_data <- merged_data %>%
-      filter(country_name %in% input$countries_first)
+    req(nrow(data) > 0)  # Ensure data is not empty
     
-    # Check if filtered_data has rows to avoid empty plots
-    req(nrow(filtered_data) > 0)
-    
-    # Get the first selected country for custom highlighting
     first_country <- input$countries_first[1]
     
-    # Add a color column for highlighting the first country
-    filtered_data <- filtered_data %>%
+    # Add color column for highlighting
+    data <- data %>%
       mutate(color = ifelse(country_name == first_country, "#B3242B", "#003366"))
     
-    # Fit a linear model for the trendline (log_gdp vs indicator_value)
-    trendline_model <- lm(indicator_value ~ log_gdp, data = filtered_data)
+    # Fit linear model
+    trendline_model <- lm(indicator_value ~ log_gdp, data = data)
+    trendline_values <- predict(trendline_model, newdata = data)
     
-    # Get fitted values for the trendline
-    trendline_values <- predict(trendline_model, newdata = filtered_data)
-    
-    # Create the plot
+    # Create plot
     plot <- plot_ly() %>%
-      # Add data points for countries
       add_trace(
-        data = filtered_data,
+        data = data,
         x = ~log_gdp,
         y = ~indicator_value,
         type = "scatter",
         mode = "markers+text",
-        text = ~country_name,  # Display country name as a label
+        text = ~country_name,
         textposition = "top center",
         marker = list(
           size = 10,
-          color = ~color,  # Use the color column for different colors
+          color = ~color,
           opacity = 0.7
         )
       ) %>%
-      # Add the trendline
       add_trace(
-        x = filtered_data$log_gdp,
+        x = data$log_gdp,
         y = trendline_values,
         type = "scatter",
         mode = "lines",
         line = list(color = "gray", dash = "dash"),
-        name = "Trendline"  # Hidden legend name
+        name = "Trendline"
       ) %>%
       layout(
         title = "Wage Bill vs. Log(GDP per Capita)",
-        xaxis = list(
-          title = "Log(GDP per Capita, 2015)",
-          showticklabels = TRUE
-        ),
-        yaxis = list(
-          title = "Wage Bill",
-          showticklabels = TRUE
-        ),
-        showlegend = FALSE  # Hide the legend
+        xaxis = list(title = "Log(GDP per Capita, 2015)"),
+        yaxis = list(title = "Wage Bill"),
+        showlegend = FALSE
       )
     
     return(plot)
   })
-  
-  # Generate static ggplot for the dot plot
-  generate_dot_plot <- function(filtered_data, first_country) {
-    ggplot(filtered_data, aes(x = log_gdp, y = indicator_value)) +
-      geom_point(aes(color = color), size = 3, alpha = 0.7) +
-      geom_smooth(method = "lm", formula = y ~ x, se = FALSE, linetype = "dashed", color = "gray") +
-      geom_text(aes(label = country_name), vjust = -0.5, size = 3) +
-      scale_color_identity() +
-      labs(
-        title = "Wage Bill vs. Log(GDP per Capita)",
-        x = "Log(GDP per Capita, 2015)",
-        y = "Wage Bill"
-      ) +
-      theme_minimal()
-  }
   
   # Download Word Report
   output$downloadGDPDoc <- downloadHandler(
@@ -1258,33 +1234,39 @@ The public sector is typically a major source of employment in most countries. T
       paste0("Wage_Bill_vs_GDP_Report_", Sys.Date(), ".docx")
     },
     content = function(file) {
-      # Create a Word document
-      doc <- read_docx()
+      data <- filtered_data()  # Use reactive filtered data
       
-      # Title
-      doc <- doc %>%
+      # Ensure data is available
+      req(nrow(data) > 0)
+      
+      # Create Word document
+      doc <- read_docx() %>%
         body_add_par("Wage Bill vs. GDP Analysis Report", style = "heading 1") %>%
-        body_add_par("This report presents the relationship between wage bill and GDP per capita (log scale) for selected countries.", style = "Normal")
-      
-      # Introduction
-      doc <- doc %>%
+        body_add_par(
+          "This report presents the relationship between wage bill and GDP per capita (log scale) for selected countries.",
+          style = "Normal"
+        ) %>%
         body_add_par("Introduction", style = "heading 2") %>%
-        body_add_par("The analysis explores the correlation between public sector wage bills and GDP per capita using data from various countries. 
-                    A trendline is provided for benchmarking and understanding the general patterns across nations.", style = "Normal")
+        body_add_par(
+          "The analysis explores the correlation between public sector wage bills and GDP per capita using data from various countries. 
+        A trendline is provided for benchmarking and understanding the general patterns across nations.",
+          style = "Normal"
+        )
       
-      # Add the Dot Plot
-      plot <- ggplot(filtered_data(), aes(x = log_gdp, y = indicator_value, color = country_name)) +
-        geom_point(size = 3) +
-        geom_smooth(method = "lm", color = "gray", linetype = "dashed") +
+      # Add ggplot to the document
+      gg <- ggplot(data, aes(x = log_gdp, y = indicator_value)) +
+        geom_point(aes(color = country_name), size = 3) +
+        geom_smooth(method = "lm", formula = y ~ x, color = "gray", linetype = "dashed") +
         labs(
           title = "Wage Bill vs. Log(GDP per Capita)",
           x = "Log(GDP per Capita, 2015)",
           y = "Wage Bill"
         ) +
         theme_minimal()
-      doc <- doc %>% body_add_gg(plot, style = "centered")
       
-      # Save the document
+      doc <- doc %>% body_add_gg(gg, style = "centered")
+      
+      # Save document
       print(doc, target = file)
     }
   )
