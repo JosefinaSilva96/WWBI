@@ -1126,8 +1126,8 @@ The public sector is typically a major source of employment in most countries. T
       
       # Check which graphs the user selected to download
       if ("GDP" %in% input$graphs_to_download) {
-        graph1_data <- selected_data()[selected_data()$indicator == "Wage Bill as % of GDP", ]
-        graph1 <- ggplot(graph1_data, aes(x = year, y = value, color = country_name)) +
+        # Graph 1: Wage bill as % of GDP Over Time
+        graph1 <- ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
           geom_line(size = 1.2) +
           geom_point(size = 3) +
           labs(
@@ -1136,11 +1136,18 @@ The public sector is typically a major source of employment in most countries. T
             y = "Wage Bill (% of GDP)"
           ) +
           theme_minimal()
+        
+        # Add Graph 1 to Word document
         doc <- body_add_gg(doc, value = graph1, style = "centered")
+        
+        # Add some text explanation
+        doc <- doc %>%
+          body_add_par("This graph shows the wage bill as a percentage of GDP over time for the selected countries.", style = "Normal")
       }
+      
       if ("PublicExpenditure" %in% input$graphs_to_download) {
-        graph2_data <- selected_data()[selected_data()$indicator == "Wage Bill as % of Public Expenditure", ]
-        graph2 <- ggplot(graph2_data, aes(x = year, y = value, color = country_name)) +
+        # Graph 2: Wage bill as % of Public Expenditure Over Time
+        graph2 <- ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
           geom_line(size = 1.2) +
           geom_point(size = 3) +
           labs(
@@ -1149,7 +1156,7 @@ The public sector is typically a major source of employment in most countries. T
             y = "Wage Bill (% of Public Expenditure)"
           ) +
           theme_minimal()
-      
+        
         # Add Graph 2 to Word document
         doc <- body_add_gg(doc, value = graph2, style = "centered")
         
@@ -1163,34 +1170,32 @@ The public sector is typically a major source of employment in most countries. T
     }
   )
   # Render the dot plot
- 
-  # Reactive expression for filtered data
+  # Define a reactive expression for filtered data
   filtered_data <- reactive({
-    req(input$countries_first)  # Ensure countries are selected
+    req(input$countries_first)  # Ensure input exists
+    
+    # Filter merged_data based on the selected countries
     merged_data %>%
-      filter(country_name %in% input$countries_first)
+      filter(country_name %in% input$countries_first) %>%
+      mutate(color = ifelse(country_name == input$countries_first[1], "#B3242B", "#003366"))  # Highlight the first country
   })
   
   # Render the dot plot
   output$dot_plot <- renderPlotly({
-    data <- filtered_data()  # Use reactive filtered data
+    # Use the reactive filtered data
+    filtered_data_df <- filtered_data()
     
-    req(nrow(data) > 0)  # Ensure data is not empty
+    # Ensure the filtered data has rows
+    req(nrow(filtered_data_df) > 0)
     
-    first_country <- input$countries_first[1]
+    # Fit a linear model for the trendline
+    trendline_model <- lm(indicator_value ~ log_gdp, data = filtered_data_df)
+    trendline_values <- predict(trendline_model, newdata = filtered_data_df)
     
-    # Add color column for highlighting
-    data <- data %>%
-      mutate(color = ifelse(country_name == first_country, "#B3242B", "#003366"))
-    
-    # Fit linear model
-    trendline_model <- lm(indicator_value ~ log_gdp, data = data)
-    trendline_values <- predict(trendline_model, newdata = data)
-    
-    # Create plot
-    plot <- plot_ly() %>%
+    # Create the Plotly plot
+    plot_ly() %>%
       add_trace(
-        data = data,
+        data = filtered_data_df,
         x = ~log_gdp,
         y = ~indicator_value,
         type = "scatter",
@@ -1204,7 +1209,7 @@ The public sector is typically a major source of employment in most countries. T
         )
       ) %>%
       add_trace(
-        x = data$log_gdp,
+        x = filtered_data_df$log_gdp,
         y = trendline_values,
         type = "scatter",
         mode = "lines",
@@ -1213,13 +1218,26 @@ The public sector is typically a major source of employment in most countries. T
       ) %>%
       layout(
         title = "Wage Bill vs. Log(GDP per Capita)",
-        xaxis = list(title = "Log(GDP per Capita, 2015)"),
-        yaxis = list(title = "Wage Bill"),
+        xaxis = list(title = "Log(GDP per Capita, 2015)", showticklabels = TRUE),
+        yaxis = list(title = "Wage Bill", showticklabels = TRUE),
         showlegend = FALSE
       )
-    
-    return(plot)
-  })
+  }
+  )
+  # Generate static ggplot for the dot plot
+  generate_dot_plot <- function(filtered_data, first_country) {
+    ggplot(filtered_data, aes(x = log_gdp, y = indicator_value)) +
+      geom_point(aes(color = color), size = 3, alpha = 0.7) +
+      geom_smooth(method = "lm", formula = y ~ x, se = FALSE, linetype = "dashed", color = "gray") +
+      geom_text(aes(label = country_name), vjust = -0.5, size = 3) +
+      scale_color_identity() +
+      labs(
+        title = "Wage Bill vs. Log(GDP per Capita)",
+        x = "Log(GDP per Capita, 2015)",
+        y = "Wage Bill"
+      ) +
+      theme_minimal()
+  }
   
   # Download Word Report
   output$downloadGDPDoc <- downloadHandler(
@@ -1227,29 +1245,34 @@ The public sector is typically a major source of employment in most countries. T
       paste0("Wage_Bill_vs_GDP_Report_", Sys.Date(), ".docx")
     },
     content = function(file) {
-      data <- filtered_data()  # Use reactive filtered data
+      # Use the reactive filtered data
+      filtered_data_df <- filtered_data()
+      req(nrow(filtered_data_df) > 0)  # Ensure data has rows
       
-      # Ensure data is available
-      req(nrow(data) > 0)
+      # Create a Word document
+      doc <- read_docx()
       
-      # Create Word document
-      doc <- read_docx() %>%
+      # Add the Title
+      doc <- doc %>%
         body_add_par("Wage Bill vs. GDP Analysis Report", style = "heading 1") %>%
         body_add_par(
           "This report presents the relationship between wage bill and GDP per capita (log scale) for selected countries.",
           style = "Normal"
-        ) %>%
+        )
+      
+      # Add the Introduction
+      doc <- doc %>%
         body_add_par("Introduction", style = "heading 2") %>%
         body_add_par(
           "The analysis explores the correlation between public sector wage bills and GDP per capita using data from various countries. 
-        A trendline is provided for benchmarking and understanding the general patterns across nations.",
+          A trendline is provided for benchmarking and understanding the general patterns across nations.",
           style = "Normal"
         )
       
-      # Add ggplot to the document
-      gg <- ggplot(data, aes(x = log_gdp, y = indicator_value)) +
-        geom_point(aes(color = country_name), size = 3) +
-        geom_smooth(method = "lm", formula = y ~ x, color = "gray", linetype = "dashed") +
+      # Create the Dot Plot
+      plot <- ggplot(filtered_data_df, aes(x = log_gdp, y = indicator_value, color = country_name)) +
+        geom_point(size = 3) +
+        geom_smooth(method = "lm", color = "gray", linetype = "dashed") +
         labs(
           title = "Wage Bill vs. Log(GDP per Capita)",
           x = "Log(GDP per Capita, 2015)",
@@ -1257,13 +1280,14 @@ The public sector is typically a major source of employment in most countries. T
         ) +
         theme_minimal()
       
-      doc <- doc %>% body_add_gg(gg, style = "centered")
+      # Add the plot to the Word document
+      doc <- doc %>% body_add_gg(value = plot, style = "centered")
       
-      # Save document
+      # Save the document to the specified file path
       print(doc, target = file)
     }
   )
-  
+
   # First Graph (Multiple Countries)
   output$firstGraph <- renderPlotly({
     data_to_plot <- public_sector_emp_temp_last %>%
