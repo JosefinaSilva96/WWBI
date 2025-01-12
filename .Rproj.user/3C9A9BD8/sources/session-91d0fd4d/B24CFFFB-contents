@@ -1346,6 +1346,9 @@ server <- function(input, output, session) {
     
     plot
   })
+  
+  #Download Handler 
+  
   output$downloadGraphsWord <- downloadHandler(
     filename = function() {
       paste0("Selected_Graphs_", Sys.Date(), ".docx")
@@ -1378,57 +1381,62 @@ server <- function(input, output, session) {
       
       if ("firstGraph" %in% input$selected_graphs_all) {
         # Render the First Public Sector Graph
-        data_to_plot <- public_sector_emp_temp_last %>%
-          filter(country_name %in% input$countries_first)
-        
-        data_to_plot_long <- data_to_plot %>%
-          select(country_name, indicator_name, year, value) %>%
-          mutate(indicator_name = factor(indicator_name))
-        
-        first_graph <- ggplot(data_to_plot_long, aes(x = country_name, y = value, color = indicator_name)) +
-          geom_point(size = 3) +
-          labs(
-            title = "Public Sector Employment (Multi-Country)",
-            x = "Country",
-            y = "Value"
-          ) +
-          theme_minimal()
-        
-        # Add First Public Sector Graph to the document
-        doc <- doc %>%
-          body_add_par("First Graph: Public Sector Employment (Multi-Country)", style = "heading 1") %>%
-          body_add_gg(value = first_graph, width = 6, height = 4)
+        if (!is.null(input$countries_first)) {
+          data_to_plot <- public_sector_emp_temp_last %>%
+            filter(country_name %in% input$countries_first)
+          
+          data_to_plot_long <- data_to_plot %>%
+            select(country_name, indicator_name, year, value) %>%
+            mutate(indicator_name = factor(indicator_name))
+          
+          first_graph <- ggplot(data_to_plot_long, aes(x = country_name, y = value, color = indicator_name)) +
+            geom_point(size = 3) +
+            labs(
+              title = "Public Sector Employment (Multi-Country)",
+              x = "Country",
+              y = "Value"
+            ) +
+            theme_minimal()
+          
+          # Add First Public Sector Graph to the document
+          doc <- doc %>%
+            body_add_par("First Graph: Public Sector Employment (Multi-Country)", style = "heading 1") %>%
+            body_add_gg(value = first_graph, width = 6, height = 4)
+        }
       }
       
       if ("secondGraph" %in% input$selected_graphs_all) {
         # Render the Second Public Sector Graph
-        data_to_plot <- public_sector_emp_temp %>%
-          filter(country_name == input$country_second)
-        
-        data_to_plot_long <- data_to_plot %>%
-          select(year, indicator_name, value) %>%
-          mutate(indicator_name = factor(indicator_name))
-        
-        second_graph <- ggplot(data_to_plot_long, aes(x = year, y = value, color = indicator_name)) +
-          geom_line(size = 1) +
-          geom_point(size = 3) +
-          labs(
-            title = paste("Public Sector Employment in", input$country_second, "Over Time"),
-            x = "Year",
-            y = "Employment Value"
-          ) +
-          theme_minimal()
-        
-        # Add Second Public Sector Graph to the document
-        doc <- doc %>%
-          body_add_par("Second Graph: Public Sector Employment (Single Country)", style = "heading 1") %>%
-          body_add_gg(value = second_graph, width = 6, height = 4)
+        if (!is.null(input$country_second)) {
+          data_to_plot <- public_sector_emp_temp %>%
+            filter(country_name == input$country_second)
+          
+          data_to_plot_long <- data_to_plot %>%
+            select(year, indicator_name, value) %>%
+            mutate(indicator_name = factor(indicator_name))
+          
+          second_graph <- ggplot(data_to_plot_long, aes(x = year, y = value, color = indicator_name)) +
+            geom_line(size = 1) +
+            geom_point(size = 3) +
+            labs(
+              title = paste("Public Sector Employment in", input$country_second, "Over Time"),
+              x = "Year",
+              y = "Employment Value"
+            ) +
+            theme_minimal()
+          
+          # Add Second Public Sector Graph to the document
+          doc <- doc %>%
+            body_add_par("Second Graph: Public Sector Employment (Single Country)", style = "heading 1") %>%
+            body_add_gg(value = second_graph, width = 6, height = 4)
+        }
       }
       
       # Save the document
       print(doc, target = file)
     }
   )
+  
   
   #Public Sector Workforce
   
