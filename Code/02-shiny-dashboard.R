@@ -1844,27 +1844,8 @@ server <- function(input, output, session) {
     paste0("Selected_Graphs_", Sys.Date(), ".docx")
   },
   content = function(file) {
-    
-    # Dynamic title with the first country
-    report_title <- paste("Wage Bill and public employment Analysis Report -", countries)
-    
     # Create a new Word document
     doc <- read_docx()
-    # Define the style for the title with a specific color and bold
-    title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)  # Custom color and bold text
-    
-    # Apply the custom title style with color and bold
-    doc <- doc %>%
-      body_add_fpar(
-        fpar(ftext(report_title, prop = title_style))  # Apply custom title style with dynamic title
-      )
-    
-    # Add the introduction heading without numbering
-    doc <- doc %>%
-      body_add_par("Introduction", style = "heading 2") %>%  # Use heading style without numbering
-      body_add_par("This note presents evidence on public sector employment and compensation practices in Bangladesh using the Worldwide Bureaucracy Indicators (WWBI). The primary data source is the Labor Force Survey (LFS), conducted by the Bangladesh Bureau of Statistics (BBS), which offers extensive, nationally representative data over multiple years up to 2022. The LFS’s comprehensive coverage of employment and wage issues across both public and private sectors, along with its frequency and national representativeness, makes it an ideal source for this analysis.
-For international comparisons, the analysis includes a set of peer countries for benchmarking, with a particular focus on countries from the South Asia region and other aspirational peers. Information on these peers was also sourced from the WWBI.
-The public sector is typically a major source of employment in most countries. The provision of basic services such as education, health, citizen security and justice, among others, makes it a central actor in labor markets, with significant impacts on the aggregate results of employment, wages, informality, and other economic variables. Moreover, public employment is an indicator of the state participation in the entire economy, which has implications for macroeconomic balances, allocation efficiency and income distribution. Thus, this analysis comprehensively documents the size of public employment, its changes over time, and the characteristics of its workforce.")
     
     
     # Add graphs based on user selection
@@ -2041,13 +2022,33 @@ The public sector is typically a major source of employment in most countries. T
      paste0("Comprehensive_Wage_Bill_Report_", Sys.Date(), ".docx")
    },
    content = function(file) {
+     # Dynamic title with the first country
+     report_title <- paste("Wage Bill and public employment Analysis Report")
+     
      # Create a Word document
      doc <- read_docx()
      
-     # Title and Introduction
+     # Define the style for the title with a specific color and bold
+     title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)  # Custom color and bold text
+     
+     # Apply the custom title style with color and bold
      doc <- doc %>%
-       body_add_par("Comprehensive Wage Bill Analysis Report", style = "heading 1") %>%
-       body_add_par("This report consolidates all visualizations and analyses for wage bill indicators.", style = "Normal")
+       body_add_fpar(
+         fpar(ftext(report_title, prop = title_style))  # Apply custom title style with dynamic title
+       )
+     
+     # Add the introduction heading without numbering
+     doc <- doc %>%
+       body_add_par("Introduction", style = "heading 2") %>%  # Use heading style without numbering
+       body_add_par("This note presents evidence on public sector employment and compensation practices in Bangladesh using the Worldwide Bureaucracy Indicators (WWBI). The primary data source is the Labor Force Survey (LFS), conducted by the Bangladesh Bureau of Statistics (BBS), which offers extensive, nationally representative data over multiple years up to 2022. The LFS’s comprehensive coverage of employment and wage issues across both public and private sectors, along with its frequency and national representativeness, makes it an ideal source for this analysis.
+For international comparisons, the analysis includes a set of peer countries for benchmarking, with a particular focus on countries from the South Asia region and other aspirational peers. Information on these peers was also sourced from the WWBI.
+The public sector is typically a major source of employment in most countries. The provision of basic services such as education, health, citizen security and justice, among others, makes it a central actor in labor markets, with significant impacts on the aggregate results of employment, wages, informality, and other economic variables. Moreover, public employment is an indicator of the state participation in the entire economy, which has implications for macroeconomic balances, allocation efficiency and income distribution. Thus, this analysis comprehensively documents the size of public employment, its changes over time, and the characteristics of its workforce.")
+     
+     # List of key indicators in the introduction
+     doc <- doc %>%
+       body_add_par("- Wage Bill as a Percentage of GDP", style = "Normal") %>%
+       body_add_par("- Wage Bill as a Percentage of Public Expenditure", style = "Normal")
+     
      
      # Section 1: Wage Bill (as % of GDP)
      doc <- doc %>%
@@ -2188,7 +2189,7 @@ shinyApp(ui = ui, server = server)
 # Test ----
 
 #Define UI
-# Define UI
+
 ui <- fluidPage(
   titlePanel("Dot Plot: Wage Bill vs. GDP per Capita (Log Scale)"),
   
