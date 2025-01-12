@@ -706,7 +706,7 @@ ui <- dashboardPage(
                   ),
                   column(
                     width = 6,
-                    downloadButton("downloadGraphsWord", "Download Graphs as Word File", class = "btn-primary btn-block")
+                    downloadButton("downloadGraphsWord", "Download Graphs as Word Document")
                   )
                 )
               )
@@ -1357,86 +1357,61 @@ server <- function(input, output, session) {
       # Create a new Word document
       doc <- read_docx()
       
-      # Add graphs based on user selection
-      if ("wageBillGraph" %in% input$selected_graphs_all) {
-        # Render the Wage Bill Graph
-        wage_bill_graph <- ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
-          geom_line(size = 1.2) +
+      # First Graph: Multi-Country
+      if ("firstGraph" %in% input$selected_graphs_public) {
+        data_to_plot <- public_sector_emp_temp_last %>%
+          filter(country_name %in% input$countries_first)
+        
+        data_to_plot_long <- data_to_plot %>%
+          select(country_name, indicator_name, year, value) %>%
+          mutate(indicator_name = factor(indicator_name))
+        
+        # Create ggplot equivalent for the first graph
+        first_graph <- ggplot(data_to_plot_long, aes(x = country_name, y = value, color = indicator_name)) +
           geom_point(size = 3) +
           labs(
-            title = ifelse(input$indicator == "Wage bill as a percentage of GDP",
-                           "Wage Bill as % of GDP Over Time",
-                           "Wage Bill as % of Public Expenditure Over Time"),
-            x = "Year",
-            y = ifelse(input$indicator == "Wage bill as a percentage of GDP", 
-                       "Wage Bill (% of GDP)", "Wage Bill (%)")
+            title = "Public Sector Employment (Multi-Country)",
+            x = "Country",
+            y = "Value"
           ) +
           theme_minimal()
         
-        # Add Wage Bill Graph to the document
+        # Add graph to Word document
         doc <- doc %>%
-          body_add_par("Wage Bill Graph", style = "heading 1") %>%
-          body_add_gg(value = wage_bill_graph, width = 6, height = 4)
+          body_add_par("First Graph: Public Sector Employment (Multi-Country)", style = "heading 1") %>%
+          body_add_gg(value = first_graph, width = 6, height = 4)
       }
       
-      if ("firstGraph" %in% input$selected_graphs_all) {
-        # Render the First Public Sector Graph
-        if (!is.null(input$countries_first)) {
-          data_to_plot <- public_sector_emp_temp_last %>%
-            filter(country_name %in% input$countries_first)
-          
-          data_to_plot_long <- data_to_plot %>%
-            select(country_name, indicator_name, year, value) %>%
-            mutate(indicator_name = factor(indicator_name))
-          
-          first_graph <- ggplot(data_to_plot_long, aes(x = country_name, y = value, color = indicator_name)) +
-            geom_point(size = 3) +
-            labs(
-              title = "Public Sector Employment (Multi-Country)",
-              x = "Country",
-              y = "Value"
-            ) +
-            theme_minimal()
-          
-          # Add First Public Sector Graph to the document
-          doc <- doc %>%
-            body_add_par("First Graph: Public Sector Employment (Multi-Country)", style = "heading 1") %>%
-            body_add_gg(value = first_graph, width = 6, height = 4)
-        }
-      }
-      
-      if ("secondGraph" %in% input$selected_graphs_all) {
-        # Render the Second Public Sector Graph
-        if (!is.null(input$country_second)) {
-          data_to_plot <- public_sector_emp_temp %>%
-            filter(country_name == input$country_second)
-          
-          data_to_plot_long <- data_to_plot %>%
-            select(year, indicator_name, value) %>%
-            mutate(indicator_name = factor(indicator_name))
-          
-          second_graph <- ggplot(data_to_plot_long, aes(x = year, y = value, color = indicator_name)) +
-            geom_line(size = 1) +
-            geom_point(size = 3) +
-            labs(
-              title = paste("Public Sector Employment in", input$country_second, "Over Time"),
-              x = "Year",
-              y = "Employment Value"
-            ) +
-            theme_minimal()
-          
-          # Add Second Public Sector Graph to the document
-          doc <- doc %>%
-            body_add_par("Second Graph: Public Sector Employment (Single Country)", style = "heading 1") %>%
-            body_add_gg(value = second_graph, width = 6, height = 4)
-        }
+      # Second Graph: Single Country
+      if ("secondGraph" %in% input$selected_graphs_public) {
+        data_to_plot <- public_sector_emp_temp %>%
+          filter(country_name == input$country_second)
+        
+        data_to_plot_long <- data_to_plot %>%
+          select(year, indicator_name, value) %>%
+          mutate(indicator_name = factor(indicator_name))
+        
+        # Create ggplot equivalent for the second graph
+        second_graph <- ggplot(data_to_plot_long, aes(x = year, y = value, color = indicator_name)) +
+          geom_line(size = 1) +
+          geom_point(size = 3) +
+          labs(
+            title = paste("Public Sector Employment in", input$country_second, "Over Time"),
+            x = "Year",
+            y = "Employment Value"
+          ) +
+          theme_minimal()
+        
+        # Add graph to Word document
+        doc <- doc %>%
+          body_add_par("Second Graph: Public Sector Employment (Single Country)", style = "heading 1") %>%
+          body_add_gg(value = second_graph, width = 6, height = 4)
       }
       
       # Save the document
       print(doc, target = file)
     }
   )
-  
   
   #Public Sector Workforce
   
