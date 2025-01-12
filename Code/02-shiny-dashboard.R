@@ -1089,7 +1089,7 @@ server <- function(input, output, session) {
     },
     content = function(file) {
       # Debugging: Ensure the input is being passed correctly
-      print(input$countries) 
+      print(input$countries)
       
       # Extract the first selected country
       if (!is.null(input$countries) && length(input$countries) > 0) {
@@ -1103,31 +1103,25 @@ server <- function(input, output, session) {
       
       doc <- read_docx()  # Start a new Word document
       
-      # Define the style for the title with a specific color and bold
-      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)  # Custom color and bold text
+      # Define the style for the title
+      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
       
-      # Apply the custom title style with color and bold
+      # Apply the custom title style
       doc <- doc %>%
-        body_add_fpar(
-          fpar(ftext(report_title, prop = title_style))  # Apply custom title style with dynamic title
-        )
+        body_add_fpar(fpar(ftext(report_title, prop = title_style)))
       
-      # Add the introduction heading without numbering
+      # Add introduction
       doc <- doc %>%
-        body_add_par("Introduction", style = "heading 2") %>%  # Use heading style without numbering
-        body_add_par("This note presents evidence on public sector employment and compensation practices in Bangladesh using the Worldwide Bureaucracy Indicators (WWBI). The primary data source is the Labor Force Survey (LFS), conducted by the Bangladesh Bureau of Statistics (BBS), which offers extensive, nationally representative data over multiple years up to 2022. The LFS’s comprehensive coverage of employment and wage issues across both public and private sectors, along with its frequency and national representativeness, makes it an ideal source for this analysis.
-For international comparisons, the analysis includes a set of peer countries for benchmarking, with a particular focus on countries from the South Asia region and other aspirational peers. Information on these peers was also sourced from the WWBI.
-The public sector is typically a major source of employment in most countries. The provision of basic services such as education, health, citizen security and justice, among others, makes it a central actor in labor markets, with significant impacts on the aggregate results of employment, wages, informality, and other economic variables. Moreover, public employment is an indicator of the state participation in the entire economy, which has implications for macroeconomic balances, allocation efficiency and income distribution. Thus, this analysis comprehensively documents the size of public employment, its changes over time, and the characteristics of its workforce.")
+        body_add_par("Introduction", style = "heading 2") %>%
+        body_add_par("This note presents evidence on public sector employment and compensation practices in Bangladesh using the Worldwide Bureaucracy Indicators (WWBI)...")
       
-      # List of key indicators in the introduction
-      doc <- doc %>%
-        body_add_par("- Wage Bill as a Percentage of GDP", style = "Normal") %>%
-        body_add_par("- Wage Bill as a Percentage of Public Expenditure", style = "Normal")
+      # Separate data for each graph
+      gdp_data <- wage_bill_gdp %>% filter(country_name %in% input$countries)
+      public_exp_data <- wage_bill_publicexp %>% filter(country_name %in% input$countries)
       
-      # Check which graphs the user selected to download
       if ("GDP" %in% input$graphs_to_download) {
-        # Graph 1: Wage bill as % of GDP Over Time
-        graph1 <- ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
+        # Graph 1: Wage Bill as % of GDP
+        graph1 <- ggplot(gdp_data, aes(x = year, y = value, color = country_name)) +
           geom_line(size = 1.2) +
           geom_point(size = 3) +
           labs(
@@ -1137,17 +1131,13 @@ The public sector is typically a major source of employment in most countries. T
           ) +
           theme_minimal()
         
-        # Add Graph 1 to Word document
-        doc <- body_add_gg(doc, value = graph1, style = "centered")
-        
-        # Add some text explanation
-        doc <- doc %>%
+        doc <- body_add_gg(doc, value = graph1, style = "centered") %>%
           body_add_par("This graph shows the wage bill as a percentage of GDP over time for the selected countries.", style = "Normal")
       }
       
       if ("PublicExpenditure" %in% input$graphs_to_download) {
-        # Graph 2: Wage bill as % of Public Expenditure Over Time
-        graph2 <- ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
+        # Graph 2: Wage Bill as % of Public Expenditure
+        graph2 <- ggplot(public_exp_data, aes(x = year, y = value, color = country_name)) +
           geom_line(size = 1.2) +
           geom_point(size = 3) +
           labs(
@@ -1157,11 +1147,7 @@ The public sector is typically a major source of employment in most countries. T
           ) +
           theme_minimal()
         
-        # Add Graph 2 to Word document
-        doc <- body_add_gg(doc, value = graph2, style = "centered")
-        
-        # Add some text explanation
-        doc <- doc %>%
+        doc <- body_add_gg(doc, value = graph2, style = "centered") %>%
           body_add_par("This graph shows the wage bill as a percentage of public expenditure over time for the selected countries.", style = "Normal")
       }
       
