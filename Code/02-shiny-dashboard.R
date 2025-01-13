@@ -458,7 +458,7 @@ public_wage_premium_educ <- public_wage_premium_educ %>%
 
 
 
-#Gender Wage premium ACA VOY                                                                                                                                                                                                                                                                     
+#Gender Wage premium                                                                                                                                                                                                                                                                   
 
 # Filter the data for the specific indicator "Public sector wage premium, by gender: Female (compared to all private employees) and
 # Public sector wage premium, by gender: Male (compared to all private employees)"
@@ -493,6 +493,26 @@ gender_wage_premium_last <- gender_wage_premium %>%
 
 
 
+public_sector_emp_temp <- public_sector_emp_temp %>%
+  select(country_name, indicator_name, year, value) %>%
+  mutate(indicator_name = factor(indicator_name)) %>%
+  mutate(indicator_label = recode(
+    indicator_name, 
+    "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
+    "Public sector employment, as a share of paid employment" = "as a share of paid employment", 
+    "Public sector employment, as a share of total employment" = "as a share of total employment"
+  ))
+
+
+public_sector_emp_temp_last <- public_sector_emp_temp_last %>%
+  select(country_name, indicator_name, year, value) %>%
+  mutate(indicator_name = factor(indicator_name)) %>%
+  mutate(indicator_label = recode(
+    indicator_name, 
+    "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
+    "Public sector employment, as a share of paid employment" = "as a share of paid employment", 
+    "Public sector employment, as a share of total employment" = "as a share of total employment"
+  ))
 
 
 ## Shiny Dashboard ----
@@ -1283,19 +1303,17 @@ server <- function(input, output, session) {
   #Public Sector Graphs 
 
   # First Graph (Multiple Countries)
+  
   output$firstGraph <- renderPlotly({
+    req(input$countries_first)  # Ensure countries_first is selected
+    
     data_to_plot <- public_sector_emp_temp_last %>%
       filter(country_name %in% input$countries_first)
     
     data_to_plot_long <- data_to_plot %>%
-      select(country_name, indicator_name, year, value) %>%
-      mutate(indicator_name = factor(indicator_name)) %>%
-      mutate(indicator_label = recode(
-        indicator_name, 
-        "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
-        "Public sector employment, as a share of paid employment" = "as a share of paid employment", 
-        "Public sector employment, as a share of total employment" = "as a share of total employment"
-      ))
+      select(country_name, indicator_label, year, value) %>%
+      mutate(indicator_label = factor(indicator_label)) # Fixed: Added missing parenthesis
+    
     
     plot_ly(data = data_to_plot_long, 
             x = ~country_name, 
@@ -1312,17 +1330,11 @@ server <- function(input, output, session) {
   
   # Second Graph (Single Country)
   output$secondGraph <- renderPlotly({
+    req(input$country_second)  # Ensure country_second is selected
+    
     data_to_plot <- public_sector_emp_temp %>%
       filter(country_name == input$country_second)
     
-    data_to_plot_long <- data_to_plot %>%
-      select(year, indicator_name, value) %>%
-      mutate(indicator_name = factor(indicator_name)) %>%
-      mutate(indicator_label = recode(
-        indicator_name, 
-        "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
-        "Public sector employment, as a share of paid employment" = "as a share of paid employment"
-      ))
     
     plot_ly(data = data_to_plot_long, 
             x = ~year, 
@@ -1347,7 +1359,7 @@ server <- function(input, output, session) {
       doc <- read_docx()
       
       # Add First Graph if selected
-      if ("firstGraph" %in% input$graphs_to_download) {
+      if ("firstGraph" %in% input$graphs_to_download && length(input$countries_first) > 0) {
         data_to_plot <- public_sector_emp_temp_last %>%
           filter(country_name %in% input$countries_first)
         
@@ -1370,7 +1382,7 @@ server <- function(input, output, session) {
       }
       
       # Add Second Graph if selected
-      if ("secondGraph" %in% input$graphs_to_download) {
+      if ("secondGraph" %in% input$graphs_to_download && !is.null(input$country_second)) {
         data_to_plot <- public_sector_emp_temp %>%
           filter(country_name == input$country_second)
         
@@ -2152,384 +2164,4 @@ shinyApp(ui = ui, server = server)
 
 
 ###############################################################################
-
-# Test ----
-
-#Define UI
-
-ui <- fluidPage(
-  titlePanel("Dot Plot: Wage Bill vs. GDP per Capita (Log Scale)"),
-  
-  sidebarLayout(
-    sidebarPanel(
-      selectInput(
-        inputId = "selected_countries",
-        label = "Select Countries:",
-        choices = unique(merged_data$country_name),
-        selected = unique(merged_data$country_name)[1:3],
-        multiple = TRUE
-      ),
-      downloadButton("downloadReport", "Download Report")
-    ),
-    
-    mainPanel(
-      plotlyOutput("dot_plot")
-    )
-  )
-)
-
-# Define server
-
-server <- function(input, output, session) {
-  
-  output$dot_plot <- renderPlotly({
-    # Filter and prepare data
-    filtered_data <- merged_data %>%
-      filter(country_name %in% input$selected_countries)
-    
-    first_country <- input$selected_countries[1]
-    filtered_data <- filtered_data %>%
-      mutate(color = ifelse(country_name == first_country, "#B3242B", "#003366"))
-    
-    trendline_model <- lm(indicator_value ~ log_gdp, data = filtered_data)
-    trendline_values <- predict(trendline_model, newdata = filtered_data)
-    
-    plot <- plot_ly() %>%
-      add_trace(
-        data = filtered_data,
-        x = ~log_gdp,
-        y = ~indicator_value,
-        type = "scatter",
-        mode = "markers+text",
-        text = ~country_code,
-        textposition = "top center",
-        marker = list(size = 10, color = ~color, opacity = 0.7)
-      ) %>%
-      add_trace(
-        x = filtered_data$log_gdp,
-        y = trendline_values,
-        type = "scatter",
-        mode = "lines",
-        line = list(color = "gray", dash = "dash"),
-        name = "Trendline"
-      ) %>%
-      layout(
-        title = "Wage Bill vs. Log(GDP per Capita)",
-        xaxis = list(title = "Log(GDP per Capita, 2015)"),
-        yaxis = list(title = "Wage Bill"),
-        showlegend = FALSE
-      )
-    
-    # Save the plot to a PNG file using kaleido
-    tmp_file <- tempfile(fileext = ".png")
-    tmp_file <- gsub("\\\\", "/", tmp_file)  # Replace backslashes with forward slashes
-    
-    # Save the plot as an image
-    plotly::save_image(plot, file = tmp_file, width = 800, height = 600)
-    
-    assign("plot_path", tmp_file, envir = .GlobalEnv)
-    
-    return(plot)
-  })
-  
-  # Download Quarto Report
-  output$downloadReport <- downloadHandler(
-    filename = function() {
-      paste("public_sector_report_", Sys.Date(), ".docx", sep = "")
-    },
-    content = function(file) {
-      # Save the graph as an HTML widget
-      tmp_file_html <- tempfile(fileext = ".html")
-      htmlwidgets::saveWidget(output$dot_plot(), tmp_file_html)
-      
-      # Save the HTML widget as a PNG file
-      tmp_file_png <- tempfile(fileext = ".png")
-      webshot2::webshot(tmp_file_html, file = tmp_file_png, vwidth = 800, vheight = 600)
-      
-      # Write a Quarto document
-      quarto_content <- '
-      ---
-      title: "Public Sector Employment and Compensation"
-      format: docx
-      ---
-      
-      # Introduction
-      
-      This note presents evidence on public sector employment and compensation practices in Bangladesh using the Worldwide Bureaucracy Indicators (WWBI). The primary data source is the Labor Force Survey (LFS), conducted by the Bangladesh Bureau of Statistics (BBS), which offers extensive, nationally representative data over multiple years up to 2022. The LFS’s comprehensive coverage of employment and wage issues across both public and private sectors, along with its frequency and national representativeness, makes it an ideal source for this analysis.
-      
-      For international comparisons, the analysis includes a set of peer countries for benchmarking, with a particular focus on countries from the South Asia region and other aspirational peers. Information on these peers was also sourced from the WWBI.
-      
-      The public sector is typically a major source of employment in most countries. The provision of basic services such as education, health, citizen security and justice, among others, makes it a central actor in labor markets, with significant impacts on the aggregate results of employment, wages, informality, and other economic variables. Moreover, public employment is an indicator of the state participation in the entire economy, which has implications for macroeconomic balances, allocation efficiency, and income distribution. Thus, this analysis comprehensively documents the size of public employment, its changes over time, and the characteristics of its workforce.
-      
-      # Graph: Wage Bill vs. Log(GDP per Capita)
-      
-      ![Dot Plot](dot_plot.png)
-      '
-      
-      # Copy the PNG graph into the same directory
-      tmp_dir <- tempdir()
-      graph_path <- file.path(tmp_dir, "dot_plot.png")
-      file.copy(tmp_file_png, graph_path, overwrite = TRUE)
-      
-      # Write the Quarto file
-      quarto_file <- file.path(tmp_dir, "report.qmd")
-      writeLines(quarto_content, quarto_file)
-      
-      # Render the Quarto file into a Word document
-      quarto::quarto_render(input = quarto_file, output_file = file)
-    }
-  )
-}
-# Run the application
-shinyApp(ui = ui, server = server)
-
-
-
-
-
-# Define the UI- Tertiary Education
-
-# Define the UI
-ui <- fluidPage(
-  titlePanel("Tertiary Education by Employment Sector and Country"),
-  
-  sidebarLayout(
-    sidebarPanel(
-      selectInput(
-        inputId = "selected_countries",
-        label = "Select Countries:",
-        choices = unique(tertiary_education$country_name),
-        selected = unique(tertiary_education$country_name)[1],  # Default selection
-        multiple = TRUE                                         # Allow multiple selections
-      )
-    ),
-    
-    mainPanel(
-      plotlyOutput("barPlot")  # Output the Plotly chart
-    )
-  )
-)
-
-# Define the server
-server <- function(input, output, session) {
-  
-  # Render the Plotly bar graph
-  output$barPlot <- renderPlotly({
-    # Filter data based on selected countries
-    filtered_data <- tertiary_education[tertiary_education$country_name %in% input$selected_countries, ]
-    
-    # Create the Plotly bar chart with specified colors
-    plot_ly(
-      data = filtered_data,
-      x = ~country_name,                      # X-axis: Country name
-      y = ~value_percentage,                  # Y-axis: Tertiary education percentages
-      color = ~indicator_name,                        # Different color for Public/Private
-      colors = c("Individuals with tertiary education as a share of public paid employees" = "#003366", "Individuals with tertiary education as a share of private paid employees" = "#B3242B"),  # Custom color mapping
-      type = 'bar',                           # Bar chart
-      barmode = 'group'                       # Group bars for Public/Private
-    ) %>%
-      layout(
-        title = "Tertiary Education by Sector and Country",
-        xaxis = list(title = "Country"),
-        yaxis = list(title = "Tertiary Education (%)"),
-        bargap = 0.2  # Adjust gap between bars
-      )
-  })
-}  
-
-# Run the Shiny app
-shinyApp(ui = ui, server = server)
-
-# Define the UI- Public sector wage premium
-
-# Define the UI
-
-ui <- fluidPage(
-  titlePanel("Public Sector Wage Premium (Compared to All Private Sector Workers)"),
-  
-  sidebarLayout(
-    sidebarPanel(
-      selectInput(
-        inputId = "selected_countries",
-        label = "Select Countries:",
-        choices = unique(public_wage_premium$country_name),
-        selected = unique(public_wage_premium$country_name)[1],  # Default selection
-        multiple = TRUE                                         # Allow multiple selections
-      )
-    ),
-    
-    mainPanel(
-      plotlyOutput("dotPlot")  # Output the Plotly chart
-    )
-  )
-)
-
-# Define the server
-server <- function(input, output, session) {
-  
-  # Render the Plotly dot plot
-  output$dotPlot <- renderPlotly({
-    # Filter data based on selected countries
-    filtered_data <- public_wage_premium[public_wage_premium$country_name %in% input$selected_countries, ]
-    
-    # Create a new column to assign color based on the first selected country
-    filtered_data$color <- ifelse(filtered_data$country_name == input$selected_countries[1], "red", "blue")
-    
-    # Create the Plotly dot plot
-    plot_ly(
-      data = filtered_data,
-      x = ~country_name,                          # X-axis: Country name
-      y = ~value_percentage,               # Y-axis: Wage premium percentage
-      color = ~color,                              # Color by the new color column
-      colors = c("#003366", "#B3242B"),                   # Custom color mapping
-      type = 'scatter',                           # Scatter plot (for dot plot)
-      mode = 'markers',                           # Markers to create dots
-      marker = list(size = 12)                    # Set dot size
-    ) %>%
-      layout(
-        title = "Public Sector Wage Premium (Compared to All Private Employees) by Country",
-        xaxis = list(title = "Country"),
-        yaxis = list(title = "Public Sector Wage Premium (%)"),
-        showlegend = FALSE                          # Optional: Hide legend
-      )
-  })
-}
-
-# Run the Shiny app
-shinyApp(ui = ui, server = server)
-
-# Define the UI- Public sector wage premium by education level (compared to private formal workers)
-
-# Define the UI
-ui <- fluidPage(
-  titlePanel("Public sector wage premium by education level (compared to private formal workers)"),
-  
-  sidebarLayout(
-    sidebarPanel(
-      selectInput(
-        inputId = "selected_countries",
-        label = "Select Countries:",
-        choices = unique(public_wage_premium_educ$country_name),
-        selected = unique(public_wage_premium_educ$country_name)[1],  # Default selection
-        multiple = FALSE                                        # Allow multiple selections
-      )
-    ),
-    
-    mainPanel(
-      plotlyOutput("barPlot")  # Output the Plotly chart
-    )
-  )
-)
-
-# Define the server
-server <- function(input, output, session) {
-  
-  # Render the Plotly bar graph
-  output$barPlot <- renderPlotly({
-    # Filter data based on selected countries
-    filtered_data <- public_wage_premium_educ[public_wage_premium_educ$country_name %in% input$selected_countries, ]
-    plot_ly(
-      data = filtered_data,
-      x = ~country_name,                         # X-axis: Country names (labels)
-      y = ~value_percentage,                     # Y-axis: Public sector wage premium by education level
-      color = ~indicator_name,                    # Color bars by indicator_name (Education level)
-      colors = c("No Education" = "#003366",
-                 "Primary Education" = "#B3242B", 
-                 "Secondary Education" = "#333333", 
-                 "Tertiary Education" = "#006400"),  # Custom color mapping
-      type = 'bar'                       # Show tooltip info
-    ) %>%
-      layout(
-        title = "Public Sector Wage Premium by Education Level (Compared to Private Formal Workers)",
-        xaxis = list(
-          title = "Country", 
-          tickangle = 0, 
-          tickmode = 'array', 
-          tickvals = filtered_data$country_name,  # Set the country names as ticks
-          ticktext = filtered_data$country_name   # Ensure the country names are displayed on the x-axis
-        ),
-        yaxis = list(title = "Wage Premium (%)"),  # Y-axis label
-        barmode = 'group',                         # Group bars by education level
-        bargap = 0.2,                              # Adjust gap between bars
-        showlegend = TRUE,                         # Show legend to distinguish between education levels
-        legend = list(title = list(text = "Education Level")) # Set title for the legend
-      )
-  })
-}
-
-# Run the Shiny app
-shinyApp(ui = ui, server = server)
-
-# Test Report App
-
-ui <- fluidPage(
-  titlePanel("Public Sector Wage Premium"),
-  sidebarLayout(
-    sidebarPanel(
-      selectInput("countries_first", "Select Countries:", choices = c("USA", "Canada"), multiple = TRUE),
-      selectInput("country_second", "Select Country:", choices = c("USA", "Canada")),
-      sliderInput("year_range", "Select Year Range:", min = 2000, max = 2022, value = c(2010, 2020)),
-      downloadButton("download_report", "Download Report")
-    ),
-    mainPanel(
-      plotlyOutput("firstGraphgender"),
-      plotlyOutput("secondGraphgender")
-    )
-  )
-)
-
-server <- function(input, output) {
-  # Generate the first graph
-  first_graph <- reactive({
-    plot_ly(x = ~input$countries_first, y = ~runif(length(input$countries_first)), type = 'bar')
-  })
-  
-  output$firstGraphgender <- renderPlotly({
-    first_graph()
-  })
-  
-  # Generate the second graph
-  second_graph <- reactive({
-    plot_ly(x = seq(input$year_range[1], input$year_range[2]), y = runif(diff(input$year_range) + 1), 
-            type = 'scatter', mode = 'lines')
-  })
-  
-  output$secondGraphgender <- renderPlotly({
-    second_graph()
-  })
-  
-  # Allow downloading of the Quarto document
-  output$download_report <- downloadHandler(
-    filename = function() {
-      paste("Wage_Premium_Report_", Sys.Date(), ".html", sep = "")
-    },
-    content = function(file) {
-      # Save graphs as images
-      temp_file_1 <- tempfile(fileext = ".png")
-      temp_file_2 <- tempfile(fileext = ".png")
-      
-      # Export plots as static images
-      orca(first_graph(), temp_file_1)
-      orca(second_graph(), temp_file_2)
-      
-      # Define parameters to pass to Quarto
-      params <- list(
-        countries = paste(input$countries_first, collapse = ", "),
-        year_range = paste(input$year_range, collapse = " - "),
-        first_graph_path = temp_file_1,
-        second_graph_path = temp_file_2
-      )
-      
-      # Render the Quarto document
-      rmarkdown::render(
-        input = "report_template_shiny_app.qmd",
-        output_file = file,
-        params = params,
-        envir = new.env(parent = globalenv()) # Isolate the environment
-      )
-    }
-  )
-}
-
-shinyApp(ui = ui, server = server)
 
