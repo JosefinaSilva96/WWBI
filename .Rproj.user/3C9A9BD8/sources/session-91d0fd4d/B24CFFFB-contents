@@ -1335,6 +1335,11 @@ server <- function(input, output, session) {
     data_to_plot <- public_sector_emp_temp %>%
       filter(country_name == input$country_second)
     
+    data_to_plot_long <- data_to_plot %>%
+      select(country_name, indicator_label, year, value) %>%
+      mutate(indicator_label = factor(indicator_label)) # Fixed: Added missing parenthesis
+    
+    
     
     plot_ly(data = data_to_plot_long, 
             x = ~year, 
@@ -1934,7 +1939,7 @@ server <- function(input, output, session) {
  
  # First Graph (Multiple Countries)
  output$firstGraphgender <- renderPlotly({
-   data_to_plot <- gender_wage_premium_last %>%
+   data_to_plot <- public_sector_emp_temp_last %>%
      filter(country_name %in% input$countries_first)
    
    data_to_plot_long <- data_to_plot %>%
@@ -1957,7 +1962,7 @@ server <- function(input, output, session) {
  })
  # Second Graph (Single Country) by Time
  output$secondGraphgender <- renderPlotly({
-   data_to_plot <- gender_wage_premium %>%
+   data_to_plot <- public_sector_emp_temp %>%
      filter(country_name == input$country_second)  # Single country selection
    
    data_to_plot_long <- data_to_plot %>%
@@ -1995,6 +2000,67 @@ server <- function(input, output, session) {
    
    plot
  })
+ 
+ # Download Handler
+ output$downloadGraphsWord <- downloadHandler(
+   filename = function() {
+     paste0("Public_Sector_Graphs_", Sys.Date(), ".docx")
+   },
+   content = function(file) {
+     doc <- read_docx()
+     
+     # Add First Graph if selected
+     if ("firstGraph" %in% input$graphs_to_download && length(input$countries_first) > 0) {
+       data_to_plot <- public_sector_emp_temp_last %>%
+         filter(country_name %in% input$countries_first)
+       
+       data_to_plot_long <- data_to_plot %>%
+         select(country_name, indicator_name, year, value) %>%
+         mutate(indicator_name = factor(indicator_name))
+       
+       first_graph <- ggplot(data_to_plot_long, aes(x = country_name, y = value, color = indicator_name)) +
+         geom_point(size = 3) +
+         labs(
+           title = "Public Sector Employment (Multi-Country)",
+           x = "Country",
+           y = "Value"
+         ) +
+         theme_minimal()
+       
+       doc <- doc %>%
+         body_add_par("First Graph: Public Sector Employment (Multi-Country)", style = "heading 1") %>%
+         body_add_gg(value = first_graph, width = 6, height = 4)
+     }
+     
+     # Add Second Graph if selected
+     if ("secondGraph" %in% input$graphs_to_download && !is.null(input$country_second)) {
+       data_to_plot <- public_sector_emp_temp %>%
+         filter(country_name == input$country_second)
+       
+       data_to_plot_long <- data_to_plot %>%
+         select(year, indicator_name, value) %>%
+         mutate(indicator_name = factor(indicator_name))
+       
+       second_graph <- ggplot(data_to_plot_long, aes(x = year, y = value, color = indicator_name)) +
+         geom_line(size = 1) +
+         geom_point(size = 3) +
+         labs(
+           title = paste("Public Sector Employment in", input$country_second, "Over Time"),
+           x = "Year",
+           y = "Employment Value"
+         ) +
+         theme_minimal()
+       
+       doc <- doc %>%
+         body_add_par("Second Graph: Public Sector Employment (Single Country)", style = "heading 1") %>%
+         body_add_gg(value = second_graph, width = 6, height = 4)
+     }
+     
+     print(doc, target = file)
+   }
+ )
+ 
+ 
  #Download all graphs for report
  output$downloadAllGraphsDoc <- downloadHandler(
    filename = function() {
