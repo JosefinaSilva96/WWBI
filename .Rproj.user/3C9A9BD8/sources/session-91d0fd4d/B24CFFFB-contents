@@ -656,61 +656,64 @@ ui <- dashboardPage(
       ),
       
       # Public Sector Graphs Tab
+      
       tabItem(tabName = "publicSectorGraphs",
               fluidRow(
-                box(title = "First Graph - Multi-Country Selection", status = "primary", solidHeader = TRUE, width = 12,
-                    selectInput("countries_first", 
-                                "Select Countries for First Graph", 
-                                choices = unique(public_sector_emp_temp$country_name), 
-                                selected = NULL, 
-                                multiple = TRUE)
-                )
-              ),
-              fluidRow(
-                box(title = "First Graph", status = "primary", solidHeader = TRUE, width = 12,
-                    plotlyOutput("firstGraph")
-                )
-              ),
-              fluidRow(
-                box(title = "Second Graph - Single Country Selection", status = "primary", solidHeader = TRUE, width = 12,
-                    selectInput("country_second", 
-                                "Select Country for Second Graph", 
-                                choices = unique(public_sector_emp_temp$country_name), 
-                                selected = NULL, 
-                                multiple = FALSE)
-                )
-              ),
-              fluidRow(
-                box(title = "Second Graph", status = "primary", solidHeader = TRUE, width = 12,
-                    plotlyOutput("secondGraph")
-                )
-              ),
-              # Add graph selection and download functionality
-              fluidRow(
+                # Combined Selection Box
                 box(
-                  title = "Download Graphs",
+                  title = "Country and Graph Selection",
                   status = "primary",
                   solidHeader = TRUE,
                   width = 12,
-                  column(
-                    width = 6,
-                    checkboxGroupInput(
-                      "selected_graphs_public", 
-                      "Select Graphs to Download:", 
-                      choices = c(
-                        "Multi-Country Graph" = "firstGraph",
-                        "Single-Country Graph" = "secondGraph"
-                      ),
-                      selected = c("firstGraph", "secondGraph") # Default: all selected
-                    )
+                  # Multi-country selection for the first graph
+                  selectInput(
+                    "countries_first",
+                    "Select Countries for First Graph (Multi-Country)",
+                    choices = unique(public_sector_emp_temp$country_name),
+                    selected = NULL,
+                    multiple = TRUE
                   ),
-                  column(
-                    width = 6,
-                    downloadButton("downloadGraphsWord", "Download Graphs as Word Document")
-                  )
+                  # Single-country selection for the second graph
+                  selectInput(
+                    "country_second",
+                    "Select Country for Second Graph (Single Country)",
+                    choices = unique(public_sector_emp_temp$country_name),
+                    selected = NULL,
+                    multiple = FALSE
+                  ),
+                  # Checkbox for selecting graphs to download
+                  checkboxGroupInput(
+                    "graphs_to_download",
+                    "Select Graphs to Download",
+                    choices = list(
+                      "First Graph - Multi-Country" = "firstGraph",
+                      "Second Graph - Single Country" = "secondGraph"
+                    ),
+                    selected = c("firstGraph", "secondGraph")
+                  ),
+                  # Download button
+                  downloadButton("downloadPublicGraphsWord", "Download Word Document")
+                )
+              ),
+              # Row for displaying both graphs
+              fluidRow(
+                box(
+                  title = "First Graph - Multi-Country",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  width = 6,
+                  plotlyOutput("firstGraph")
+                ),
+                box(
+                  title = "Second Graph - Single Country",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  width = 6,
+                  plotlyOutput("secondGraph")
                 )
               )
-              ),
+      ),
+      
       # Public Sector Workforce Graphs Tab
       tabItem(
         tabName = "publicSectorWorkforceGraphs",
@@ -1157,6 +1160,7 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
+  
   # Render the dot plot
   # Define a reactive expression for filtered data
   filtered_data <- reactive({
@@ -1286,81 +1290,64 @@ server <- function(input, output, session) {
     data_to_plot_long <- data_to_plot %>%
       select(country_name, indicator_name, year, value) %>%
       mutate(indicator_name = factor(indicator_name)) %>%
-      # Modify indicator labels for shorter text
-      mutate(indicator_label = recode(indicator_name, 
-                                      "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
-                                      "Public sector employment, as a share of paid employment" = "as a share of paid employment", 
-                                      "Public sector employment, as a share of total employment"="as a share of total employment" ))
+      mutate(indicator_label = recode(
+        indicator_name, 
+        "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
+        "Public sector employment, as a share of paid employment" = "as a share of paid employment", 
+        "Public sector employment, as a share of total employment" = "as a share of total employment"
+      ))
     
-    plot <- plot_ly(data = data_to_plot_long, 
-                    x = ~country_name, 
-                    y = ~value, 
-                    color = ~indicator_label, 
-                    type = 'scatter',
-                    mode = 'markers',  
-                    marker = list(size = 8)) %>%
-      layout(title = "Public sector employment as a share of",
+    plot_ly(data = data_to_plot_long, 
+            x = ~country_name, 
+            y = ~value, 
+            color = ~indicator_label, 
+            type = 'scatter',
+            mode = 'markers',  
+            marker = list(size = 8)) %>%
+      layout(title = "Public Sector Employment (Multi-Country)",
              xaxis = list(title = "Country", tickangle = 45),
              yaxis = list(title = "Value"),
              legend = list(title = list(text = "Indicator")))
-    
-    plot
   })
   
   # Second Graph (Single Country)
   output$secondGraph <- renderPlotly({
     data_to_plot <- public_sector_emp_temp %>%
-      filter(country_name == input$country_second)  # Single country selection
+      filter(country_name == input$country_second)
     
     data_to_plot_long <- data_to_plot %>%
       select(year, indicator_name, value) %>%
       mutate(indicator_name = factor(indicator_name)) %>%
-      # Modify indicator labels for shorter text
-      mutate(indicator_label = recode(indicator_name, 
-                                      "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
-                                      "Public sector employment, as a share of paid employment" = "as a share of paid employment"))
+      mutate(indicator_label = recode(
+        indicator_name, 
+        "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
+        "Public sector employment, as a share of paid employment" = "as a share of paid employment"
+      ))
     
-    plot <- plot_ly(
-      data = data_to_plot_long, 
-      x = ~year, 
-      y = ~value, 
-      color = ~indicator_label,  # Color each indicator differently
-      text = ~paste("Value:", round(value, 2)),  # Tooltip with value
-      type = 'scatter', 
-      mode = 'lines+markers',  # Add lines and markers
-      marker = list(size = 8)  # Set marker size
-    ) %>%
-      layout(
-        title = paste("Public Sector Employment in", input$country_second, "Over Time"),
-        xaxis = list(title = "Year", tickangle = 45, dtick = 2),
-        yaxis = list(title = "Employment Value"),
-        legend = list(title = list(text = "Indicator"))
-      ) %>%
-      add_annotations(
-        x = ~year, 
-        y = ~value,  # Add offset to place annotation above the point
-        text = ~round(value, 2),  # Display value as annotation
-        showarrow = FALSE,  # Remove arrows
-        font = list(size = 12, color = "black"),
-        xanchor = "center",  # Center annotation horizontally
-        yanchor = "bottom"   # Position annotation above the point
-      )
-    
-    plot
+    plot_ly(data = data_to_plot_long, 
+            x = ~year, 
+            y = ~value, 
+            color = ~indicator_label, 
+            text = ~paste("Value:", round(value, 2)), 
+            type = 'scatter', 
+            mode = 'lines+markers',  
+            marker = list(size = 8)) %>%
+      layout(title = paste("Public Sector Employment in", input$country_second, "Over Time"),
+             xaxis = list(title = "Year", tickangle = 45, dtick = 2),
+             yaxis = list(title = "Employment Value"),
+             legend = list(title = list(text = "Indicator")))
   })
   
-  #Download Handler 
-  
+  # Download Handler
   output$downloadGraphsWord <- downloadHandler(
     filename = function() {
-      paste0("Selected_Graphs_", Sys.Date(), ".docx")
+      paste0("Public_Sector_Graphs_", Sys.Date(), ".docx")
     },
     content = function(file) {
-      # Create a new Word document
       doc <- read_docx()
       
-      # First Graph: Multi-Country
-      if ("firstGraph" %in% input$selected_graphs_public) {
+      # Add First Graph if selected
+      if ("firstGraph" %in% input$graphs_to_download) {
         data_to_plot <- public_sector_emp_temp_last %>%
           filter(country_name %in% input$countries_first)
         
@@ -1368,7 +1355,6 @@ server <- function(input, output, session) {
           select(country_name, indicator_name, year, value) %>%
           mutate(indicator_name = factor(indicator_name))
         
-        # Create ggplot equivalent for the first graph
         first_graph <- ggplot(data_to_plot_long, aes(x = country_name, y = value, color = indicator_name)) +
           geom_point(size = 3) +
           labs(
@@ -1378,14 +1364,13 @@ server <- function(input, output, session) {
           ) +
           theme_minimal()
         
-        # Add graph to Word document
         doc <- doc %>%
           body_add_par("First Graph: Public Sector Employment (Multi-Country)", style = "heading 1") %>%
           body_add_gg(value = first_graph, width = 6, height = 4)
       }
       
-      # Second Graph: Single Country
-      if ("secondGraph" %in% input$selected_graphs_public) {
+      # Add Second Graph if selected
+      if ("secondGraph" %in% input$graphs_to_download) {
         data_to_plot <- public_sector_emp_temp %>%
           filter(country_name == input$country_second)
         
@@ -1393,7 +1378,6 @@ server <- function(input, output, session) {
           select(year, indicator_name, value) %>%
           mutate(indicator_name = factor(indicator_name))
         
-        # Create ggplot equivalent for the second graph
         second_graph <- ggplot(data_to_plot_long, aes(x = year, y = value, color = indicator_name)) +
           geom_line(size = 1) +
           geom_point(size = 3) +
@@ -1404,13 +1388,11 @@ server <- function(input, output, session) {
           ) +
           theme_minimal()
         
-        # Add graph to Word document
         doc <- doc %>%
           body_add_par("Second Graph: Public Sector Employment (Single Country)", style = "heading 1") %>%
           body_add_gg(value = second_graph, width = 6, height = 4)
       }
       
-      # Save the document
       print(doc, target = file)
     }
   )
