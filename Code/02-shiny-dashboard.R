@@ -537,6 +537,7 @@ ui <- dashboardPage(
       menuItem("Public Sector Wage Premium", tabName = "publicsectorwagepremiumGraphs", icon = icon("chart-line")),
       menuItem("Public Sector Education Workers", tabName = "publicsectoreducationGraphs", icon = icon("chart-line")), 
       menuItem("Public Sector Graphs", tabName = "publicsectorGraphs", icon = icon("chart-line")), 
+      menuItem("Wage Premium Gender Graphs", tabName = "wagepremiumgenderGraphs", icon = icon("chart-line")), 
       menuItem("Download All Graphs", tabName = "downloadAllGraphs", icon = icon("download")) 
     )
   ),
@@ -980,6 +981,62 @@ ui <- dashboardPage(
                   column(
                     width = 6,
                     downloadButton("downloadGraphsWord", "Download Graphs as Word File", class = "btn-primary btn-block")
+                  )
+                )
+              )
+      ),
+      # Wage Premium gender Graphs
+      tabItem(tabName = "wagepremiumgenderGraphs",
+              fluidRow(
+                box(title = "First Graph - Multi-Country Selection", status = "primary", solidHeader = TRUE, width = 12,
+                    selectInput("countries_first", 
+                                "Select Countries for First Graph", 
+                                choices = unique(gender_wage_premium_last$country_name), 
+                                selected = NULL, 
+                                multiple = TRUE)
+                )
+              ),
+              fluidRow(
+                box(title = "First Graph", status = "primary", solidHeader = TRUE, width = 12,
+                    plotlyOutput("firstGraphgender")
+                )
+              ),
+              fluidRow(
+                box(title = "Second Graph - Single Country Selection", status = "primary", solidHeader = TRUE, width = 12,
+                    selectInput("country_second", 
+                                "Select Country for Second Graph", 
+                                choices = unique(gender_wage_premium$country_name), 
+                                selected = NULL, 
+                                multiple = FALSE)
+                )
+              ),
+              fluidRow(
+                box(title = "Second Graph", status = "primary", solidHeader = TRUE, width = 12,
+                    plotlyOutput("secondGraphgender")
+                )
+              ),
+              # Add graph selection and download functionality
+              fluidRow(
+                box(
+                  title = "Download Graphs",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  width = 12,
+                  column(
+                    width = 6,
+                    checkboxGroupInput(
+                      "selected_graphs_public", 
+                      "Select Graphs to Download:", 
+                      choices = c(
+                        "Multi-Country Graph" = "firstGraph",
+                        "Single-Country Graph" = "secondGraph"
+                      ),
+                      selected = c("firstGraph", "secondGraph") # Default: all selected
+                    )
+                  ),
+                  column(
+                    width = 6,
+                    downloadButton("downloadGraphsWordgender", "Download Graphs as Word File", class = "btn-primary btn-block")
                   )
                 )
               )
@@ -1886,7 +1943,7 @@ server <- function(input, output, session) {
  })
  
  # Download Handler
- # Download Handler
+
  output$downloadGraphsWord <-  downloadHandler(
    filename = function() {
      paste0("Public_Sector_Analysis_", Sys.Date(), ".docx")
@@ -2044,16 +2101,16 @@ server <- function(input, output, session) {
  })
  
  # Download Handler
- output$downloadGraphsWord <- downloadHandler(
+ output$downloadGraphsWordgender <- downloadHandler(
    filename = function() {
-     paste0("Public_Sector_Graphs_", Sys.Date(), ".docx")
+     paste0("Wage_Premium_Gender_Graphs_", Sys.Date(), ".docx")
    },
    content = function(file) {
      doc <- read_docx()
      
      # Add First Graph if selected
-     if ("firstGraph" %in% input$graphs_to_download && length(input$countries_first) > 0) {
-       data_to_plot <- public_sector_emp_temp_last %>%
+     if ("firstGraphgender" %in% input$graphs_to_download && length(input$countries_first) > 0) {
+       data_to_plot <- gender_wage_premium_last %>%
          filter(country_name %in% input$countries_first)
        
        data_to_plot_long <- data_to_plot %>%
@@ -2070,13 +2127,13 @@ server <- function(input, output, session) {
          theme_minimal()
        
        doc <- doc %>%
-         body_add_par("First Graph: Public Sector Employment (Multi-Country)", style = "heading 1") %>%
+         body_add_par("First Graph: Public sector wage premium, by gender (last year available)", style = "heading 1") %>%
          body_add_gg(value = first_graph, width = 6, height = 4)
      }
      
      # Add Second Graph if selected
-     if ("secondGraph" %in% input$graphs_to_download && !is.null(input$country_second)) {
-       data_to_plot <- public_sector_emp_temp %>%
+     if ("secondGraphgender" %in% input$graphs_to_download && !is.null(input$country_second)) {
+       data_to_plot <- gender_wage_premium %>%
          filter(country_name == input$country_second)
        
        data_to_plot_long <- data_to_plot %>%
@@ -2087,14 +2144,14 @@ server <- function(input, output, session) {
          geom_line(size = 1) +
          geom_point(size = 3) +
          labs(
-           title = paste("Public Sector Employment in", input$country_second, "Over Time"),
+           title = paste("Public sector wage premium, by gender in", input$country_second, "Over Time"),
            x = "Year",
            y = "Employment Value"
          ) +
          theme_minimal()
        
        doc <- doc %>%
-         body_add_par("Second Graph: Public Sector Employment (Single Country)", style = "heading 1") %>%
+         body_add_par("Second Graph: Public sector wage premium, by gender in", style = "heading 1") %>%
          body_add_gg(value = second_graph, width = 6, height = 4)
      }
      
