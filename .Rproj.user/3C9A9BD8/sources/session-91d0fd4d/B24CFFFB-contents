@@ -808,7 +808,7 @@ ui <- dashboardPage(
               ),
               selected = c("firstGraph", "secondGraph")  # Default to all selected
             ),
-            downloadButton("downloadGraphsWord", "Download Selected Graphs in Word")
+            downloadButton("downloadGraphsWordworkforce", "Download Selected Graphs in Word")
           )
         )
       ),
@@ -1367,7 +1367,8 @@ server <- function(input, output, session) {
   
   # Render the stacked bar graph
   output$stackedBarGraph <- renderPlotly({
-    data_to_plot <- filtered_workforce_data()
+    data_to_plot <- filtered_workforce_data()  # Call the reactive expression here
+    
     req(nrow(data_to_plot) > 0)  # Ensure there's data to plot
     
     plot_ly(
@@ -1398,6 +1399,8 @@ server <- function(input, output, session) {
       )
   })
   
+
+  
   # Second Graph: Horizontal Stacked Bar Chart (Single Country)
   output$messageOutput <- renderUI({
     # Filter data for the selected country
@@ -1412,18 +1415,26 @@ server <- function(input, output, session) {
     return(NULL)
   })
   
+  # Check if filtered_data is empty before calculating min and max
   output$horizontalStackedBar <- renderPlotly({
     req(input$selected_country)
     
-    # Filter data for the selected country
     filtered_data <- public_sector_workforce %>%
       filter(country_name == input$selected_country)
     
-    # Find the first and last year available for the selected country
+    # Check if there is enough data
+    if (nrow(filtered_data) == 0) {
+      return(NULL)  # Return NULL if there's no data for the selected country
+    }
+    
     first_year <- min(filtered_data$year, na.rm = TRUE)
     last_year <- max(filtered_data$year, na.rm = TRUE)
     
-    # Filter data for the first and last year
+    # Check again if first_year and last_year are finite values
+    if (is.infinite(first_year) | is.infinite(last_year)) {
+      return(NULL)  # Return NULL if years are infinite (empty data)
+    }
+    
     data_to_plot <- filtered_data %>%
       filter(year %in% c(first_year, last_year)) %>%
       group_by(year, indicator_name) %>%
@@ -1455,98 +1466,72 @@ server <- function(input, output, session) {
       )
   })
   
-  # Word Graph Download Handler
-  output$downloadGraphsWord <- downloadHandler(
+  # Download Handler for Word Report
+  output$downloadGraphsWordworkforce <- downloadHandler(
     filename = function() {
-      paste0("Public_Sector_Workforce_Graphs_", Sys.Date(), ".docx")
+      paste0("Public_Sector_Analysis_", Sys.Date(), ".docx")
     },
     content = function(file) {
-      # Create a new Word document
-      doc <- read_docx()
+      doc <- read_docx()  # Start a new Word document
       
-      # Check if the first graph is selected
-      if ("firstGraph" %in% input$selected_graphs_public) {
-        # Render the first graph
-        data_to_plot <- filtered_workforce_data()
-        if (nrow(data_to_plot) > 0) {
-          stacked_graph <- plot_ly(
-            data = data_to_plot,
-            x = ~country_name,
-            y = ~value_percentage,
-            color = ~indicator_name,
-            type = "bar",
-            text = ~paste(
-              "Country:", country_name,
-              "<br>Indicator:", indicator_name,
-              "<br>Value:", round(value_percentage, 1), "%"
-            ),
-            textposition = "auto",
-            colors = c(
-              "Public Administration workers, as a share of public total employees" = "#568340", 
-              "Education workers, as a share of public total employees" = "#B3242B", 
-              "Health workers, as a share of public total employees" = "#003366", 
-              "Other" = "#A9A9A9"
-            )
-          )
-          
-          # Save the first graph as an image
-          tmp_file1 <- tempfile(fileext = ".png")
-          export(stacked_graph, file = tmp_file1)
-          
-          # Add the first graph to the document
-          doc <- doc %>%
-            body_add_par("First Graph: Public Workforce Distribution by Country", style = "heading 1") %>%
-            body_add_img(src = tmp_file1, width = 6, height = 4)
-        }
-      }
+      # Title for the report
+      report_title <- paste("Public Sector Workforce Analysis")
+      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
+      doc <- doc %>%
+        body_add_fpar(fpar(ftext(report_title, prop = title_style)))
       
-      # Check if the second graph is selected
-      if ("secondGraph" %in% input$selected_graphs_public) {
-        filtered_data <- public_sector_workforce %>%
-          filter(country_name == input$selected_country)
-        if (nrow(filtered_data) > 0) {
-          first_year <- min(filtered_data$year, na.rm = TRUE)
-          last_year <- max(filtered_data$year, na.rm = TRUE)
-          
-          if (is.finite(first_year) && is.finite(last_year)) {
-            data_to_plot <- filtered_data %>%
-              filter(year %in% c(first_year, last_year)) %>%
-              group_by(year, indicator_name) %>%
-              summarise(value_percentage = mean(value_percentage, na.rm = TRUE), .groups = "drop")
-            
-            horizontal_graph <- plot_ly(
-              data = data_to_plot,
-              x = ~value_percentage,
-              y = ~factor(year, levels = c(last_year, first_year)),
-              color = ~indicator_name,
-              type = "bar",
-              orientation = "h",
-              text = ~paste0(round(value_percentage, 1), "%"),
-              textposition = "inside",
-              colors = c(
-                "Public Administration workers, as a share of public total employees" = "#568340",
-                "Education workers, as a share of public total employees" = "#B3242B",
-                "Health workers, as a share of public total employees" = "#003366",
-                "Other" = "#A9A9A9"
-              )
-            )
-            
-            # Save the second graph as an image
-            tmp_file2 <- tempfile(fileext = ".png")
-            export(horizontal_graph, file = tmp_file2)
-            
-            # Add the second graph to the document
-            doc <- doc %>%
-              body_add_par(paste("Horizontal Stacked Bar Graph for", input$selected_country), style = "heading 1") %>%
-              body_add_img(src = tmp_file2, width = 6, height = 4)
-          }
-        }
-      }
+      # First Graph (Stacked Bar Graph for Multiple Countries using ggplot2)
+      first_graph_ggplot <- ggplot(filtered_workforce_data(), aes(x = country_name, y = value_percentage, fill = indicator_name)) +
+        geom_bar(stat = "identity", position = "stack") +
+        scale_fill_manual(values = c(
+          "Public Administration workers, as a share of public total employees" = "#568340", 
+          "Education workers, as a share of public total employees" = "#B3242B", 
+          "Health workers, as a share of public total employees" = "#003366", 
+          "Other" = "#A9A9A9"
+        )) +
+        labs(title = "Public Workforce Distribution by Country", x = "Country", y = "Workforce Distribution (%)") +
+        theme_minimal()
+      
+      # Save the first graph as a PNG file
+      ggsave("first_graph.png", plot = first_graph_ggplot, width = 6, height = 4)
+      
+      # Add first graph to the Word document
+      doc <- doc %>%
+        body_add_par("First Graph: Public Workforce Distribution by Country", style = "heading 1") %>%
+        body_add_img(src = "first_graph.png", width = 6, height = 4) %>%
+        body_add_par("This graph shows the public workforce distribution across multiple countries.", style = "Normal")
+      
+      # Second Graph (Horizontal Stacked Bar Chart for Single Country using ggplot2)
+      second_graph_ggplot <- ggplot(filtered_data %>%
+                                      filter(year %in% c(first_year, last_year)) %>%
+                                      group_by(year, indicator_name) %>%
+                                      summarise(value_percentage = mean(value_percentage, na.rm = TRUE), .groups = "drop"),
+                                    aes(x = value_percentage, y = factor(year, levels = c(last_year, first_year)), fill = indicator_name)) +
+        geom_bar(stat = "identity", position = "stack", orientation = "horizontal") +
+        scale_fill_manual(values = c(
+          "Public Administration workers, as a share of public total employees" = "#568340",
+          "Education workers, as a share of public total employees" = "#B3242B",
+          "Health workers, as a share of public total employees" = "#003366", 
+          "Other" = "#A9A9A9"
+        )) +
+        labs(title = paste("Sectoral Distribution of Public Sector Workforce in", input$selected_country), 
+             x = "Percentage (%)", y = "Year") +
+        theme_minimal()
+      
+      # Save the second graph as a PNG file
+      ggsave("second_graph.png", plot = second_graph_ggplot, width = 6, height = 4)
+      
+      # Add second graph to the Word document
+      doc <- doc %>%
+        body_add_par("Second Graph: Sectoral Distribution of Public Sector Workforce", style = "heading 1") %>%
+        body_add_img(src = "second_graph.png", width = 6, height = 4) %>%
+        body_add_par("This graph shows the sectoral distribution of public sector workforce for the selected country.", style = "Normal")
       
       # Save the Word document
       print(doc, target = file)
     }
   )
+  
   
   
   #Gender Workforce 
