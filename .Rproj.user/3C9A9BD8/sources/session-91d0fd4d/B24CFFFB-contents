@@ -1355,19 +1355,22 @@ server <- function(input, output, session) {
   
   #Public Sector Workforce
   
-  # Reactive expression to filter workforce data
+  # Updated reactive expression (without filtering directly in the expression)
   filtered_workforce_data <- reactive({
     req(input$countries_workforce)  # Ensure input is not null
     public_sector_workforce %>%
-      filter(country_name %in% input$countries_workforce) %>%
       group_by(country_name, indicator_name) %>%
-      slice_max(order_by = year, n = 1) %>%  # Get the latest year available for each country
+      slice_max(order_by = year, n = 1) %>%
       ungroup()
   })
   
   # Render the stacked bar graph
   output$stackedBarGraph <- renderPlotly({
-    data_to_plot <- filtered_workforce_data()  # Call the reactive expression here
+    req(input$countries_workforce)  # Ensure countries_workforce input is valid
+    
+    # Apply filter after accessing the reactive data
+    data_to_plot <- filtered_workforce_data() %>%
+      filter(country_name %in% input$countries_workforce)  # Filter the data here
     
     req(nrow(data_to_plot) > 0)  # Ensure there's data to plot
     
@@ -1398,8 +1401,6 @@ server <- function(input, output, session) {
         legend = list(title = list(text = "<b>Indicator</b>"))
       )
   })
-  
-
   
   # Second Graph: Horizontal Stacked Bar Chart (Single Country)
   output$messageOutput <- renderUI({
@@ -1481,7 +1482,9 @@ server <- function(input, output, session) {
         body_add_fpar(fpar(ftext(report_title, prop = title_style)))
       
       # First Graph (Stacked Bar Graph for Multiple Countries using ggplot2)
-      first_graph_ggplot <- ggplot(filtered_workforce_data(), aes(x = country_name, y = value_percentage, fill = indicator_name)) +
+      first_graph_data <- filtered_workforce_data() %>%
+        filter(country_name %in% input$countries_workforce)
+      first_graph_ggplot <- ggplot(first_graph_data, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
         geom_bar(stat = "identity", position = "stack") +
         scale_fill_manual(values = c(
           "Public Administration workers, as a share of public total employees" = "#568340", 
@@ -1502,11 +1505,12 @@ server <- function(input, output, session) {
         body_add_par("This graph shows the public workforce distribution across multiple countries.", style = "Normal")
       
       # Second Graph (Horizontal Stacked Bar Chart for Single Country using ggplot2)
-      second_graph_ggplot <- ggplot(filtered_data %>%
-                                      filter(year %in% c(first_year, last_year)) %>%
-                                      group_by(year, indicator_name) %>%
-                                      summarise(value_percentage = mean(value_percentage, na.rm = TRUE), .groups = "drop"),
-                                    aes(x = value_percentage, y = factor(year, levels = c(last_year, first_year)), fill = indicator_name)) +
+      second_graph_data <- public_sector_workforce %>%
+        filter(country_name == input$selected_country) %>%
+        filter(year %in% c(first_year, last_year)) %>%
+        group_by(year, indicator_name) %>%
+        summarise(value_percentage = mean(value_percentage, na.rm = TRUE), .groups = "drop")
+      second_graph_ggplot <- ggplot(second_graph_data, aes(x = value_percentage, y = factor(year, levels = c(last_year, first_year)), fill = indicator_name)) +
         geom_bar(stat = "identity", position = "stack", orientation = "horizontal") +
         scale_fill_manual(values = c(
           "Public Administration workers, as a share of public total employees" = "#568340",
@@ -1531,8 +1535,6 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
-  
-  
   
   #Gender Workforce 
   
