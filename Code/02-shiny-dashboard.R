@@ -1,6 +1,7 @@
 # Shiny Dashboard for Worldwide Bureaucracy Indicators
 
 ### Libraries
+
 library(haven)
 library(dplyr)
 library(tidyr)
