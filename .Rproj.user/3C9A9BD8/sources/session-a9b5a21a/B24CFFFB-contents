@@ -2098,6 +2098,7 @@ server <- function(input, output, session) {
  })
  
  # Download Handler
+ 
  output$downloadGraphsWordgender <- downloadHandler(
    filename = function() {
      paste0("Wage_Premium_Gender_Graphs_", Sys.Date(), ".docx")
@@ -2108,11 +2109,8 @@ server <- function(input, output, session) {
      print(input$country_second)
      
      # Extract the first selected country for dynamic title
-     if (!is.null(input$countries_first) && length(input$countries_first) > 0) {
-       countries <- input$countries_first[1]  # Take the first country
-     } else {
-       countries <- "Unknown Country"  # Fallback in case no country is selected
-     }
+     countries <- ifelse(!is.null(input$countries_first) && length(input$countries_first) > 0, input$countries_first[1], "Unknown Country")
+     
      # Dynamic title with the first country
      report_title <- paste("Wage Premium Gender Analysis Report -", countries)
      
@@ -2121,24 +2119,17 @@ server <- function(input, output, session) {
      # Define the style for the title
      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
      
-     
      # Apply the custom title style
      doc <- doc %>%
        body_add_fpar(fpar(ftext(report_title, prop = title_style)))
-    
+     
      # Add introduction
      doc <- doc %>%
        body_add_par("Introduction", style = "heading 2") %>%
        body_add_par("This report presents evidence on public sector employment and compensation practices for the selected countries. The analysis uses the latest data on public sector employment trends and provides insights into the composition and trends in public sector workforces.")
      
-     
-     
      # Add First Graph if selected
      if ("firstGraphgender" %in% input$graphs_to_download && length(input$countries_first) > 0) {
-       data_to_plot <- gender_wage_premium_last %>%
-         filter(country_name %in% input$countries_first)
-       
-       # Data for the first graph (Multi-Country)
        data_to_plot <- gender_wage_premium_last %>%
          filter(country_name %in% input$countries_first)
        
@@ -2147,39 +2138,32 @@ server <- function(input, output, session) {
          mutate(indicator_label = factor(indicator_label))
        
        # Generate first graph (Multi-Country)
-       first_graph <- ggplot(data_to_plot_long, aes(x = country_name, y = value, color = indicator_label)) +
+       first_graph_wage_premium_gender <- ggplot(data_to_plot_long, aes(x = country_name, y = value, color = indicator_label)) +
          geom_point(size = 3) +
-         labs(title = "Wage Premium Gnder (Multi-Country)", x = "Country", y = "Value") +
+         labs(title = "Wage Premium Gender (Multi-Country)", x = "Country", y = "Value") +
          theme_minimal()
        
-       # Save first graph as PNG (to the 'www' folder or appropriate path)
-       ggsave("C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/first_graph_wage_premium_gender.png", plot = first_graph, width = 6, height = 4)
-       
+       # Save first graph as PNG
+       graph_path1 <- "C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/first_graph_wage_premium_gender.png"
+       ggsave(graph_path1, plot = first_graph_wage_premium_gender, width = 6, height = 4)
        
        # Add first graph to the Word document
        doc <- doc %>%
-         body_add_par("First Graph: Wage Premium Gnder (Multi-Country)", style = "heading 1") %>%
-         body_add_img(src = "C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/first_graph_wage_premium_gender.png", width = 6, height = 4) %>%
-         body_add_par("This graph shows the wage preium by gender across multiple countries.", style = "Normal")
+         body_add_par("First Graph: Wage Premium Gender (Multi-Country)", style = "heading 1") %>%
+         body_add_img(src = graph_path1, width = 6, height = 4) %>%
+         body_add_par("This graph shows the wage premium by gender across multiple countries.", style = "Normal")
      }
-     
      
      # Add Second Graph if selected
      if ("secondGraphgender" %in% input$graphs_to_download && !is.null(input$country_second)) {
        data_to_plot <- gender_wage_premium %>%
          filter(country_name == input$country_second)
        
-       # Data for the second graph (Single Country)
-       data_to_plot <- gender_wage_premium %>%
-         filter(country_name == input$country_second)
-       
-       
        data_to_plot_long <- data_to_plot %>%
          select(year, indicator_name, value) %>%
          mutate(indicator_name = factor(indicator_name))
        
-       
-       second_graph <- ggplot(data_to_plot_long, aes(x = year, y = value, color = indicator_name)) +
+       second_graph_wage_premium_gende <- ggplot(data_to_plot_long, aes(x = year, y = value, color = indicator_name)) +
          geom_line(size = 1) +
          geom_point(size = 3) +
          labs(
@@ -2189,19 +2173,18 @@ server <- function(input, output, session) {
          ) +
          theme_minimal()
        
-       
-       # Save second graph as PNG (to the 'www' folder or appropriate path)
-       ggsave("C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/second_graph_wage_premium_gender.png", plot = second_graph, width = 6, height = 4)
+       # Save second graph as PNG
+       graph_path2 <- "C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/second_graph_wage_premium_gender.png"
+       ggsave(graph_path2, plot = second_graph_wage_premium_gender, width = 6, height = 4)
        
        # Add second graph to the Word document
        doc <- doc %>%
          body_add_par("Second Graph: Public Sector Employment (Single Country)", style = "heading 1") %>%
-         body_add_img(src = "C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/second_graph_wage_premium_gender.png", width = 6, height = 4) %>%
+         body_add_img(src = graph_path2, width = 6, height = 4) %>%
          body_add_par("This graph shows the wage premium by gender trends over time for the selected country.", style = "Normal")
      }
      
      # Save the Word document
-     
      print(doc, target = file)
    }
  )
