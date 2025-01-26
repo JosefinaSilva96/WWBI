@@ -295,6 +295,19 @@ public_sector_workforce <- public_sector_workforce %>%
   )
 
 
+public_sector_workforce <- public_sector_workforce %>%
+  mutate(indicator_name = ifelse(indicator_name == "Education workers, as a share of public total employees", "Education", indicator_name))
+
+public_sector_workforce <- public_sector_workforce %>%
+  mutate(indicator_name = ifelse(indicator_name == "Health workers, as a share of public total employees", "Health", indicator_name))
+
+public_sector_workforce <- public_sector_workforce %>%
+  mutate(indicator_name = ifelse(indicator_name == "Public Administration workers, as a share of public total employees", "Publicd Administration", indicator_name))
+
+
+
+
+
 # Keep the first and  last year available for each country
 
 public_sector_workforce_first_last <- public_sector_workforce %>%
@@ -303,6 +316,20 @@ public_sector_workforce_first_last <- public_sector_workforce %>%
   filter(year == max(year, na.rm = TRUE) |           # Keep rows for the last year
            year == min(year, na.rm = TRUE)) %>%      # Keep rows for the first year
   ungroup()
+
+
+public_sector_workforce_first_last <- public_sector_workforce_first_last %>%
+  mutate(indicator_name = ifelse(indicator_name == "Education workers, as a share of public total employees", "Education", indicator_name))
+
+public_sector_workforce_first_last <- public_sector_workforce_first_last %>%
+  mutate(indicator_name = ifelse(indicator_name == "Health workers, as a share of public total employees", "Health", indicator_name))
+
+public_sector_workforce_first_last <- public_sector_workforce_first_last %>%
+  mutate(indicator_name = ifelse(indicator_name == "Public Administration workers, as a share of public total employees", "Publicd Administration", indicator_name))
+
+
+
+
 
 # Filter the data for the specific indicator "Characteristics of the gender workforce"
 
@@ -1478,6 +1505,7 @@ server <- function(input, output, session) {
   })
   
   # Download Handler for Word Report
+  # Download Handler for Word Report
   output$downloadGraphsWordworkforce <- downloadHandler(
     filename = function() {
       paste0("Public_Sector_Analysis_", Sys.Date(), ".docx")
@@ -1515,37 +1543,58 @@ server <- function(input, output, session) {
         body_add_par("This graph shows the public workforce distribution across multiple countries.", style = "Normal")
       
       # Second Graph (Horizontal Stacked Bar Chart for Single Country using ggplot2)
-      second_graph_data <- public_sector_workforce %>%
-        filter(country_name == input$selected_country) %>%
-        filter(year %in% c(first_year, last_year)) %>%
-        group_by(year, indicator_name) %>%
-        summarise(value_percentage = mean(value_percentage, na.rm = TRUE), .groups = "drop")
-      second_graph_ggplot <- ggplot(second_graph_data, aes(x = value_percentage, y = factor(year, levels = c(last_year, first_year)), fill = indicator_name)) +
-        geom_bar(stat = "identity", position = "stack", orientation = "horizontal") +
-        scale_fill_manual(values = c(
-          "Public Administration workers, as a share of public total employees" = "#568340",
-          "Education workers, as a share of public total employees" = "#B3242B",
-          "Health workers, as a share of public total employees" = "#003366", 
-          "Other" = "#A9A9A9"
-        )) +
-        labs(title = paste("Sectoral Distribution of Public Sector Workforce in", input$selected_country), 
-             x = "Percentage (%)", y = "Year") +
-        theme_minimal()
+      filtered_data <- public_sector_workforce %>%
+        filter(country_name == input$selected_country)
       
-      # Save the second graph as a PNG file
-      ggsave("second_graph.png", plot = second_graph_ggplot, width = 6, height = 4)
-      
-      # Add second graph to the Word document
-      doc <- doc %>%
-        body_add_par("Second Graph: Sectoral Distribution of Public Sector Workforce", style = "heading 1") %>%
-        body_add_img(src = "second_graph.png", width = 6, height = 4) %>%
-        body_add_par("This graph shows the sectoral distribution of public sector workforce for the selected country.", style = "Normal")
+      # Check if there is enough data
+      if (nrow(filtered_data) < 2) {
+        message <- "Not enough data available for this country to create the graph."
+        doc <- doc %>%
+          body_add_par(message, style = "Normal")
+      } else {
+        # Calculate first_year and last_year for the selected country
+        first_year <- min(filtered_data$year, na.rm = TRUE)
+        last_year <- max(filtered_data$year, na.rm = TRUE)
+        
+        # Check if first_year and last_year are valid (finite values)
+        if (!is.finite(first_year) | !is.finite(last_year)) {
+          message <- "Invalid year data for the selected country."
+          doc <- doc %>%
+            body_add_par(message, style = "Normal")
+        } else {
+          # Filter the data for the first and last year
+          second_graph_data <- filtered_data %>%
+            filter(year %in% c(first_year, last_year)) %>%
+            group_by(year, indicator_name) %>%
+            summarise(value_percentage = mean(value_percentage, na.rm = TRUE), .groups = "drop")
+          
+          second_graph_ggplot <- ggplot(second_graph_data, aes(x = value_percentage, y = factor(year, levels = c(last_year, first_year)), fill = indicator_name)) +
+            geom_bar(stat = "identity", position = "stack", orientation = "horizontal") +
+            scale_fill_manual(values = c(
+              "Public Administration workers, as a share of public total employees" = "#568340",
+              "Education workers, as a share of public total employees" = "#B3242B",
+              "Health workers, as a share of public total employees" = "#003366", 
+              "Other" = "#A9A9A9"
+            )) +
+            labs(title = paste("Sectoral Distribution of Public Sector Workforce in", input$selected_country), 
+                 x = "Percentage (%)", y = "Year") +
+            theme_minimal()
+          
+          # Save the second graph as a PNG file
+          ggsave("second_graph.png", plot = second_graph_ggplot, width = 6, height = 4)
+          
+          # Add second graph to the Word document
+          doc <- doc %>%
+            body_add_par("Second Graph: Sectoral Distribution of Public Sector Workforce", style = "heading 1") %>%
+            body_add_img(src = "second_graph.png", width = 6, height = 4) %>%
+            body_add_par("This graph shows the sectoral distribution of public sector workforce for the selected country.", style = "Normal")
+        }
+      }
       
       # Save the Word document
       print(doc, target = file)
     }
   )
-  
   #Gender Workforce 
   
   output$employment_plot <- renderPlotly({
