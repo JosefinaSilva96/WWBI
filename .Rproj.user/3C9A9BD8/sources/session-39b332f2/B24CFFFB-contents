@@ -302,7 +302,10 @@ public_sector_workforce <- public_sector_workforce %>%
   mutate(indicator_name = ifelse(indicator_name == "Health workers, as a share of public total employees", "Health", indicator_name))
 
 public_sector_workforce <- public_sector_workforce %>%
-  mutate(indicator_name = ifelse(indicator_name == "Public Administration workers, as a share of public total employees", "Publicd Administration", indicator_name))
+  mutate(indicator_name = ifelse(indicator_name == "Public Administration workers, as a share of public total employees", "Public Administration", indicator_name))
+
+public_sector_workforce <- public_sector_workforce %>%
+  mutate(indicator_name = ifelse(indicator_name == "Publicd Administration", "Public Administration", indicator_name))
 
 
 
@@ -325,8 +328,11 @@ public_sector_workforce_first_last <- public_sector_workforce_first_last %>%
   mutate(indicator_name = ifelse(indicator_name == "Health workers, as a share of public total employees", "Health", indicator_name))
 
 public_sector_workforce_first_last <- public_sector_workforce_first_last %>%
-  mutate(indicator_name = ifelse(indicator_name == "Public Administration workers, as a share of public total employees", "Publicd Administration", indicator_name))
+  mutate(indicator_name = ifelse(indicator_name == "Public Administration workers, as a share of public total employees", "Public Administration", indicator_name))
 
+
+public_sector_workforce_first_last <- public_sector_workforce_first_last %>%
+  mutate(indicator_name = ifelse(indicator_name == "Publicd Administration", "Public Administration", indicator_name))
 
 
 
@@ -574,7 +580,8 @@ ui <- dashboardPage(
       tabItem(tabName = "dashboard",
               fluidRow(
                 box(title = "Dashboard Description", status = "primary", solidHeader = TRUE, width = 12,
-                    "Welcome to the World Bank Indicators Dashboard!")
+                    "Welcome to the Worldwide Bureaucracy Indicators (WWBI)
+                    The Worldwide Bureaucracy Indicators (WWBI) database is a unique cross-national dataset on public sector employment and wages that aims to fill an information gap, thereby helping researchers, development practitioners, and policymakers gain a better understanding of the personnel dimensions of state capability, the footprint of the public sector within the overall labor market, and the fiscal implications of the public sector wage bill. The dataset is derived from administrative data and household surveys, thereby complementing existing, expert perception-based approaches.")
               )
       ),
       # Widgets Tab
@@ -894,21 +901,58 @@ ui <- dashboardPage(
             width = 12,
             plotlyOutput(outputId = "employment_plot_overtime", height = "600px")
           )
+        ),
+        
+        # Download Button for Word Report
+        fluidRow(
+          box(
+            title = "Download Report",
+            status = "primary",
+            solidHeader = TRUE,
+            width = 12,
+            downloadButton(
+              outputId = "downloadGraphsWordworkforce", 
+              label = "Download Gender Workforce Report"
+            )
+          )
         )
       ),
+
       # Tertiary Education Graphs Tab
       tabItem(tabName = "educationGraphs",
               fluidRow(
-                box(title = "Country Selection", status = "primary", solidHeader = TRUE, width = 12,
-                    selectInput("selected_countries", "Select Countries", 
-                                choices = unique(tertiary_education$country_name),
-                                selected = unique(tertiary_education$country_name)[1:3], # Default selection
-                                multiple = TRUE)
+                box(
+                  title = "Country Selection", 
+                  status = "primary", 
+                  solidHeader = TRUE, 
+                  width = 12,
+                  selectInput("selected_countries", "Select Countries", 
+                              choices = unique(tertiary_education$country_name),
+                              selected = unique(tertiary_education$country_name)[1:3], # Default selection
+                              multiple = TRUE
+                  )
                 )
               ),
               fluidRow(
-                box(title = "Tertiary Education Graphs", status = "primary", solidHeader = TRUE, width = 12,
-                    plotlyOutput("barPlot", height = "600px")
+                box(
+                  title = "Tertiary Education Graphs", 
+                  status = "primary", 
+                  solidHeader = TRUE, 
+                  width = 12,
+                  plotlyOutput("barPlot", height = "600px")
+                )
+              ),
+              # Download Button for Tertiary Education Report
+              fluidRow(
+                box(
+                  title = "Download Report",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  width = 12,
+                  downloadButton(
+                    outputId = "downloadGraphsWordEducation", 
+                    label = "Download Tertiary Education Report"
+                  )
                 )
               )
       ),
@@ -1424,9 +1468,9 @@ server <- function(input, output, session) {
       ),  # Detailed hover information
       textposition = "auto",
       colors = c(
-        "Public Administration workers, as a share of public total employees" = "#568340", 
-        "Education workers, as a share of public total employees" = "#B3242B", 
-        "Health workers, as a share of public total employees" = "#003366", 
+        "Public Administration" = "#568340", 
+        "Education" = "#B3242B", 
+        "Health" = "#003366", 
         "Other" = "#A9A9A9"  # Gray for "Other"
       )
     ) %>%
@@ -1488,9 +1532,9 @@ server <- function(input, output, session) {
             text = ~paste0(round(value_percentage, 1), "%"),  # Add percentage as text
             textposition = "inside",
             colors = c(
-              "Public Administration workers, as a share of public total employees" = "#568340",
-              "Education workers, as a share of public total employees" = "#B3242B",
-              "Health workers, as a share of public total employees" = "#003366", 
+              "Public Administration" = "#568340",
+              "Education" = "#B3242B",
+              "Health" = "#003366", 
               "Other" = "#A9A9A9"
             )
     ) %>%
@@ -1504,7 +1548,6 @@ server <- function(input, output, session) {
       )
   })
   
-  # Download Handler for Word Report
   # Download Handler for Word Report
   output$downloadGraphsWordworkforce <- downloadHandler(
     filename = function() {
@@ -1525,9 +1568,9 @@ server <- function(input, output, session) {
       first_graph_ggplot <- ggplot(first_graph_data, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
         geom_bar(stat = "identity", position = "stack") +
         scale_fill_manual(values = c(
-          "Public Administration workers, as a share of public total employees" = "#568340", 
-          "Education workers, as a share of public total employees" = "#B3242B", 
-          "Health workers, as a share of public total employees" = "#003366", 
+          "Public Administration" = "#568340", 
+          "Education" = "#B3242B", 
+          "Health" = "#003366", 
           "Other" = "#A9A9A9"
         )) +
         labs(title = "Public Workforce Distribution by Country", x = "Country", y = "Workforce Distribution (%)") +
@@ -1571,9 +1614,9 @@ server <- function(input, output, session) {
           second_graph_ggplot <- ggplot(second_graph_data, aes(x = value_percentage, y = factor(year, levels = c(last_year, first_year)), fill = indicator_name)) +
             geom_bar(stat = "identity", position = "stack", orientation = "horizontal") +
             scale_fill_manual(values = c(
-              "Public Administration workers, as a share of public total employees" = "#568340",
-              "Education workers, as a share of public total employees" = "#B3242B",
-              "Health workers, as a share of public total employees" = "#003366", 
+              "Public Administration" = "#568340",
+              "Education" = "#B3242B",
+              "Health" = "#003366", 
               "Other" = "#A9A9A9"
             )) +
             labs(title = paste("Sectoral Distribution of Public Sector Workforce in", input$selected_country), 
@@ -1596,86 +1639,104 @@ server <- function(input, output, session) {
     }
   )
   #Gender Workforce 
-  
   output$employment_plot <- renderPlotly({
     # Filter data based on selected countries
     filtered_data <- gender_workforce %>%
       filter(country_name %in% input$countries_workforce)
     
-    #Last year available
+    # Handle missing or incomplete data
+    if (nrow(filtered_data) == 0) {
+      return(NULL)  # Return NULL if no data available
+    }
+    
+    # Last year available for public sector
     public_latest <- filtered_data %>%
       filter(indicator_name == "Females, as a share of public paid employees") %>%
       group_by(country_name) %>%
-      filter(year == max(year, na.rm = TRUE)) %>%  # Keep only the most recent year
+      filter(year == max(year, na.rm = TRUE)) %>%
       ungroup()
     
-    #Last year available
+    # Last year available for private sector
     private_latest <- filtered_data %>%
       filter(indicator_name == "Females, as a share of private paid employees") %>%
       group_by(country_name) %>%
-      filter(year == max(year, na.rm = TRUE)) %>%  # Keep only the most recent year
+      filter(year == max(year, na.rm = TRUE)) %>%
       ungroup()
+    
+    # Ensure private_latest and public_latest exist
+    if (nrow(public_latest) == 0 || nrow(private_latest) == 0) {
+      return(NULL)  # Return NULL if no valid data
+    }
     
     # Create the plot
     plot <- plot_ly(
       data = public_latest,
       x = ~country_name,
-      y = ~value_percentage,  # Use the percentage for the last year available
+      y = ~value_percentage,
       type = 'bar',
-      color = I("#003366"),  # Color for public sector
+      color = I("#003366"),
       text = ~paste("Country: ", country_name,
                     "<br>Last year available: ", year,
-                    "<br>Employment (%): ", round(value_percentage, 2)),  # Add detailed hover text
-      hoverinfo = "text",  # Show hover info
+                    "<br>Employment (%): ", round(value_percentage, 2)),
+      hoverinfo = "text",
       name = "Public Sector",
       showlegend = TRUE
     ) %>%
       add_trace(
         data = private_latest,
         x = ~country_name,
-        y = ~value_percentage,  # Use the percentage for the last year available
+        y = ~value_percentage,
         type = "scatter",
         mode = "markers",
         marker = list(size = 10, color = "#B3242B"),
         name = "Private Sector",
         text = ~paste("Country: ", country_name,
                       "<br>Last year available: ", year,
-                      "<br>Employment (%): ", round(value_percentage, 2)),  # Add detailed hover text
-        hoverinfo = "text",  # Show hover info
-        showlegend = TRUE  # Show the legend
+                      "<br>Employment (%): ", round(value_percentage, 2)),
+        hoverinfo = "text",
+        showlegend = TRUE
       ) %>%
       layout(
         barmode = "group",
         title = "Female Employment by Sector (Last Year Available)",
         xaxis = list(
           title = "Country (Last Year Available)",
-          tickmode = 'array', 
-          tickvals = public_latest$country_name,  # Explicitly set the tick values
+          tickmode = 'array',
+          tickvals = public_latest$country_name,
           ticktext = paste(public_latest$country_name, 
-                           "(", public_latest$year, ")")  # Append year to country names
+                           "(", public_latest$year, ")")
         ),
         yaxis = list(title = "Employment (%)"),
         legend = list(title = list(text = "Sector"))
       )
     
-    return(plot)
+    plot
   })
+  
   # Second Graph: Female Employment by Sector Over Time (Single Country)
   output$employment_plot_overtime <- renderPlotly({
     # Filter the data for the selected country
     filtered_data <- gender_workforce %>% 
-      filter(country_name == input$selected_country) # Ensure single country selection
+      filter(country_name == input$selected_country)
+    
+    # Handle missing or incomplete data
+    if (nrow(filtered_data) == 0) {
+      return(NULL)  # Return NULL if no data available
+    }
     
     # Define a custom color palette
-    custom_colors <- c("Females, as a share of private paid employees" = "#003366", "Females, as a share of public paid employees" = "#B3242B")
+    custom_colors <- c(
+      "Females, as a share of private paid employees" = "#003366", 
+      "Females, as a share of public paid employees" = "#B3242B"
+    )
     
     # Create the Plotly graph
     plot <- filtered_data %>%
       plot_ly(
         x = ~year,
-        y = ~value_percentage,             
+        y = ~value_percentage,
         color = ~indicator_name,
-        colors = custom_colors, # Apply custom colors
+        colors = custom_colors,
         type = 'scatter',
         mode = 'lines+markers',
         hoverinfo = 'text',
@@ -1696,7 +1757,100 @@ server <- function(input, output, session) {
     
     plot
   })
-  
+
+  # Download Handler 
+  output$downloadGraphsWordworkforce <- downloadHandler(
+    filename = function() {
+      paste0("Gender_Workforce_Analysis_", Sys.Date(), ".docx")
+    },
+    content = function(file) {
+      # Create the Word document
+      doc <- read_docx()
+      
+      # Title for the document
+      doc <- doc %>%
+        body_add_par("Gender Workforce Analysis", style = "heading 1")
+      
+      # Recompute filtered data
+      filtered_data <- gender_workforce %>%
+        filter(country_name %in% input$countries_workforce)
+      
+      if (nrow(filtered_data) == 0) {
+        stop("No data available for selected countries.")
+      }
+      
+      # Recompute public_latest and private_latest
+      public_latest <- filtered_data %>%
+        filter(indicator_name == "Females, as a share of public paid employees") %>%
+        group_by(country_name) %>%
+        filter(year == max(year, na.rm = TRUE)) %>%
+        ungroup()
+      
+      private_latest <- filtered_data %>%
+        filter(indicator_name == "Females, as a share of private paid employees") %>%
+        group_by(country_name) %>%
+        filter(year == max(year, na.rm = TRUE)) %>%
+        ungroup()
+      
+      # Generate the first plotly graph
+      plotly_1 <- plot_ly(
+        data = public_latest,
+        x = ~country_name,
+        y = ~value_percentage,
+        type = 'bar',
+        color = I("#003366"),
+        name = "Public Sector"
+      ) %>%
+        add_trace(
+          data = private_latest,
+          x = ~country_name,
+          y = ~value_percentage,
+          type = "scatter",
+          mode = "markers",
+          marker = list(size = 10, color = "#B3242B"),
+          name = "Private Sector"
+        )
+      
+      # Save the first plotly graph as an image
+      webshot::webshot(
+        plotly_1,
+        file = "first_graph.png",
+        vwidth = 800,
+        vheight = 600
+      )
+      
+      # Add the first graph to the Word document
+      doc <- doc %>%
+        body_add_par("Female Employment by Sector (Last Year Available)", style = "heading 2") %>%
+        body_add_img(src = "first_graph.png", width = 6, height = 4)
+      
+      # Generate the second plotly graph
+      plotly_2 <- plot_ly(
+        data = gender_workforce %>% filter(country_name == input$selected_country),
+        x = ~year,
+        y = ~value_percentage,
+        color = ~indicator_name,
+        type = 'scatter',
+        mode = 'lines+markers'
+      )
+      
+      # Save the second plotly graph as an image
+      webshot::webshot(
+        plotly_2,
+        file = "second_graph.png",
+        vwidth = 800,
+        vheight = 600
+      )
+      
+      # Add the second graph to the Word document
+      doc <- doc %>%
+        body_add_par("Female Employment by Sector Over Time", style = "heading 2") %>%
+        body_add_img(src = "second_graph.png", width = 6, height = 4)
+      
+      # Save the Word document
+      print(doc, target = file)
+    }
+  )
   #Tertiary Education
   
   # Render the Plotly bar graph
@@ -1736,6 +1890,63 @@ server <- function(input, output, session) {
         bargap = 0.2                          # Adjust gap between bars
       )
   })
+  # Download Handler for Word Report
+  output$downloadGraphsWordEducation <- downloadHandler(
+    filename = function() {
+      paste0("Tertiary_Education_Analysis_", Sys.Date(), ".docx")
+    },
+    content = function(file) {
+      doc <- read_docx()  # Start a new Word document
+      
+      # Title for the report
+      report_title <- paste("Tertiary Education Analysis")
+      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
+      doc <- doc %>%
+        body_add_fpar(fpar(ftext(report_title, prop = title_style)))
+      
+      # Tertiary Education Bar Plot
+      # Filter data based on selected countries
+      filtered_data <- tertiary_education %>%
+        filter(country_name %in% input$selected_countries)
+      
+      # Ensure the filtered dataset is not empty
+      if (nrow(filtered_data) == 0) {
+        return(NULL)  # Return nothing if the filtered dataset is empty
+      }
+      
+      # Create the bar plot for tertiary education by sector
+      bar_plot <- plot_ly(
+        data = filtered_data,
+        x = ~country_name,                      # X-axis: Country name
+        y = ~value_percentage,                  # Y-axis: Tertiary education percentages
+        color = ~indicator_name,                # Different color for Public/Private
+        colors = c(
+          "Individuals with tertiary education as a share of public paid employees" = "#003366", 
+          "Individuals with tertiary education as a share of private paid employees" = "#B3242B"
+        ),                                     # Custom color mapping
+        type = 'bar',                           # Bar chart
+        barmode = 'group'                       # Group bars for Public/Private
+      ) %>%
+        layout(
+          title = "Tertiary Education by Sector and Country",
+          xaxis = list(title = "Country"),      # Title for x-axis
+          yaxis = list(title = "Tertiary Education (%)"), # Title for y-axis
+          bargap = 0.2                          # Adjust gap between bars
+        )
+      
+      # Save the bar plot as a PNG file
+      ggsave("bar_plot.png", plot = bar_plot, width = 6, height = 4)
+      
+      # Add the bar plot to the Word document
+      doc <- doc %>%
+        body_add_par("Tertiary Education by Sector and Country", style = "heading 1") %>%
+        body_add_img(src = "bar_plot.png", width = 6, height = 4) %>%
+        body_add_par("This graph shows the share of individuals with tertiary education in the public and private sectors for the selected countries.", style = "Normal")
+      
+      # Save the Word document
+      print(doc, target = file)
+    }
+  )
   
   #Public sector wage Premium
   
@@ -2381,7 +2592,7 @@ The public sector is typically a major source of employment in most countries. T
   })
   # Dummy outputs for widgets
   output$numberIndicatorsBox <- renderInfoBox({
-    infoBox("Indicators", 100, icon = icon("list"), color = "blue")
+    infoBox("Indicators", 302, icon = icon("list"), color = "blue")
   })
   
   output$numberCountriesBox <- renderInfoBox({
@@ -2403,6 +2614,7 @@ The public sector is typically a major source of employment in most countries. T
 }
 
 # Run the application 
+
 
 shinyApp(ui = ui, server = server)
 
