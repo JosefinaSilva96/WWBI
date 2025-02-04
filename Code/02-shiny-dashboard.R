@@ -185,6 +185,7 @@ print(data_gdp)
 wage_bill_publicexp <- data_wwbi[data_wwbi$indicator_name == "Wage bill as a percentage of Public Expenditure", ]
 
 
+
 wage_bill_publicexp <- wage_bill_publicexp %>%
   pivot_longer(cols = starts_with("year_"), 
                names_to = "year", 
@@ -613,7 +614,10 @@ ui <- dashboardPage(
       # Wage Bill Graphs Tab
       tabItem(
         tabName = "wageBillGraphs",
+        
+        # First Row with Indicator and Selection for Countries or Region
         fluidRow(
+          # Indicator Selection Box
           box(
             title = "WWB Indicator Selection",
             status = "primary",
@@ -628,18 +632,32 @@ ui <- dashboardPage(
               )
             )
           ),
+          
+          # Country and Graph Selection Box
           box(
             title = "Country and Graph Selection",
             status = "primary",
             solidHeader = TRUE,
             width = 8,
+            
+            # Country or Region Selection
             selectInput(
               "countries",
-              "Countries",
+              "Select Countries:",
               choices = unique(wage_bill_gdp$country_name),
               selected = unique(wage_bill_gdp$country_name)[1],
               multiple = TRUE
             ),
+            
+            # Add an option to select whether to group by Country or Region
+            selectInput(
+              "label_type",
+              "Select Label Type:",
+              choices = c("Country", "Region"),
+              selected = "Country",
+              width = "100%"
+            ),
+            
             # Checkbox group for graph selection
             checkboxGroupInput(
               "graphs_to_download",
@@ -650,10 +668,13 @@ ui <- dashboardPage(
               ),
               selected = c("PublicExpenditure", "GDP")
             ),
+            
             # Download button
             downloadButton("downloadWord", "Download Word Document")
           )
         ),
+        
+        # Second Row for displaying the graph
         fluidRow(
           box(
             title = "Graph",
@@ -666,7 +687,6 @@ ui <- dashboardPage(
       ),
       
       # Wage Bill Graphs GDP Tab
-     
       tabItem(
         tabName = "wageBillgdpGraphs",
         
@@ -698,6 +718,19 @@ ui <- dashboardPage(
               width = "100%"
             ),
             downloadButton("downloadGDPDoc", "Download GDP Analysis Report")
+          ),
+          
+          # Radio Buttons for selecting between country or region
+          box(
+            title = "Select Label Type", 
+            status = "primary", 
+            solidHeader = TRUE, 
+            width = 4,
+            radioButtons(
+              "label_type", "Choose Label Type", 
+              choices = c("Country", "Region"), 
+              selected = "Country"
+            )
           )
         ),
         
@@ -1187,20 +1220,19 @@ server <- function(input, output, session) {
     } else {
       data <- wage_bill_publicexp %>% filter(country_name %in% input$countries)
     }
+    
+    # Add the region data from data_wwbi (using region.x)
+    data <- data %>%
+      left_join(data_wwbi %>% select(country_name, region), by = "country_name") %>%
+      mutate(region = coalesce(region.x, region.y)) %>%  # Use coalesce to pick the first non-NA value
+      select(-region.x, -region.y)  # Remove the duplicate region columns
+    
     return(data)
   })
   
   # Render Plotly plot for the main indicator
   output$plot <- renderPlotly({
     data_to_plot <- selected_data()
-    
-    # Get the maximum year in the filtered data
-    max_year <- max(data_to_plot$year, na.rm = TRUE)
-    
-    # Extract data for the last year
-    last_year_data <- data_to_plot %>%
-      filter(year == max_year) %>%
-      select(country_name, year, value)
     
     # Define plot titles and plot mode based on selected indicator
     title_text <- ifelse(input$indicator == "Wage bill as a percentage of GDP",
@@ -1209,10 +1241,13 @@ server <- function(input, output, session) {
     plot_mode <- 'lines+markers'  # Common plot mode for both indicators
     
     # Create the Plotly plot
+    label_col <- ifelse(input$label_type == "Country", "country_name", "region")  # Dynamic label selection
+    
+    # Create the Plotly plot with dynamic color (either by country or region)
     plot <- plot_ly(data = data_to_plot, 
                     x = ~year, 
                     y = ~value, 
-                    color = ~country_name, 
+                    color = as.formula(paste("~", label_col)),  # Dynamically assign color based on label selection
                     type = 'scatter', 
                     mode = plot_mode,
                     marker = list(size = 8)) %>%
@@ -1220,26 +1255,10 @@ server <- function(input, output, session) {
              xaxis = list(title = "Year", dtick = 2),
              yaxis = list(title = ifelse(input$indicator == "Wage bill as a percentage of GDP", 
                                          "Wage Bill (% of GDP)", "Wage Bill (%)")),
-             legend = list(title = list(text = "Country")))
-    
-    # Add annotations for the last year values
-    for (i in 1:nrow(last_year_data)) {
-      plot <- plot %>%
-        add_annotations(
-          x = last_year_data$year[i], 
-          y = last_year_data$value[i],
-          text = paste(round(last_year_data$value[i], 2)),
-          showarrow = FALSE,
-          font = list(size = 12, color = "black"),
-          bgcolor = "white",
-          xanchor = "center",
-          yanchor = "bottom"
-        )
-    }
+             legend = list(title = list(text = ifelse(input$label_type == "Country", "Country", "Region"))))  # Dynamic legend title
     
     plot  # Return the final plot
   })
-  
   # Create the download handler for Word document with graphs
   
   output$downloadWord <- downloadHandler(
@@ -2650,33 +2669,4 @@ shinyApp(ui = ui, server = server)
 
 ###############################################################################
 
-ui <- bootstrapPage(
-  theme = bs_theme(version = 5, bootswatch = 'minty'),
-  titlePanel("Old Faithful Geyser Data"),
-  sidebarLayout(
-    sidebarPanel(
-      sliderInput("bins",
-                  "Number of bins:",
-                  min = 1,
-                  max = 50,
-                  value = 30)
-    ),
-    mainPanel(
-      plotOutput("distPlot")
-    )
-  )
-)
-
-server <- function(input, output) {
-  
-  output$distPlot <- renderPlot({
-    x    <- faithful[, 2]
-    bins <- seq(min(x), max(x), length.out = input$bins + 1)
-    hist(x, breaks = bins, col = 'darkgray', border = 'white',
-         xlab = 'Waiting time to next eruption (in mins)',
-         main = 'Histogram of waiting times')
-  })
-}
-
-shinyApp(ui = ui, server = server)
 
