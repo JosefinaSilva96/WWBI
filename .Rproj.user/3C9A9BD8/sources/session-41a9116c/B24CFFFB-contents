@@ -560,8 +560,7 @@ ui <- dashboardPage(
   dashboardSidebar(
     sidebarMenu(
       menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
-      menuItem("Metadata", icon = icon("th"), tabName = "metadata"),
-      menuItem("Indicators Status", tabName = "indicators", icon = icon("globe")),
+      menuItem("Metadata", tabName = "indicators", icon = icon("globe")),
       menuItem("Wage Bill Graphs", tabName = "wageBillGraphs", icon = icon("chart-line")), 
       menuItem("Wage Bill and GDP Graphs", tabName = "wageBillgdpGraphs", icon = icon("chart-line")), 
       menuItem("Public Sector Workforce Graphs", tabName = "publicSectorWorkforceGraphs", icon = icon("chart-line")), 
@@ -582,16 +581,6 @@ ui <- dashboardPage(
                 box(title = "Dashboard Description", status = "primary", solidHeader = TRUE, width = 12,
                     "Welcome to the Worldwide Bureaucracy Indicators (WWBI)
                     The Worldwide Bureaucracy Indicators (WWBI) database is a unique cross-national dataset on public sector employment and wages that aims to fill an information gap, thereby helping researchers, development practitioners, and policymakers gain a better understanding of the personnel dimensions of state capability, the footprint of the public sector within the overall labor market, and the fiscal implications of the public sector wage bill. The dataset is derived from administrative data and household surveys, thereby complementing existing, expert perception-based approaches.")
-              )
-      ),
-      # Widgets Tab
-      tabItem(tabName = "metadata",
-              fluidRow(
-                infoBoxOutput("numberIndicatorsBox", width = 6),
-                infoBoxOutput("numberCountriesBox", width = 6),
-                infoBoxOutput("temporalCoverageAnnualBox", width = 6),
-                infoBoxOutput("temporalCoverageYearsBox", width = 6),
-                infoBoxOutput("lastUpdatedBox", width = 6)
               )
       ),
       # Wage Bill Graphs Tab
@@ -1114,38 +1103,46 @@ ui <- dashboardPage(
           )
         )
       ),
-      # Indicators in Metadata Tab 
-      tabItem(tabName = "metadata",
+      # Indicators and Widgets Tab
+      tabItem(tabName = "indicators",
+              # Widgets Section
+              fluidRow(
+                infoBoxOutput("numberIndicatorsBox", width = 6),
+                infoBoxOutput("numberCountriesBox", width = 6),
+                infoBoxOutput("temporalCoverageAnnualBox", width = 6),
+                infoBoxOutput("temporalCoverageYearsBox", width = 6),
+                infoBoxOutput("lastUpdatedBox", width = 6)
+              ),
+              
+              # World Map Section
               fluidRow(
                 box(title = "Indicator Status Across Countries", status = "primary", solidHeader = TRUE, width = 12,
                     "This map shows which countries have reported data for the selected indicator."
                 )
               ),
               fluidRow(
-  box(title = "Indicator Selection", status = "primary", solidHeader = TRUE, width = 4,
-      selectInput("indicatorSelect", "Select Indicator", 
-                  choices = unique(data_wwbi$indicator_name), selected = NULL)
-  ),
-  box(title = "Year Selection", status = "primary", solidHeader = TRUE, width = 4,
-      selectInput("yearSelect", "Select Year", 
-                  choices = 2010:2022, selected = 2022)
-  )
-), 
-fluidRow(
-  box(title = "Country Count", status = "primary", solidHeader = TRUE, width = 12,
-      textOutput("countryCount")  # Display the country count
-  )
-), 
-fluidRow(
-  box(title = "World Map", status = "primary", solidHeader = TRUE, width = 12,
-      leafletOutput("worldMap", height = "600px")
-  )
-)
-
+                box(title = "Indicator Selection", status = "primary", solidHeader = TRUE, width = 4,
+                    selectInput("indicatorSelect", "Select Indicator", 
+                                choices = unique(data_wwbi$indicator_name), selected = NULL)
+                ),
+                box(title = "Year Selection", status = "primary", solidHeader = TRUE, width = 4,
+                    selectInput("yearSelect", "Select Year", 
+                                choices = 2010:2022, selected = 2022)
+                )
+              ), 
+              fluidRow(
+                box(title = "Country Count", status = "primary", solidHeader = TRUE, width = 12,
+                    textOutput("countryCount")  # Display the country count
+                )
+              ), 
+              fluidRow(
+                box(title = "World Map", status = "primary", solidHeader = TRUE, width = 12,
+                    leafletOutput("worldMap", height = "600px")
+                )
+              )
       )
-    )
   )
-)
+))
 
 
 
@@ -2584,7 +2581,7 @@ The public sector is typically a major source of employment in most countries. T
   })
   
   output$numberCountriesBox <- renderInfoBox({
-    infoBox("Countries", length(unique(data_wwbi$country_name)), icon = icon("globe"), color = "blue")
+    infoBox("Economies", length(unique(data_wwbi$country_name)), icon = icon("globe"), color = "blue")
   })
   
   output$temporalCoverageAnnualBox <- renderInfoBox({
