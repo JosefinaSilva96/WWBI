@@ -31,6 +31,7 @@ library(rmarkdown)
 library(quarto)
 library(tinytex)
 library(orca)
+library(bslib)
 
 
 ### INITIAL COMMANDS ----
@@ -574,6 +575,13 @@ ui <- dashboardPage(
     )
   ),
   dashboardBody(
+    # Link to the Bootswatch Quartz theme (updated URL)
+    tags$head(
+      tags$link(
+        rel = "stylesheet",
+        href = "https://cdn.jsdelivr.net/npm/bootswatch@5.1.3/dist/quartz/bootstrap.min.css"
+      )
+      ),
     tabItems(
       # Dashboard Tab
       tabItem(tabName = "dashboard",
