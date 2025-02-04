@@ -32,6 +32,8 @@ library(quarto)
 library(tinytex)
 library(orca)
 library(bslib)
+library(shinythemes)
+library(countrycode)
 
 
 ### INITIAL COMMANDS ----
@@ -43,6 +45,30 @@ data_path <- "C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/Data
 #Load indicators data set 
 
 data_wwbi <- read_dta(file.path(data_path, "data_wwbi.dta"))
+
+# Add continent column
+
+# Ensure data_wwbi is a data.table
+setDT(data_wwbi)  
+
+# Assign continents using countrycode()
+
+data_wwbi[, continent := countrycode(country_name, origin = "country.name", destination = "continent")]
+
+# Manually assign continent for unmatched countries
+
+data_wwbi[country_name == "Kosovo", continent := "Europe"]
+data_wwbi[country_name == "Micronesia", continent := "Oceania"]
+
+# Define MENA countries
+mena_countries <- c("Algeria", "Bahrain", "Egypt", "Iran", "Iraq", "Israel", "Jordan", 
+                    "Kuwait", "Lebanon", "Libya", "Morocco", "Oman", "Palestine", "Qatar", 
+                    "Saudi Arabia", "Syria", "Tunisia", "United Arab Emirates", "Yemen")
+
+# Create a region column that classifies Africa into MENA and Sub-Saharan Africa
+data_wwbi[, region := fifelse(country_name %in% mena_countries, "MENA",
+                              fifelse(continent == "Africa", "Sub-Saharan Africa", continent))]
+
 
 
 #Load gdp data base 
@@ -556,7 +582,6 @@ public_sector_emp_temp_last <- public_sector_emp_temp_last %>%
 # Define UI ----
 
 ui <- dashboardPage(
-  skin = "black",
   dashboardHeader(title = "WWB Indicators"),
   dashboardSidebar(
     sidebarMenu(
@@ -575,13 +600,7 @@ ui <- dashboardPage(
     )
   ),
   dashboardBody(
-    # Link to the Bootswatch Quartz theme (updated URL)
-    tags$head(
-      tags$link(
-        rel = "stylesheet",
-        href = "https://cdn.jsdelivr.net/npm/bootswatch@5.1.3/dist/quartz/bootstrap.min.css"
-      )
-      ),
+    theme = bs_theme(version = 5, bootswatch = 'minty'),
     tabItems(
       # Dashboard Tab
       tabItem(tabName = "dashboard",
@@ -2441,8 +2460,7 @@ server <- function(input, output, session) {
      print(doc, target = file)
    }
  )
- 
- 
+
  
  #Download all graphs for report
  output$downloadAllGraphsDoc <- downloadHandler(
@@ -2510,79 +2528,97 @@ The public sector is typically a major source of employment in most countries. T
      print(doc, target = file)
    }
  )
+ # Define the color scale based on the dynamic data range
+ output$worldMap <- renderLeaflet({
+   # Determine the min and max values from the filtered data
+   data_values <- filtered_data_for_map()
+   color_pal <- colorNumeric("Greens", domain = c(min(data_values$value_percentage, na.rm = TRUE), 
+                                                  max(data_values$value_percentage, na.rm = TRUE)))
+   
+   leaflet(world_spdf) %>%
+     addTiles() %>%
+     setView(lng = 0, lat = 20, zoom = 2) %>%
+     addLegend(
+       position = "bottomright",
+       pal = color_pal,
+       values = c(min(data_values$value_percentage, na.rm = TRUE), 
+                  max(data_values$value_percentage, na.rm = TRUE)),
+       title = "Indicator Value",
+       opacity = 1
+     )
+ })
  
-  # Define the initial world map render
-  output$worldMap <- renderLeaflet({
-    leaflet(world_spdf) %>%
-      addTiles() %>%
-      setView(lng = 0, lat = 20, zoom = 2)  # Adjust view to show the world
-  })
-  
-  # Reactive expression to filter data based on the selected indicator and year
-  filtered_data_for_map <- reactive({
-    req(input$indicatorSelect, input$yearSelect)  # Ensure inputs are not null
-    data_wwbi %>%
-      filter(
-        indicator_name == input$indicatorSelect, 
-        !is.na(.data[[paste0("year_", input$yearSelect)]])
-      ) %>%
-      transmute(
-        country_name, 
-        indicator_name, 
-        value_percentage = .data[[paste0("year_", input$yearSelect)]]
-      )
-  })
-  
-  # Observe and update the map
-  observe({
-    req(input$indicatorSelect, input$yearSelect)  # Ensure inputs are not null
-    
-    # Filter the data based on the selected indicator and year
-    reported_countries <- filtered_data_for_map()
-    
-    # Debugging: If no countries are reported for the selected indicator
-    if (is.null(reported_countries) || nrow(reported_countries) == 0) {
-      warning("No reported countries for the selected indicator.")
-      return()  # Exit if no data is available
-    }
-    
-    # Merge the filtered data with world_spdf
-    world_data_merged <- world_spdf %>%
-      left_join(reported_countries, by = "country_name")
-    
-    # Calculate the number of countries with data
-    total_countries_with_data <- nrow(reported_countries)
-    
-    # Update the Leaflet map
-    leafletProxy("worldMap") %>%
-      clearShapes() %>%
-      addPolygons(
-        data = world_data_merged,
-        fillColor = ~ifelse(is.na(value_percentage), "#808080", colorNumeric("Greens", domain = world_data_merged$value_percentage)(value_percentage)),
-        fillOpacity = 0.7,
-        color = "white",
-        weight = 1,
-        highlightOptions = highlightOptions(color = "#FFD700", weight = 2, fillOpacity = 0.9),
-        label = ~paste0(
-          "<strong>Country:</strong> ", country_name, "<br>",
-          ifelse(!is.na(value_percentage), 
-                 paste0("<strong>Value:</strong> ", round(value_percentage, 2)), 
-                 "<strong>No Data</strong>")
-        ),
-        popup = ~paste(
-          "Country: ", country_name,
-          "<br>Indicator: ", indicator_name,
-          ifelse(!is.na(value_percentage), 
-                 paste("<br>Value: ", round(value_percentage, 2)), 
-                 "<br>No Data Available")
-        )
-      )
-    
-    # Render the country count
-    output$countryCount <- renderText({
-      paste("Total Countries with Data: ", total_countries_with_data)
-    })
-  })
+ # Reactive expression to filter data based on the selected indicator and year
+ filtered_data_for_map <- reactive({
+   req(input$indicatorSelect, input$yearSelect)  # Ensure inputs are not null
+   data_wwbi %>%
+     filter(
+       indicator_name == input$indicatorSelect, 
+       !is.na(.data[[paste0("year_", input$yearSelect)]])
+     ) %>%
+     transmute(
+       country_name, 
+       indicator_name, 
+       value_percentage = .data[[paste0("year_", input$yearSelect)]]
+     )
+ })
+ 
+ # Observe and update the map
+ observe({
+   req(input$indicatorSelect, input$yearSelect)  # Ensure inputs are not null
+   
+   # Filter the data based on the selected indicator and year
+   reported_countries <- filtered_data_for_map()
+   
+   # Debugging: If no countries are reported for the selected indicator
+   if (is.null(reported_countries) || nrow(reported_countries) == 0) {
+     warning("No reported countries for the selected indicator.")
+     return()  # Exit if no data is available
+   }
+   
+   # Merge the filtered data with world_spdf
+   world_data_merged <- world_spdf %>%
+     left_join(reported_countries, by = "country_name")
+   
+   # Determine the min and max values from the filtered data for dynamic scaling
+   color_pal <- colorNumeric("Greens", domain = c(min(reported_countries$value_percentage, na.rm = TRUE),
+                                                  max(reported_countries$value_percentage, na.rm = TRUE)))
+   
+   # Update the Leaflet map with new polygons based on the selected indicator
+   leafletProxy("worldMap") %>%
+     clearShapes() %>%
+     addPolygons(
+       data = world_data_merged,
+       fillColor = ~ifelse(is.na(value_percentage), "#808080", color_pal(value_percentage)),
+       fillOpacity = 0.7,
+       color = "white",
+       weight = 1,
+       highlightOptions = highlightOptions(color = "#FFD700", weight = 2, fillOpacity = 0.9),
+       label = ~paste0(
+         "<strong>Country:</strong> ", country_name, "<br>",
+         ifelse(!is.na(value_percentage), 
+                paste0("<strong>Value:</strong> ", round(value_percentage, 2)), 
+                "<strong>No Data</strong>")
+       ),
+       popup = ~paste(
+         "Country: ", country_name,
+         "<br>Indicator: ", indicator_name,
+         ifelse(!is.na(value_percentage), 
+                paste("<br>Value: ", round(value_percentage, 2)), 
+                "<br>No Data Available")
+       )
+     )
+   
+   # Render the country count
+   output$countryCount <- renderText({
+     paste("Total Countries with Data: ", nrow(reported_countries))
+   })
+ })
+   # Render the country count
+   output$countryCount <- renderText({
+     paste("Total Countries with Data: ", nrow(reported_countries))
+   })
+ 
   # Dummy outputs for widgets
   output$numberIndicatorsBox <- renderInfoBox({
     infoBox("Indicators", 302, icon = icon("list"), color = "blue")
@@ -2608,10 +2644,39 @@ The public sector is typically a major source of employment in most countries. T
 
 # Run the application 
 
-
 shinyApp(ui = ui, server = server)
 
 
 
 ###############################################################################
+
+ui <- bootstrapPage(
+  theme = bs_theme(version = 5, bootswatch = 'minty'),
+  titlePanel("Old Faithful Geyser Data"),
+  sidebarLayout(
+    sidebarPanel(
+      sliderInput("bins",
+                  "Number of bins:",
+                  min = 1,
+                  max = 50,
+                  value = 30)
+    ),
+    mainPanel(
+      plotOutput("distPlot")
+    )
+  )
+)
+
+server <- function(input, output) {
+  
+  output$distPlot <- renderPlot({
+    x    <- faithful[, 2]
+    bins <- seq(min(x), max(x), length.out = input$bins + 1)
+    hist(x, breaks = bins, col = 'darkgray', border = 'white',
+         xlab = 'Waiting time to next eruption (in mins)',
+         main = 'Histogram of waiting times')
+  })
+}
+
+shinyApp(ui = ui, server = server)
 
