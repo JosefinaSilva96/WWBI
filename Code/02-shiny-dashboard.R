@@ -560,7 +560,7 @@ ui <- dashboardPage(
   dashboardSidebar(
     sidebarMenu(
       menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
-      menuItem("Widgets", icon = icon("th"), tabName = "widgets"),
+      menuItem("Metadata", icon = icon("th"), tabName = "metadata"),
       menuItem("Indicators Status", tabName = "indicators", icon = icon("globe")),
       menuItem("Wage Bill Graphs", tabName = "wageBillGraphs", icon = icon("chart-line")), 
       menuItem("Wage Bill and GDP Graphs", tabName = "wageBillgdpGraphs", icon = icon("chart-line")), 
@@ -585,25 +585,13 @@ ui <- dashboardPage(
               )
       ),
       # Widgets Tab
-      tabItem(tabName = "widgets",
+      tabItem(tabName = "metadata",
               fluidRow(
                 infoBoxOutput("numberIndicatorsBox", width = 6),
                 infoBoxOutput("numberCountriesBox", width = 6),
                 infoBoxOutput("temporalCoverageAnnualBox", width = 6),
                 infoBoxOutput("temporalCoverageYearsBox", width = 6),
                 infoBoxOutput("lastUpdatedBox", width = 6)
-              )
-      ),
-      # Variable List Tab
-      tabItem(tabName = "variableList",
-              fluidRow(
-                box(title = "Year Filter", status = "primary", solidHeader = TRUE, width = 3,
-                    selectInput("yearFilter", "Select Year", 
-                                choices = paste0("year_", 2000:2022), selected = "year_2022", multiple = TRUE)
-                ),
-                box(title = "Available Variables", status = "primary", solidHeader = TRUE, width = 12,
-                    DTOutput("variableTable")
-                )
               )
       ),
       # Wage Bill Graphs Tab
@@ -1126,8 +1114,8 @@ ui <- dashboardPage(
           )
         )
       ),
-      # Indicators Tab
-      tabItem(tabName = "indicators",
+      # Indicators in Metadata Tab 
+      tabItem(tabName = "metadata",
               fluidRow(
                 box(title = "Indicator Status Across Countries", status = "primary", solidHeader = TRUE, width = 12,
                     "This map shows which countries have reported data for the selected indicator."
