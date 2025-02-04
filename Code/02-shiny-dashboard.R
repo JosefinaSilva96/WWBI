@@ -576,6 +576,47 @@ public_sector_emp_temp_last <- public_sector_emp_temp_last %>%
     "Public sector employment, as a share of total employment" = "as a share of total employment"
   ))
 
+#Female Leadership 
+
+gender_leadership <- data_wwbi[data_wwbi$indicator_name %in% c("Females, as a share of public paid employees by occupational group: Managers", 
+                                                                 "Females, as a share of public paid employees by occupational group: Clerks", 
+                                                               "Females, as a share of private paid employees by occupational group: Managers", 
+                                                               "Females, as a share of private paid employees by occupational group: Clerks" ), ]
+
+gender_leadership <- gender_leadership %>%
+  pivot_longer(cols = starts_with("year_"), 
+               names_to = "year", 
+               values_to = "value") %>%
+  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
+  filter(!is.na(value)) #1698 obs
+
+gender_leadership <- gender_leadership %>%
+  select(year, indicator_name, value, country_name,region) %>%
+  mutate(indicator_name = factor(indicator_name)) %>%
+  # Modify indicator labels for shorter text
+  mutate(indicator_label = recode(indicator_name, 
+                                  "Females, as a share of public paid employees by occupational group: Managers" = "Managers-Public", 
+                                  "Females, as a share of public paid employees by occupational group: Clerks" = "Clerks-Public", 
+                                  "Females, as a share of private paid employees by occupational group: Managers" = "Managers-Private",
+                                  "Females, as a share of private paid employees by occupational group: Clerks" = "Clerks-Private"))
+
+
+# Keep the last year available for each country
+
+gender_leadership <- gender_leadership %>%
+  filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
+  group_by(country_name, indicator_label, region) %>%                      # Group by country_name (or any other variable)
+  filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
+  ungroup()                                      # Ungroup the data
+
+
+
+gender_leadership <- gender_leadership %>%
+  mutate(value_percentage = value * 100)
+
+
+
+
 
 ## Shiny Dashboard ----
 
@@ -597,6 +638,7 @@ ui <- dashboardPage(
       menuItem("Public Sector Education Workers", tabName = "publicsectoreducationGraphs", icon = icon("chart-line")), 
       menuItem("Public Sector Graphs", tabName = "publicsectorGraphs", icon = icon("chart-line")), 
       menuItem("Wage Premium Gender Graphs", tabName = "wagepremiumgenderGraphs", icon = icon("chart-line")), 
+      menuItem("Female Leadership Graphs", tabName = "womenleadershipGraphs", icon = icon("chart-line")), 
       menuItem("Download All Graphs", tabName = "downloadAllGraphs", icon = icon("download")) 
     )
   ),
@@ -1145,6 +1187,44 @@ ui <- dashboardPage(
                   column(
                     width = 6,
                     downloadButton("downloadGraphsWordgender", "Download Graphs as Word File", class = "btn-primary btn-block")
+                  )
+                )
+              )
+      ),
+      # Women Leadership Graphs Tab
+      tabItem(tabName = "womenleadershipGraphs",
+              fluidRow(
+                box(
+                  title = "Country Selection", 
+                  status = "primary", 
+                  solidHeader = TRUE, 
+                  width = 12,
+                  selectInput("selected_countries", "Select Countries", 
+                              choices = unique(gender_leadership$country_name),
+                              selected = unique(gender_leadership$country_name)[1:3], # Default selection
+                              multiple = TRUE
+                  )
+                )
+              ),
+              fluidRow(
+                box(
+                  title = "Women Leadership Graphs", 
+                  status = "primary", 
+                  solidHeader = TRUE, 
+                  width = 12,
+                  plotlyOutput("barPlotwomen", height = "600px")
+                )
+              ),
+              # Download Button for Women Leadership Report
+              fluidRow(
+                box(
+                  title = "Download Report",
+                  status = "primary",
+                  solidHeader = TRUE,
+                  width = 12,
+                  downloadButton(
+                    outputId = "downloadGraphsWordfemale", 
+                    label = "Download Female Leadership Report"
                   )
                 )
               )
@@ -2480,6 +2560,107 @@ server <- function(input, output, session) {
    }
  )
 
+ #Female Leadership
+ 
+ # Render the Plotly bar graph
+ output$barPlotwomen <- renderPlotly({
+   
+   # Check if countries are selected
+   if (is.null(input$selected_countries) || length(input$selected_countries) == 0) {
+     return(NULL)  # Do nothing if no countries are selected
+   }
+   
+   # Filter data based on selected countries
+   filtered_data <- gender_leadership %>%
+     filter(country_name %in% input$selected_countries)
+   
+   # Ensure the filtered dataset is not empty
+   if (nrow(filtered_data) == 0) {
+     return(NULL)  # Return nothing if the filtered dataset is empty
+   }
+   
+   # Create the Plotly bar chart
+   plot_ly(
+     data = filtered_data,
+     x = ~country_name,                      # X-axis: Country name
+     y = ~value_percentage,                  # Y-axis: Female percentage in occupation
+     color = ~indicator_label,                # Different color for Managers/Clerks in Public/Private
+     colors = c(
+       "Clerks-Public" = "#003366", 
+       "Managers-Public" = "#ADD8E6",
+       "Clerks-Private" = "#006400",
+       "Managers-Private" = "#90EE90"
+     ),                                     # Custom color mapping
+     type = 'bar',                           # Bar chart
+     barmode = 'group'                       # Group bars for Public/Private, Managers/Clerks
+   ) %>%
+     layout(
+       title = "Females by Occupational Group and Sector",
+       xaxis = list(title = "Country"),      # Title for x-axis
+       yaxis = list(title = "Female Share (%)"), # Title for y-axis
+       bargap = 0.2                          # Adjust gap between bars
+     )
+ })
+ 
+ # Download Handler for Word Report
+ output$downloadGraphsWordfemale <- downloadHandler(
+   filename = function() {
+     paste0("Females_Occupation_Groups_Analysis_", Sys.Date(), ".docx")
+   },
+   content = function(file) {
+     doc <- read_docx()  # Start a new Word document
+     
+     # Title for the report
+     report_title <- paste("Females by Occupational Group and Sector")
+     title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
+     doc <- doc %>%
+       body_add_fpar(fpar(ftext(report_title, prop = title_style)))
+     
+     # Filter data based on selected countries
+     filtered_data <- gender_leadership %>%
+       filter(country_name %in% input$selected_countries)
+     
+     # Ensure the filtered dataset is not empty
+     if (nrow(filtered_data) == 0) {
+       return(NULL)  # Return nothing if the filtered dataset is empty
+     }
+     
+     # Create the bar plot for Females by Occupation Group and Sector
+     bar_plot <- plot_ly(
+       data = filtered_data,
+       x = ~country_name,                      # X-axis: Country name
+       y = ~value_percentage,                  # Y-axis: Female percentage in occupation
+       color = ~indicator_label,                # Different color for Managers/Clerks in Public/Private
+       colors = c(
+         "Clerks-Public" = "#003366", 
+         "Managers-Public" = "#ADD8E6",
+         "Clerks-Private" = "#006400",
+         "Managers-Private" = "#90EE90"
+       ),                                     # Custom color mapping
+       type = 'bar',                           # Bar chart
+       barmode = 'group'                       # Group bars for Public/Private, Managers/Clerks
+     ) %>%
+       layout(
+         title = "Females by Occupational Group and Sector",
+         xaxis = list(title = "Country"),      # Title for x-axis
+         yaxis = list(title = "Female Share (%)"), # Title for y-axis
+         bargap = 0.2                          # Adjust gap between bars
+       )
+     
+     # Save the bar plot as a PNG file
+     ggsave("bar_plot.png", plot = bar_plot, width = 6, height = 4)
+     
+     # Add the bar plot to the Word document
+     doc <- doc %>%
+       body_add_par("Females by Occupational Group and Sector", style = "heading 1") %>%
+       body_add_img(src = "bar_plot.png", width = 6, height = 4) %>%
+       body_add_par("This graph shows the share of females in various occupational groups (Managers/Clerks) in the public and private sectors for the selected countries.", style = "Normal")
+     
+     # Save the Word document
+     print(doc, target = file)
+   }
+ )
+ 
  
  #Download all graphs for report
  output$downloadAllGraphsDoc <- downloadHandler(
