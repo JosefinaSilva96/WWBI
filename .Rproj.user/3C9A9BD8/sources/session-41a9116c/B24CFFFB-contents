@@ -34,6 +34,8 @@ library(orca)
 library(bslib)
 library(shinythemes)
 library(countrycode)
+library(bs4Dash)
+
 
 
 ### INITIAL COMMANDS ----
@@ -2866,4 +2868,65 @@ shinyApp(ui = ui, server = server)
 
 
 
+ui <- bs4DashPage(
+  dark = TRUE,
+  header = bs4DashNavbar(
+    skin = "dark",
+    status = "primary",
+    border = TRUE,
+    compact = TRUE,
+    brandText = "Dashboard"
+  ),
+  sidebar = bs4DashSidebar(
+    skin = "dark",
+    status = "primary",
+    title = "Dashboard",
+    brandColor = "primary",
+    elevation = 4,
+    opacity = 0.8,
+    collapsed = FALSE,
+    bs4SidebarMenu(
+      bs4SidebarMenuItem("Overview", tabName = "overview", icon = icon("home")),
+      bs4SidebarMenuItem("Standard Table", tabName = "standard_table", icon = icon("table")),
+      bs4SidebarMenuItem("Patterns of Development", tabName = "patterns_dev", icon = icon("th")),
+      bs4SidebarMenuItem(
+        "Growth and Convergence",
+        tabName = "growth_convergence",
+        icon = icon("chart-line"),
+        status = "danger"
+      ),
+      bs4SidebarHeader("Drivers of Growth and Jobs"),
+      bs4SidebarMenuItem("Structural Transformation", tabName = "structural", icon = icon("sync")),
+      bs4SidebarMenuItem("Demographics and Jobs", tabName = "demographics", icon = icon("users")),
+      bs4SidebarMenuItem("Poverty and Inclusion", tabName = "poverty", icon = icon("hand-holding-heart")),
+      bs4SidebarMenuItem("Environmental Sustainability", tabName = "sustainability", icon = icon("tree")),
+      bs4SidebarHeader("Subcategories"),
+      bs4SidebarMenuItem("Aggregate Firm Dynamics", tabName = "firm_dynamics", icon = icon("industry")),
+      bs4SidebarMenuItem("Innovation and Capabilities", tabName = "innovation", icon = icon("lightbulb")),
+      bs4SidebarMenuItem("Investment", tabName = "investment", icon = icon("dollar-sign")),
+      bs4SidebarMenuItem("Competition and Markets", tabName = "competition", icon = icon("shopping-cart")),
+      bs4SidebarMenuItem("Trade and GVCs", tabName = "trade", icon = icon("globe"))
+    )
+  ),
+  body = bs4DashBody(
+    bs4TabItems(
+      bs4TabItem(tabName = "overview", h1("Overview Content")),
+      bs4TabItem(tabName = "standard_table", h1("Standard Table Content")),
+      bs4TabItem(tabName = "patterns_dev", h1("Patterns of Development Content")),
+      bs4TabItem(tabName = "growth_convergence", h1("Growth and Convergence Content")),
+      bs4TabItem(tabName = "structural", h1("Structural Transformation Content")),
+      bs4TabItem(tabName = "demographics", h1("Demographics and Jobs Content")),
+      bs4TabItem(tabName = "poverty", h1("Poverty and Inclusion Content")),
+      bs4TabItem(tabName = "sustainability", h1("Environmental Sustainability Content")),
+      bs4TabItem(tabName = "firm_dynamics", h1("Aggregate Firm Dynamics Content")),
+      bs4TabItem(tabName = "innovation", h1("Innovation and Capabilities Content")),
+      bs4TabItem(tabName = "investment", h1("Investment Content")),
+      bs4TabItem(tabName = "competition", h1("Competition and Markets Content")),
+      bs4TabItem(tabName = "trade", h1("Trade and GVCs Content"))
+    )
+  )
+)
 
+server <- function(input, output) {}
+
+shinyApp(ui, server)
