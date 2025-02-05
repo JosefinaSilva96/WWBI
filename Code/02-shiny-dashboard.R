@@ -129,7 +129,7 @@ countries <- c(
   "China", "Tanzania", "Uganda", "Ukraine", "Uruguay", "United States", 
   "Uzbekistan", "St. Vincent and the Grenadines", "Venezuela", 
   "Republica Bolivariana de", "Vietnam", "Vanuatu", "Samoa", "Kosovo","South Africa",
-  "Zambia", "Zimbabwe")
+  "Zambia", "Zimbabwe", "Americas", "Asia", "Europe", "MENA", "Oceania", "Sub-Saharan Africa")
 
 #Drop pvalue in the indicator column
 
@@ -194,6 +194,22 @@ wage_bill_publicexp <- wage_bill_publicexp %>%
   filter(!is.na(value)) #4096 obs
 
 
+regional_mean <- wage_bill_publicexp %>%
+  filter(indicator_name == "Wage bill as a percentage of Public Expenditure") %>%
+  group_by(region, year, indicator_name) %>%
+  summarise(mean_value = mean(value, na.rm = TRUE), .groups = 'drop')
+
+
+regional_mean <- regional_mean %>%
+  rename(country_name = region)
+
+regional_mean <- regional_mean %>%
+  rename(value = mean_value)
+
+wage_bill_publicexp <- bind_rows(wage_bill_publicexp, regional_mean)
+
+
+
 # Filter the data for the specific indicator "Wage bill as a percentage of GDP"
 
 wage_bill_gdp <- data_wwbi[data_wwbi$indicator_name == "Wage bill as a percentage of GDP", ]
@@ -206,6 +222,19 @@ wage_bill_gdp <- wage_bill_gdp %>%
   mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
   filter(!is.na(value)) #4104 obs
 
+regional_mean_wbgdp <- wage_bill_gdp %>%
+  filter(indicator_name == "Wage bill as a percentage of GDP") %>%
+  group_by(region, year, indicator_name) %>%
+  summarise(mean_value = mean(value, na.rm = TRUE), .groups = 'drop')
+
+
+regional_mean_wbgdp <- regional_mean_wbgdp %>%
+  rename(country_name = region)
+
+regional_mean <- regional_mean %>%
+  rename(value = mean_value)
+
+wage_bill_gdp <- bind_rows(wage_bill_gdp, regional_mean_wbgdp)
 
 
 # Filter the data for the specific indicator "Public sector employment, as a share of formal employment and paid employment "
@@ -686,18 +715,9 @@ ui <- dashboardPage(
             selectInput(
               "countries",
               "Select Countries:",
-              choices = unique(wage_bill_gdp$country_name),
-              selected = unique(wage_bill_gdp$country_name)[1],
+              choices = unique(wage_bill_publicexp$country_name),
+              selected = unique(wage_bill_publicexp$country_name)[1],
               multiple = TRUE
-            ),
-            
-            # Add an option to select whether to group by Country or Region
-            selectInput(
-              "label_type",
-              "Select Label Type:",
-              choices = c("Country", "Region"),
-              selected = "Country",
-              width = "100%"
             ),
             
             # Checkbox group for graph selection
@@ -1301,12 +1321,6 @@ server <- function(input, output, session) {
       data <- wage_bill_publicexp %>% filter(country_name %in% input$countries)
     }
     
-    # Add the region data from data_wwbi (using region.x)
-    data <- data %>%
-      left_join(data_wwbi %>% select(country_name, region), by = "country_name") %>%
-      mutate(region = coalesce(region.x, region.y)) %>%  # Use coalesce to pick the first non-NA value
-      select(-region.x, -region.y)  # Remove the duplicate region columns
-    
     return(data)
   })
   
@@ -1320,14 +1334,14 @@ server <- function(input, output, session) {
                          "Wage Bill as % of Public Expenditure Over Time")
     plot_mode <- 'lines+markers'  # Common plot mode for both indicators
     
-    # Create the Plotly plot
-    label_col <- ifelse(input$label_type == "Country", "country_name", "region")  # Dynamic label selection
+    # Dynamically assign color based on input$label_type (Country or Region)
+    color_variable <- ifelse(input$label_type == "Country", "country_name", "region")
     
-    # Create the Plotly plot with dynamic color (either by country or region)
+    # Create the Plotly plot
     plot <- plot_ly(data = data_to_plot, 
                     x = ~year, 
                     y = ~value, 
-                    color = as.formula(paste("~", label_col)),  # Dynamically assign color based on label selection
+                    color = as.formula(paste("~", color_variable)),  # Dynamically assign color
                     type = 'scatter', 
                     mode = plot_mode,
                     marker = list(size = 8)) %>%
@@ -2849,5 +2863,7 @@ shinyApp(ui = ui, server = server)
 
 
 ###############################################################################
+
+
 
 
