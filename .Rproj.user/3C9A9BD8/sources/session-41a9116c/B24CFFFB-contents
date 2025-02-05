@@ -2889,12 +2889,7 @@ ui <- bs4DashPage(
       bs4SidebarMenuItem("Overview", tabName = "overview", icon = icon("home")),
       bs4SidebarMenuItem("Standard Table", tabName = "standard_table", icon = icon("table")),
       bs4SidebarMenuItem("Patterns of Development", tabName = "patterns_dev", icon = icon("th")),
-      bs4SidebarMenuItem(
-        "Growth and Convergence",
-        tabName = "growth_convergence",
-        icon = icon("chart-line"),
-        status = "danger"
-      ),
+      bs4SidebarMenuItem("Growth and Convergence", tabName = "growth_convergence", icon = icon("chart-line"), status = "danger"),
       bs4SidebarHeader("Drivers of Growth and Jobs"),
       bs4SidebarMenuItem("Structural Transformation", tabName = "structural", icon = icon("sync")),
       bs4SidebarMenuItem("Demographics and Jobs", tabName = "demographics", icon = icon("users")),
@@ -2926,6 +2921,7 @@ ui <- bs4DashPage(
     )
   )
 )
+
 
 server <- function(input, output) {}
 
