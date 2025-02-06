@@ -674,7 +674,7 @@ ui <- dashboardPage(
     )
   ),
   dashboardBody(
-    theme = bs_theme(version = 5, bootswatch = 'minty'),
+    theme = bs_theme(version = 5, bootswatch = 'quartz'),
     tabItems(
       # Dashboard Tab
       tabItem(tabName = "dashboard",
