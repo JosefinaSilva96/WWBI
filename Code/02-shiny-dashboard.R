@@ -2969,6 +2969,15 @@ shinyApp(ui, server)
 
 
 
+
+# Sample data for demonstration
+merged_data <- data.frame(
+  country_name = c("USA", "Canada", "Germany", "France", "Brazil"),
+  wage_bill = c(500, 300, 450, 400, 350),
+  gdp_per_capita = c(60000, 45000, 50000, 47000, 15000),
+  stringsAsFactors = FALSE
+)
+
 ui <- bootstrapPage(
   theme = bs_theme(version = 5, bootswatch = 'quartz'),
   
@@ -2985,6 +2994,7 @@ ui <- bootstrapPage(
       font-size: 18px;
       font-weight: bold;
       color: white;
+      text-decoration: none;
     }
     #sidebar .nav-item.active {
       background-color: #eb2f96;
@@ -2998,27 +3008,108 @@ ui <- bootstrapPage(
     }
   ")),
   
-  # Sidebar and main content layout
+  # Layout with sidebar and content
   div(
     class = "d-flex",
+    
     # Sidebar
     div(
       id = "sidebar",
-      div(class = "nav-item active", "Overview"),
-      div(class = "nav-item", "Education"),
-      div(class = "nav-item", "Health"),
-      div(class = "nav-item", "About")
+      div(class = "nav-item", actionLink("nav_overview", "Overview")),
+      div(class = "nav-item", actionLink("nav_education", "Education")),
+      div(class = "nav-item", actionLink("nav_health", "Health")),
+      div(class = "nav-item", actionLink("nav_about", "About"))
     ),
     
-    # Main content
+    # Main content area
     div(
       class = "flex-grow-1 p-4",
-      h2("Main Content Area"),
-      p("This is where the main content will go.")
+      h2("WWB Indicators"),
+      uiOutput("main_content")
     )
   )
 )
 
-server <- function(input, output) {}
+server <- function(input, output, session) {
+  
+  # Reactive value to track active tab
+  active_tab <- reactiveVal("overview")
+  
+  # Update the active tab when clicking on sidebar items
+  observeEvent(input$nav_overview, {
+    active_tab("overview")
+  })
+  observeEvent(input$nav_education, {
+    active_tab("education")
+  })
+  observeEvent(input$nav_health, {
+    active_tab("health")
+  })
+  observeEvent(input$nav_about, {
+    active_tab("about")
+  })
+  
+  # Dynamic main content based on active tab
+  output$main_content <- renderUI({
+    tab <- active_tab()
+    
+    if (tab == "overview") {
+      div(
+        h3("Dashboard Overview"),
+        p("Welcome to the Worldwide Bureaucracy Indicators (WWBI). This dashboard provides insights into public sector employment and wages. Use the menu to navigate.")
+      )
+    } else if (tab == "education") {
+      div(
+        h3("Education Graphs"),
+        plotlyOutput("education_graph", height = "400px")
+      )
+    } else if (tab == "health") {
+      div(
+        h3("Health Graphs"),
+        plotlyOutput("health_graph", height = "400px")
+      )
+    } else if (tab == "about") {
+      div(
+        h3("About"),
+        p("This dashboard was created to explore data on public sector employment and wages.")
+      )
+    }
+  })
+  
+  # Education graph
+  output$education_graph <- renderPlotly({
+    plot_ly(
+      data = merged_data,
+      x = ~country_name,
+      y = ~wage_bill,
+      type = "bar",
+      text = ~paste0("Wage Bill: ", wage_bill),
+      marker = list(color = 'rgba(0, 123, 255, 0.7)')
+    ) %>%
+      layout(
+        title = list(text = "Education Wage Bill by Country", font = list(size = 14)),
+        xaxis = list(title = "", tickangle = -45),
+        yaxis = list(title = "Wage Bill")
+      )
+  })
+  
+  # Health graph
+  output$health_graph <- renderPlotly({
+    plot_ly(
+      data = merged_data,
+      x = ~country_name,
+      y = ~gdp_per_capita,
+      type = "scatter",
+      mode = "markers",
+      text = ~paste0("GDP per Capita: ", gdp_per_capita),
+      marker = list(size = 10, color = 'rgba(255, 123, 0, 0.7)')
+    ) %>%
+      layout(
+        title = list(text = "Health Indicators by Country", font = list(size = 14)),
+        xaxis = list(title = "Country"),
+        yaxis = list(title = "GDP per Capita")
+      )
+  })
+}
 
 shinyApp(ui = ui, server = server)
