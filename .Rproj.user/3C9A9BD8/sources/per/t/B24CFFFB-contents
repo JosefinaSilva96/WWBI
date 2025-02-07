@@ -3040,7 +3040,7 @@ server <- function(input, output, session) {
     active_tab("overview")
   })
   observeEvent(input$nav_education, {
-    active_tab("education")
+    active_tab("wagebill")
   })
   observeEvent(input$nav_health, {
     active_tab("health")
@@ -3058,10 +3058,10 @@ server <- function(input, output, session) {
         h3("Dashboard Overview"),
         p("Welcome to the Worldwide Bureaucracy Indicators (WWBI). This dashboard provides insights into public sector employment and wages. Use the menu to navigate.")
       )
-    } else if (tab == "education") {
+    } else if (tab == "wagebill") {
       div(
-        h3("Education Graphs"),
-        plotlyOutput("education_graph", height = "400px")
+        h3("Wage Bill Graphs"),
+        plotlyOutput("wagebill_graph", height = "400px")
       )
     } else if (tab == "health") {
       div(
