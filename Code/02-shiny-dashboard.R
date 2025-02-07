@@ -702,6 +702,19 @@ ui <- bootstrapPage(
       h2("WWB Indicators"),
       tabsetPanel(
         id = "tabs",
+        tabPanel(
+          "Dashboard",
+          fluidRow(
+            box(
+              title = "Dashboard Description", 
+              status = "primary", 
+              solidHeader = TRUE, 
+              width = 12,
+              "Welcome to the Worldwide Bureaucracy Indicators (WWBI).
+              The Worldwide Bureaucracy Indicators (WWBI) database is a unique cross-national dataset on public sector employment and wages that aims to fill an information gap, thereby helping researchers, development practitioners, and policymakers gain a better understanding of the personnel dimensions of state capability, the footprint of the public sector within the overall labor market, and the fiscal implications of the public sector wage bill. The dataset is derived from administrative data and household surveys, thereby complementing existing, expert perception-based approaches."
+            )
+          )
+          ),
         
         # Wage Bill and GDP Graphs Tab
         tabPanel(
