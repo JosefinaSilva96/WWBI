@@ -653,97 +653,86 @@ gender_leadership <- gender_leadership %>%
 
 
 # Define UI ----
+
+
 ui <- bootstrapPage(
   theme = bs_theme(version = 5, bootswatch = 'quartz'),
   
-  # Application title
-  titlePanel("WWB Indicators"),
+  # Custom CSS for the sidebar
+  tags$style(HTML("
+    #sidebar {
+      height: 100vh;
+      background: linear-gradient(to bottom, #56ccf2, #2f80ed);
+      padding: 20px;
+      color: white;
+    }
+    #sidebar .nav-item {
+      margin: 15px 0;
+      font-size: 18px;
+      font-weight: bold;
+      color: white;
+      text-decoration: none;
+    }
+    #sidebar .nav-item.active {
+      background-color: #eb2f96;
+      padding: 10px;
+      border-radius: 20px;
+      color: white;
+    }
+    #sidebar .nav-item:hover {
+      cursor: pointer;
+      color: #eb2f96;
+    }
+  ")),
   
-  # Sidebar navigation using navlistPanel
-  fluidRow(
-    column(3,
-           navlistPanel(
-             tabPanel("Dashboard", value = "dashboard"),
-             tabPanel("Metadata", value = "indicators"),
-             tabPanel("Wage Bill Graphs", value = "wageBillGraphs"),
-             tabPanel("Wage Bill and GDP Graphs", value = "wageBillgdpGraphs"),
-             tabPanel("Public Sector Workforce Graphs", value = "publicSectorWorkforceGraphs"),
-             tabPanel("Gender Workforce Graphs", value = "genderWorkforceGraphs"),
-             tabPanel("Tertiary Education Graphs", value = "educationGraphs"),
-             tabPanel("Public Sector Wage Premium", value = "publicsectorwagepremiumGraphs"),
-             tabPanel("Public Sector Education Workers", value = "publicsectoreducationGraphs"),
-             tabPanel("Public Sector Graphs", value = "publicsectorGraphs"),
-             tabPanel("Wage Premium Gender Graphs", value = "wagepremiumgenderGraphs"),
-             tabPanel("Female Leadership Graphs", value = "womenleadershipGraphs"),
-             tabPanel("Download All Graphs", value = "downloadAllGraphs"),
-             id = "tabs"
-           )
+  # Layout with sidebar and content
+  div(
+    class = "d-flex",
+    
+    # Sidebar
+    div(
+      id = "sidebar",
+      div(class = "nav-item active", "Dashboard"),
+      div(class = "nav-item", "Metadata"),
+      div(class = "nav-item", "Wage Bill Graphs"),
+      div(class = "nav-item", "Wage Bill and GDP Graphs"),
+      div(class = "nav-item", "Public Sector Workforce Graphs"),
+      div(class = "nav-item", "Gender Workforce Graphs"),
+      div(class = "nav-item", "Tertiary Education Graphs"),
+      div(class = "nav-item", "Public Sector Wage Premium"),
+      div(class = "nav-item", "Public Sector Education Workers"),
+      div(class = "nav-item", "Public Sector Graphs"),
+      div(class = "nav-item", "Wage Premium Gender Graphs"),
+      div(class = "nav-item", "Female Leadership Graphs"),
+      div(class = "nav-item", "Download All Graphs")
     ),
     
-    # Main panel for content
-    column(9,
-           tabsetPanel(id = "tabs",
-                       
-                       # Dashboard Tab
-                       tabPanel("Dashboard",
-                                fluidRow(
-                                  box(title = "Dashboard Description", status = "primary", solidHeader = TRUE, width = 12,
-                                      "Welcome to the Worldwide Bureaucracy Indicators (WWBI).
-                            The Worldwide Bureaucracy Indicators (WWBI) database is a unique cross-national dataset on public sector employment and wages that aims to fill an information gap, thereby helping researchers, development practitioners, and policymakers gain a better understanding of the personnel dimensions of state capability, the footprint of the public sector within the overall labor market, and the fiscal implications of the public sector wage bill. The dataset is derived from administrative data and household surveys, thereby complementing existing, expert perception-based approaches.")
-                                )
-                       ),
-                       
-                       # Wage Bill Graphs Tab
-                       tabPanel("Wage Bill Graphs",
-                                fluidRow(
-                                  # Indicator Selection Box
-                                  box(
-                                    title = "WWB Indicator Selection",
-                                    status = "primary",
-                                    solidHeader = TRUE,
-                                    width = 4,
-                                    selectInput(
-                                      "indicator",
-                                      "Select a WWB Indicator",
-                                      choices = c(
-                                        "Wage bill (as % of public expenditure) over time",
-                                        "Wage bill as a percentage of GDP"
-                                      )
-                                    )
-                                  ),
-                                  
-                                  # Country and Graph Selection Box
-                                  box(
-                                    title = "Country and Graph Selection",
-                                    status = "primary",
-                                    solidHeader = TRUE,
-                                    width = 8,
-                                    
-                                    # Country or Region Selection
-                                    selectInput(
-                                      "countries",
-                                      "Select Countries:",
-                                      choices = NULL,  # Updated dynamically in server
-                                      multiple = TRUE
-                                    ),
-                                    
-                                    # Checkbox group for graph selection
-                                    checkboxGroupInput(
-                                      "graphs_to_download",
-                                      "Select Graphs to Download",
-                                      choices = list(
-                                        "Wage Bill (as % of public expenditure)" = "PublicExpenditure",
-                                        "Wage Bill (as % of GDP)" = "GDP"
-                                      ),
-                                      selected = c("PublicExpenditure", "GDP")
-                                    ),
-                                    
-                                    # Download button
-                                    downloadButton("downloadWord", "Download Word Document")
-                                  )
-                                )
-                                )
-                       ),
+    # Main content area
+    div(
+      class = "flex-grow-1 p-4",
+      h2("WWB Indicators"),
+      tabsetPanel(id = "tabs",
+                  tabPanel("Dashboard",
+                           fluidRow(
+                             box(title = "Dashboard Description", status = "primary", solidHeader = TRUE, width = 12,
+                                 "Welcome to the Worldwide Bureaucracy Indicators (WWBI).
+                                 The Worldwide Bureaucracy Indicators (WWBI) database is a unique cross-national dataset on public sector employment and wages that aims to fill an information gap, thereby helping researchers, development practitioners, and policymakers gain a better understanding of the personnel dimensions of state capability, the footprint of the public sector within the overall labor market, and the fiscal implications of the public sector wage bill. The dataset is derived from administrative data and household surveys, thereby complementing existing, expert perception-based approaches.")
+                           )
+                  ),
+                  tabPanel("Metadata", "Metadata content goes here."),
+                  tabPanel("Wage Bill Graphs", "Wage Bill Graphs content goes here."),
+                  tabPanel("Wage Bill and GDP Graphs", "Wage Bill and GDP Graphs content goes here."),
+                  tabPanel("Public Sector Workforce Graphs", "Public Sector Workforce Graphs content goes here."),
+                  tabPanel("Gender Workforce Graphs", "Gender Workforce Graphs content goes here."),
+                  tabPanel("Tertiary Education Graphs", "Tertiary Education Graphs content goes here."),
+                  tabPanel("Public Sector Wage Premium", "Public Sector Wage Premium content goes here."),
+                  tabPanel("Public Sector Education Workers", "Public Sector Education Workers content goes here."),
+                  tabPanel("Public Sector Graphs", "Public Sector Graphs content goes here."),
+                  tabPanel("Wage Premium Gender Graphs", "Wage Premium Gender Graphs content goes here."),
+                  tabPanel("Female Leadership Graphs", "Female Leadership Graphs content goes here."),
+                  tabPanel("Download All Graphs", "Download All Graphs content goes here.")
+      )
+    ),
       # Wage Bill Graphs GDP Tab
       tabPanel(
         tabName = "wageBillgdpGraphs",
@@ -1298,7 +1287,7 @@ ui <- bootstrapPage(
               )
       )
   )
-))
+)
 
 
 
@@ -2923,32 +2912,58 @@ shinyApp(ui, server)
 
 
 
+
+
 ui <- bootstrapPage(
   theme = bs_theme(version = 5, bootswatch = 'quartz'),
-  titlePanel("Old Faithful Geyser Data"),
-  sidebarLayout(
-    sidebarPanel(
-      sliderInput("bins",
-                  "Number of bins:",
-                  min = 1,
-                  max = 50,
-                  value = 30)
+  
+  # Custom CSS for the sidebar
+  tags$style(HTML("
+    #sidebar {
+      height: 100vh;
+      background: linear-gradient(to bottom, #56ccf2, #2f80ed);
+      padding: 20px;
+      color: white;
+    }
+    #sidebar .nav-item {
+      margin: 15px 0;
+      font-size: 18px;
+      font-weight: bold;
+      color: white;
+    }
+    #sidebar .nav-item.active {
+      background-color: #eb2f96;
+      padding: 10px;
+      border-radius: 20px;
+      color: white;
+    }
+    #sidebar .nav-item:hover {
+      cursor: pointer;
+      color: #eb2f96;
+    }
+  ")),
+  
+  # Sidebar and main content layout
+  div(
+    class = "d-flex",
+    # Sidebar
+    div(
+      id = "sidebar",
+      div(class = "nav-item active", "Overview"),
+      div(class = "nav-item", "Education"),
+      div(class = "nav-item", "Health"),
+      div(class = "nav-item", "About")
     ),
-    mainPanel(
-      plotOutput("distPlot")
+    
+    # Main content
+    div(
+      class = "flex-grow-1 p-4",
+      h2("Main Content Area"),
+      p("This is where the main content will go.")
     )
   )
 )
 
-server <- function(input, output) {
-  
-  output$distPlot <- renderPlot({
-    x    <- faithful[, 2]
-    bins <- seq(min(x), max(x), length.out = input$bins + 1)
-    hist(x, breaks = bins, col = 'darkgray', border = 'white',
-         xlab = 'Waiting time to next eruption (in mins)',
-         main = 'Histogram of waiting times')
-  })
-}
+server <- function(input, output) {}
 
 shinyApp(ui = ui, server = server)
