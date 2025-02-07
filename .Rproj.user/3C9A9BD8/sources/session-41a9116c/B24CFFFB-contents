@@ -692,47 +692,76 @@ ui <- bootstrapPage(
     # Sidebar
     div(
       id = "sidebar",
-      div(class = "nav-item active", "Dashboard"),
-      div(class = "nav-item", "Metadata"),
-      div(class = "nav-item", "Wage Bill Graphs"),
-      div(class = "nav-item", "Wage Bill and GDP Graphs"),
-      div(class = "nav-item", "Public Sector Workforce Graphs"),
-      div(class = "nav-item", "Gender Workforce Graphs"),
-      div(class = "nav-item", "Tertiary Education Graphs"),
-      div(class = "nav-item", "Public Sector Wage Premium"),
-      div(class = "nav-item", "Public Sector Education Workers"),
-      div(class = "nav-item", "Public Sector Graphs"),
-      div(class = "nav-item", "Wage Premium Gender Graphs"),
-      div(class = "nav-item", "Female Leadership Graphs"),
-      div(class = "nav-item", "Download All Graphs")
+      div(class = "nav-item", "Dashboard"),
+      div(class = "nav-item", "Wage Bill and GDP Graphs") # Sidebar menu item
     ),
     
     # Main content area
     div(
       class = "flex-grow-1 p-4",
       h2("WWB Indicators"),
-      tabsetPanel(id = "tabs",
-                  tabPanel("Dashboard",
-                           fluidRow(
-                             box(title = "Dashboard Description", status = "primary", solidHeader = TRUE, width = 12,
-                                 "Welcome to the Worldwide Bureaucracy Indicators (WWBI).
-                                 The Worldwide Bureaucracy Indicators (WWBI) database is a unique cross-national dataset on public sector employment and wages that aims to fill an information gap, thereby helping researchers, development practitioners, and policymakers gain a better understanding of the personnel dimensions of state capability, the footprint of the public sector within the overall labor market, and the fiscal implications of the public sector wage bill. The dataset is derived from administrative data and household surveys, thereby complementing existing, expert perception-based approaches.")
-                           )
-                  ),
-                  tabPanel("Metadata", "Metadata content goes here."),
-                  tabPanel("Wage Bill Graphs", "Wage Bill Graphs content goes here."),
-                  tabPanel("Wage Bill and GDP Graphs", "Wage Bill and GDP Graphs content goes here."),
-                  tabPanel("Public Sector Workforce Graphs", "Public Sector Workforce Graphs content goes here."),
-                  tabPanel("Gender Workforce Graphs", "Gender Workforce Graphs content goes here."),
-                  tabPanel("Tertiary Education Graphs", "Tertiary Education Graphs content goes here."),
-                  tabPanel("Public Sector Wage Premium", "Public Sector Wage Premium content goes here."),
-                  tabPanel("Public Sector Education Workers", "Public Sector Education Workers content goes here."),
-                  tabPanel("Public Sector Graphs", "Public Sector Graphs content goes here."),
-                  tabPanel("Wage Premium Gender Graphs", "Wage Premium Gender Graphs content goes here."),
-                  tabPanel("Female Leadership Graphs", "Female Leadership Graphs content goes here."),
-                  tabPanel("Download All Graphs", "Download All Graphs content goes here.")
-      )
-    ),
+      tabsetPanel(
+        id = "tabs",
+        
+        # Wage Bill and GDP Graphs Tab
+        tabPanel(
+          "Wage Bill and GDP Graphs",
+          
+          # Header row with description
+          fluidRow(
+            box(
+              title = "Dot Plot: Wage Bill vs. GDP per Capita (Log Scale)", 
+              status = "primary", 
+              solidHeader = TRUE, 
+              width = 12,
+              p("This visualization explores the relationship between wage bill (as an indicator) and GDP per capita (log scale). 
+              You can select specific countries to highlight and observe their trends.")
+            )
+          ),
+          
+          # Row for country selection and download
+          fluidRow(
+            box(
+              title = "Select Countries and Download", 
+              status = "primary", 
+              solidHeader = TRUE, 
+              width = 4,
+              selectInput(
+                "countries_first", 
+                label = "Select Countries:", 
+                choices = unique(merged_data$country_name), 
+                selected = NULL, 
+                multiple = TRUE,
+                width = "100%"
+              ),
+              downloadButton("downloadGDPDoc", "Download GDP Analysis Report")
+            ),
+            
+            # Radio Buttons for selecting between country or region
+            box(
+              title = "Select Label Type", 
+              status = "primary", 
+              solidHeader = TRUE, 
+              width = 4,
+              radioButtons(
+                "label_type", "Choose Label Type", 
+                choices = c("Country", "Region"), 
+                selected = "Country"
+              )
+            )
+          ),
+          
+          # Row for displaying the plot
+          fluidRow(
+            box(
+              title = "Dot Plot Visualization", 
+              status = "primary", 
+              solidHeader = TRUE, 
+              width = 12,
+              plotlyOutput("dot_plot", height = "500px")
+            )
+          )
+        ),
       # Wage Bill Graphs GDP Tab
       tabPanel(
         tabName = "wageBillgdpGraphs",
@@ -1287,6 +1316,7 @@ ui <- bootstrapPage(
               )
       )
   )
+))
 )
 
 
