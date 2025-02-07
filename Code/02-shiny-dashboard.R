@@ -692,10 +692,20 @@ ui <- bootstrapPage(
     # Sidebar
     div(
       id = "sidebar",
-      div(class = "nav-item", "Dashboard"),
-      div(class = "nav-item", "Wage Bill and GDP Graphs") # Sidebar menu item
+      div(class = "nav-item active", "Dashboard"),
+      div(class = "nav-item", "Metadata"),
+      div(class = "nav-item", "Wage Bill Graphs"),
+      div(class = "nav-item", "Wage Bill and GDP Graphs"),
+      div(class = "nav-item", "Public Sector Workforce Graphs"),
+      div(class = "nav-item", "Gender Workforce Graphs"),
+      div(class = "nav-item", "Tertiary Education Graphs"),
+      div(class = "nav-item", "Public Sector Wage Premium"),
+      div(class = "nav-item", "Public Sector Education Workers"),
+      div(class = "nav-item", "Public Sector Graphs"),
+      div(class = "nav-item", "Wage Premium Gender Graphs"),
+      div(class = "nav-item", "Female Leadership Graphs"),
+      div(class = "nav-item", "Download All Graphs")
     ),
-    
     # Main content area
     div(
       class = "flex-grow-1 p-4",
@@ -717,8 +727,10 @@ ui <- bootstrapPage(
           ),
         
         # Wage Bill and GDP Graphs Tab
-        tabPanel(
-          "Wage Bill and GDP Graphs",
+        div(
+          class=="nav-item", 
+          
+          ("Wage Bill and GDP Graphs"),
           
           # Header row with description
           fluidRow(
