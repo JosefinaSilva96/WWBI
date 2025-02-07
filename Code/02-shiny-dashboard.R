@@ -653,106 +653,99 @@ gender_leadership <- gender_leadership %>%
 
 
 # Define UI ----
-
 ui <- bootstrapPage(
   theme = bs_theme(version = 5, bootswatch = 'quartz'),
-  dashboardHeader(title = "WWB Indicators"),
-  dashboardSidebar(
-    sidebarMenu(
-      menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
-      menuItem("Metadata", tabName = "indicators", icon = icon("globe")),
-      menuItem("Wage Bill Graphs", tabName = "wageBillGraphs", icon = icon("chart-line")), 
-      menuItem("Wage Bill and GDP Graphs", tabName = "wageBillgdpGraphs", icon = icon("chart-line")), 
-      menuItem("Public Sector Workforce Graphs", tabName = "publicSectorWorkforceGraphs", icon = icon("chart-line")), 
-      menuItem("Gender Workforce Graphs", tabName = "genderWorkforceGraphs", icon = icon("chart-line")), 
-      menuItem("Tertiary Education Graphs", tabName = "educationGraphs", icon = icon("chart-line")),
-      menuItem("Public Sector Wage Premium", tabName = "publicsectorwagepremiumGraphs", icon = icon("chart-line")),
-      menuItem("Public Sector Education Workers", tabName = "publicsectoreducationGraphs", icon = icon("chart-line")), 
-      menuItem("Public Sector Graphs", tabName = "publicsectorGraphs", icon = icon("chart-line")), 
-      menuItem("Wage Premium Gender Graphs", tabName = "wagepremiumgenderGraphs", icon = icon("chart-line")), 
-      menuItem("Female Leadership Graphs", tabName = "womenleadershipGraphs", icon = icon("chart-line")), 
-      menuItem("Download All Graphs", tabName = "downloadAllGraphs", icon = icon("download")) 
-    )
-  ),
-  dashboardBody(
-    theme = bs_theme(version = 5, bootswatch = 'quartz'),
-    tabItems(
-      # Dashboard Tab
-      tabItem(tabName = "dashboard",
-              fluidRow(
-                box(title = "Dashboard Description", status = "primary", solidHeader = TRUE, width = 12,
-                    "Welcome to the Worldwide Bureaucracy Indicators (WWBI)
-                    The Worldwide Bureaucracy Indicators (WWBI) database is a unique cross-national dataset on public sector employment and wages that aims to fill an information gap, thereby helping researchers, development practitioners, and policymakers gain a better understanding of the personnel dimensions of state capability, the footprint of the public sector within the overall labor market, and the fiscal implications of the public sector wage bill. The dataset is derived from administrative data and household surveys, thereby complementing existing, expert perception-based approaches.")
-              )
-      ),
-      # Wage Bill Graphs Tab
-      tabItem(
-        tabName = "wageBillGraphs",
-        
-        # First Row with Indicator and Selection for Countries or Region
-        fluidRow(
-          # Indicator Selection Box
-          box(
-            title = "WWB Indicator Selection",
-            status = "primary",
-            solidHeader = TRUE,
-            width = 4,
-            selectInput(
-              "indicator",
-              "Select a WWB Indicator",
-              choices = c(
-                "Wage bill (as % of public expenditure) over time",
-                "Wage bill as a percentage of GDP"
-              )
-            )
-          ),
-          
-          # Country and Graph Selection Box
-          box(
-            title = "Country and Graph Selection",
-            status = "primary",
-            solidHeader = TRUE,
-            width = 8,
-            
-            # Country or Region Selection
-            selectInput(
-              "countries",
-              "Select Countries:",
-              choices = unique(wage_bill_publicexp$country_name),
-              selected = unique(wage_bill_publicexp$country_name)[1],
-              multiple = TRUE
-            ),
-            
-            # Checkbox group for graph selection
-            checkboxGroupInput(
-              "graphs_to_download",
-              "Select Graphs to Download",
-              choices = list(
-                "Wage Bill (as % of public expenditure)" = "PublicExpenditure",
-                "Wage Bill (as % of GDP)" = "GDP"
-              ),
-              selected = c("PublicExpenditure", "GDP")
-            ),
-            
-            # Download button
-            downloadButton("downloadWord", "Download Word Document")
-          )
-        ),
-        
-        # Second Row for displaying the graph
-        fluidRow(
-          box(
-            title = "Graph",
-            status = "primary",
-            solidHeader = TRUE,
-            width = 12,
-            plotlyOutput("plot")
-          )
-        )
-      ),
-      
+  
+  # Application title
+  titlePanel("WWB Indicators"),
+  
+  # Sidebar navigation using navlistPanel
+  fluidRow(
+    column(3,
+           navlistPanel(
+             tabPanel("Dashboard", value = "dashboard"),
+             tabPanel("Metadata", value = "indicators"),
+             tabPanel("Wage Bill Graphs", value = "wageBillGraphs"),
+             tabPanel("Wage Bill and GDP Graphs", value = "wageBillgdpGraphs"),
+             tabPanel("Public Sector Workforce Graphs", value = "publicSectorWorkforceGraphs"),
+             tabPanel("Gender Workforce Graphs", value = "genderWorkforceGraphs"),
+             tabPanel("Tertiary Education Graphs", value = "educationGraphs"),
+             tabPanel("Public Sector Wage Premium", value = "publicsectorwagepremiumGraphs"),
+             tabPanel("Public Sector Education Workers", value = "publicsectoreducationGraphs"),
+             tabPanel("Public Sector Graphs", value = "publicsectorGraphs"),
+             tabPanel("Wage Premium Gender Graphs", value = "wagepremiumgenderGraphs"),
+             tabPanel("Female Leadership Graphs", value = "womenleadershipGraphs"),
+             tabPanel("Download All Graphs", value = "downloadAllGraphs"),
+             id = "tabs"
+           )
+    ),
+    
+    # Main panel for content
+    column(9,
+           tabsetPanel(id = "tabs",
+                       
+                       # Dashboard Tab
+                       tabPanel("Dashboard",
+                                fluidRow(
+                                  box(title = "Dashboard Description", status = "primary", solidHeader = TRUE, width = 12,
+                                      "Welcome to the Worldwide Bureaucracy Indicators (WWBI).
+                            The Worldwide Bureaucracy Indicators (WWBI) database is a unique cross-national dataset on public sector employment and wages that aims to fill an information gap, thereby helping researchers, development practitioners, and policymakers gain a better understanding of the personnel dimensions of state capability, the footprint of the public sector within the overall labor market, and the fiscal implications of the public sector wage bill. The dataset is derived from administrative data and household surveys, thereby complementing existing, expert perception-based approaches.")
+                                )
+                       ),
+                       
+                       # Wage Bill Graphs Tab
+                       tabPanel("Wage Bill Graphs",
+                                fluidRow(
+                                  # Indicator Selection Box
+                                  box(
+                                    title = "WWB Indicator Selection",
+                                    status = "primary",
+                                    solidHeader = TRUE,
+                                    width = 4,
+                                    selectInput(
+                                      "indicator",
+                                      "Select a WWB Indicator",
+                                      choices = c(
+                                        "Wage bill (as % of public expenditure) over time",
+                                        "Wage bill as a percentage of GDP"
+                                      )
+                                    )
+                                  ),
+                                  
+                                  # Country and Graph Selection Box
+                                  box(
+                                    title = "Country and Graph Selection",
+                                    status = "primary",
+                                    solidHeader = TRUE,
+                                    width = 8,
+                                    
+                                    # Country or Region Selection
+                                    selectInput(
+                                      "countries",
+                                      "Select Countries:",
+                                      choices = NULL,  # Updated dynamically in server
+                                      multiple = TRUE
+                                    ),
+                                    
+                                    # Checkbox group for graph selection
+                                    checkboxGroupInput(
+                                      "graphs_to_download",
+                                      "Select Graphs to Download",
+                                      choices = list(
+                                        "Wage Bill (as % of public expenditure)" = "PublicExpenditure",
+                                        "Wage Bill (as % of GDP)" = "GDP"
+                                      ),
+                                      selected = c("PublicExpenditure", "GDP")
+                                    ),
+                                    
+                                    # Download button
+                                    downloadButton("downloadWord", "Download Word Document")
+                                  )
+                                )
+                                )
+                       ),
       # Wage Bill Graphs GDP Tab
-      tabItem(
+      tabPanel(
         tabName = "wageBillgdpGraphs",
         
         # Header row with description
