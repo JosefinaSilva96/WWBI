@@ -3113,3 +3113,193 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui = ui, server = server)
+
+
+
+library(shiny)
+library(bslib)
+library(shinyWidgets)
+library(shinydashboard)
+library(plotly)
+
+
+ui <- bootstrapPage(
+  theme = bs_theme(version = 5, bootswatch = 'quartz'),
+  
+  # Custom CSS for the sidebar
+  tags$style(HTML("
+    #sidebar {
+      height: 100vh;
+      background: linear-gradient(to bottom, #56ccf2, #2f80ed);
+      padding: 20px;
+      color: white;
+    }
+    #sidebar .nav-item {
+      margin: 15px 0;
+      font-size: 18px;
+      font-weight: bold;
+      color: white;
+      text-decoration: none;
+    }
+    #sidebar .nav-item.active {
+      background-color: #eb2f96;
+      padding: 10px;
+      border-radius: 20px;
+      color: white;
+    }
+    #sidebar .nav-item:hover {
+      cursor: pointer;
+      color: #eb2f96;
+    }
+  ")),
+  
+  # Layout with sidebar and content
+  div(
+    class = "d-flex",
+    
+    # Sidebar
+    div(
+      id = "sidebar",
+      div(class = "nav-item active", "Dashboard"),
+      div(class = "nav-item", "Metadata"),
+      div(class = "nav-item", "Wage Bill Graphs"),
+      div(class = "nav-item", "Wage Bill and GDP Graphs"),
+      div(class = "nav-item", "Public Sector Workforce Graphs"),
+      div(class = "nav-item", "Gender Workforce Graphs"),
+      div(class = "nav-item", "Tertiary Education Graphs"),
+      div(class = "nav-item", "Public Sector Wage Premium"),
+      div(class = "nav-item", "Public Sector Education Workers"),
+      div(class = "nav-item", "Public Sector Graphs"),
+      div(class = "nav-item", "Wage Premium Gender Graphs"),
+      div(class = "nav-item", "Female Leadership Graphs"),
+      div(class = "nav-item", "Download All Graphs")
+    ),
+    
+    # Main content area
+    div(
+      class = "flex-grow-1 p-4",
+      h2("WWB Indicators"),
+      
+      # Tabset panel for switching between tabs
+      tabsetPanel(
+        id = "tabs",
+        
+        tabPanel("Dashboard",
+                 fluidRow(
+                   box(
+                     title = "Dashboard Description", 
+                     status = "primary", 
+                     solidHeader = TRUE, 
+                     width = 12,
+                     "Welcome to the Worldwide Bureaucracy Indicators (WWBI).
+              The Worldwide Bureaucracy Indicators (WWBI) database is a unique cross-national dataset on public sector employment and wages that aims to fill an information gap."
+                   )
+                 )
+        ),
+        
+        # Wage Bill and GDP Graphs Tab
+        tabPanel("Wage Bill and GDP Graphs",
+                 
+                 # Header row with description
+                 fluidRow(
+                   box(
+                     title = "Dot Plot: Wage Bill vs. GDP per Capita (Log Scale)", 
+                     status = "primary", 
+                     solidHeader = TRUE, 
+                     width = 12,
+                     p("This visualization explores the relationship between wage bill (as an indicator) and GDP per capita (log scale). 
+              You can select specific countries to highlight and observe their trends.")
+                   )
+                 ),
+                 
+                 # Row for country selection and download
+                 fluidRow(
+                   box(
+                     title = "Select Countries and Download", 
+                     status = "primary", 
+                     solidHeader = TRUE, 
+                     width = 4,
+                     selectInput(
+                       "countries_first", 
+                       label = "Select Countries:", 
+                       choices = c("USA", "Canada", "Mexico"),  # Example countries
+                       selected = NULL, 
+                       multiple = TRUE,
+                       width = "100%"
+                     ),
+                     downloadButton("downloadGDPDoc", "Download GDP Analysis Report")
+                   ),
+                   
+                   # Radio Buttons for selecting between country or region
+                   box(
+                     title = "Select Label Type", 
+                     status = "primary", 
+                     solidHeader = TRUE, 
+                     width = 4,
+                     radioButtons(
+                       "label_type", "Choose Label Type", 
+                       choices = c("Country", "Region"), 
+                       selected = "Country"
+                     )
+                   )
+                 ),
+                 
+                 # Row for displaying the plot
+                 fluidRow(
+                   box(
+                     title = "Dot Plot Visualization", 
+                     status = "primary", 
+                     solidHeader = TRUE, 
+                     width = 12,
+                     plotlyOutput("dot_plot", height = "500px")
+                   )
+                 )
+        )
+      )
+    )
+  )
+)
+
+server <- function(input, output, session) {
+  
+  # Placeholder dataset
+  data <- data.frame(
+    year = rep(2000:2020, 3),
+    value = c(runif(21, 5, 15), runif(21, 8, 20), runif(21, 3, 12)),
+    country_name = rep(c("USA", "Canada", "Mexico"), each = 21),
+    region = rep(c("North America"), 63)
+  )
+  
+  # Reactive dataset
+  selected_data <- reactive({
+    req(input$countries_first)
+    data %>% filter(country_name %in% input$countries_first)
+  })
+  
+  # Render Plotly plot
+  output$dot_plot <- renderPlotly({
+    data_to_plot <- selected_data()
+    
+    plot_ly(data = data_to_plot, 
+            x = ~year, 
+            y = ~value, 
+            color = ~country_name,  
+            type = 'scatter', 
+            mode = 'markers',
+            marker = list(size = 8)) %>%
+      layout(
+        title = "Wage Bill vs. GDP per Capita (Log Scale)",
+        xaxis = list(title = "Year", dtick = 2),
+        yaxis = list(title = "Wage Bill (% of GDP)"),
+        legend = list(title = list(text = "Country"))
+      )
+  })
+}
+
+shinyApp(ui, server)
+
+
+
+
+
+

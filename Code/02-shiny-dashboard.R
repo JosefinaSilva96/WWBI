@@ -3113,3 +3113,187 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui = ui, server = server)
+
+
+
+library(shiny)
+library(bslib)
+library(shinyWidgets)
+library(shinydashboard)
+library(plotly)
+
+ui <- bootstrapPage(
+  theme = bs_theme(version = 5, bootswatch = 'quartz'),
+  
+  tags$style(HTML("
+    #sidebar {
+      height: 100vh;
+      background: linear-gradient(to bottom, #56ccf2, #2f80ed);
+      padding: 20px;
+      color: white;
+    }
+    #sidebar .nav-pills .nav-link {
+      font-size: 18px;
+      font-weight: bold;
+      color: white;
+      text-decoration: none;
+    }
+    #sidebar .nav-pills .nav-link.active {
+      background-color: #eb2f96;
+      padding: 10px;
+      border-radius: 10px;
+      color: white;
+    }
+    #sidebar .nav-pills .nav-link:hover {
+      color: #eb2f96;
+    }
+  ")),
+  
+  # Sidebar and Main Content Layout
+  div(class = "container-fluid",
+      div(class = "row",
+          # Sidebar
+          div(class = "col-md-3 col-lg-2 d-md-block sidebar",
+              div(id = "sidebar",
+                  h4("Navigation", class = "text-center"),
+                  div(class = "nav flex-column nav-pills",
+                      a(href = "#", class = "nav-link active", "Dashboard"),
+                      a(href = "#", class = "nav-link", "Metadata"),
+                      a(href = "#", class = "nav-link", "Wage Bill Graphs"),
+                      a(href = "#", class = "nav-link", "Wage Bill and GDP Graphs"),
+                      a(href = "#", class = "nav-link", "Public Sector Workforce Graphs"),
+                      a(href = "#", class = "nav-link", "Gender Workforce Graphs"),
+                      a(href = "#", class = "nav-link", "Tertiary Education Graphs"),
+                      a(href = "#", class = "nav-link", "Public Sector Wage Premium"),
+                      a(href = "#", class = "nav-link", "Public Sector Education Workers"),
+                      a(href = "#", class = "nav-link", "Public Sector Graphs"),
+                      a(href = "#", class = "nav-link", "Wage Premium Gender Graphs"),
+                      a(href = "#", class = "nav-link", "Female Leadership Graphs"),
+                      a(href = "#", class = "nav-link", "Download All Graphs")
+                  )
+              )
+          ),
+          
+          # Main Content Area
+          div(class = "col-md-9 col-lg-10 p-4",
+              h2("WWB Indicators"),
+              
+              tabsetPanel(id = "tabs",
+                          tabPanel("Dashboard",
+                                   fluidRow(
+                                     box(
+                                       title = "Dashboard Description", 
+                                       status = "primary", 
+                                       solidHeader = TRUE, 
+                                       width = 12,
+                                       "Welcome to the Worldwide Bureaucracy Indicators (WWBI). 
+                                        The WWBI database provides insights into public sector employment 
+                                        and wages, helping policymakers and researchers understand 
+                                        state capacity and fiscal implications."
+                                     )
+                                   )
+                          ),
+                          
+                          tabPanel("Wage Bill and GDP Graphs",
+                                   fluidRow(
+                                     box(
+                                       title = "Dot Plot: Wage Bill vs. GDP per Capita (Log Scale)", 
+                                       status = "primary", 
+                                       solidHeader = TRUE, 
+                                       width = 12,
+                                       p("This visualization explores the relationship between wage bill 
+                                          and GDP per capita (log scale). Select countries to highlight trends.")
+                                     )
+                                   ),
+                                   
+                                   fluidRow(
+                                     box(
+                                       title = "Select Countries and Download", 
+                                       status = "primary", 
+                                       solidHeader = TRUE, 
+                                       width = 4,
+                                       selectInput("countries_first", 
+                                                   label = "Select Countries:", 
+                                                   choices = unique(merged_data$country_name), 
+                                                   selected = NULL, 
+                                                   multiple = TRUE,
+                                                   width = "100%"),
+                                       downloadButton("downloadGDPDoc", "Download GDP Analysis Report")
+                                     ),
+                                     
+                                     box(
+                                       title = "Select Label Type", 
+                                       status = "primary", 
+                                       solidHeader = TRUE, 
+                                       width = 4,
+                                       radioButtons("label_type", "Choose Label Type", 
+                                                    choices = c("Country", "Region"), 
+                                                    selected = "Country")
+                                     )
+                                   ),
+                                   
+                                   fluidRow(
+                                     box(
+                                       title = "Dot Plot Visualization", 
+                                       status = "primary", 
+                                       solidHeader = TRUE, 
+                                       width = 12,
+                                       plotlyOutput("dot_plot", height = "500px")
+                                     )
+                                   )
+                          )
+              )
+          )
+      )
+  )
+)
+
+server <- function(input, output, session) {
+  
+  # Reactive dataset selection
+  selected_data <- reactive({
+    req(input$countries_first)
+    
+    if (input$label_type == "Country") {
+      data <- wage_bill_gdp %>% filter(country_name %in% input$countries_first)
+    } else {
+      data <- wage_bill_publicexp %>% filter(country_name %in% input$countries_first)
+    }
+    
+    return(data)
+  })
+  
+  # Render Plotly Graph
+  output$dot_plot <- renderPlotly({
+    data_to_plot <- selected_data()
+    
+    plot_ly(data = data_to_plot, 
+            x = ~year, 
+            y = ~value, 
+            color = ~country_name, 
+            type = 'scatter', 
+            mode = 'lines+markers',
+            marker = list(size = 8)) %>%
+      layout(title = "Wage Bill vs GDP Over Time",
+             xaxis = list(title = "Year", dtick = 2),
+             yaxis = list(title = "Wage Bill (%)"),
+             legend = list(title = list(text = input$label_type)))
+  })
+}
+
+shinyApp(ui, server)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
