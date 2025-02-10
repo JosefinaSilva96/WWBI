@@ -3126,7 +3126,7 @@ library(plotly)
 ui <- bootstrapPage(
   theme = bs_theme(version = 5, bootswatch = 'quartz'),
   
-  # Custom CSS for the sidebar
+  # Custom CSS for sidebar
   tags$style(HTML("
     #sidebar {
       height: 100vh;
@@ -3160,19 +3160,9 @@ ui <- bootstrapPage(
     # Sidebar
     div(
       id = "sidebar",
-      div(class = "nav-item active", "Dashboard"),
-      div(class = "nav-item", "Metadata"),
-      div(class = "nav-item", "Wage Bill Graphs"),
-      div(class = "nav-item", "Wage Bill and GDP Graphs"),
-      div(class = "nav-item", "Public Sector Workforce Graphs"),
-      div(class = "nav-item", "Gender Workforce Graphs"),
-      div(class = "nav-item", "Tertiary Education Graphs"),
-      div(class = "nav-item", "Public Sector Wage Premium"),
-      div(class = "nav-item", "Public Sector Education Workers"),
-      div(class = "nav-item", "Public Sector Graphs"),
-      div(class = "nav-item", "Wage Premium Gender Graphs"),
-      div(class = "nav-item", "Female Leadership Graphs"),
-      div(class = "nav-item", "Download All Graphs")
+      actionLink("nav_dashboard", "Dashboard", class = "nav-item active"),
+      actionLink("nav_metadata", "Metadata", class = "nav-item"),
+      actionLink("nav_wage_gdp", "Wage Bill and GDP Graphs", class = "nav-item")
     ),
     
     # Main content area
@@ -3183,6 +3173,7 @@ ui <- bootstrapPage(
       # Tabset panel for switching between tabs
       tabsetPanel(
         id = "tabs",
+        selected = "Dashboard",  # Ensure the app starts on the Dashboard tab
         
         tabPanel("Dashboard",
                  fluidRow(
@@ -3197,61 +3188,62 @@ ui <- bootstrapPage(
                  )
         ),
         
-        # Wage Bill and GDP Graphs Tab
         tabPanel("Wage Bill and GDP Graphs",
-                 
-                 # Header row with description
-                 fluidRow(
-                   box(
-                     title = "Dot Plot: Wage Bill vs. GDP per Capita (Log Scale)", 
-                     status = "primary", 
-                     solidHeader = TRUE, 
-                     width = 12,
-                     p("This visualization explores the relationship between wage bill (as an indicator) and GDP per capita (log scale). 
-              You can select specific countries to highlight and observe their trends.")
-                   )
-                 ),
-                 
-                 # Row for country selection and download
-                 fluidRow(
-                   box(
-                     title = "Select Countries and Download", 
-                     status = "primary", 
-                     solidHeader = TRUE, 
-                     width = 4,
-                     selectInput(
-                       "countries_first", 
-                       label = "Select Countries:", 
-                       choices = c("USA", "Canada", "Mexico"),  # Example countries
-                       selected = NULL, 
-                       multiple = TRUE,
-                       width = "100%"
-                     ),
-                     downloadButton("downloadGDPDoc", "Download GDP Analysis Report")
+                 conditionalPanel(
+                   condition = "input.tabs == 'Wage Bill and GDP Graphs'",
+                   
+                   # Header row with description
+                   fluidRow(
+                     box(
+                       title = "Dot Plot: Wage Bill vs. GDP per Capita (Log Scale)", 
+                       status = "primary", 
+                       solidHeader = TRUE, 
+                       width = 12,
+                       p("This visualization explores the relationship between wage bill (as an indicator) and GDP per capita (log scale). 
+                You can select specific countries to highlight and observe their trends.")
+                     )
                    ),
                    
-                   # Radio Buttons for selecting between country or region
-                   box(
-                     title = "Select Label Type", 
-                     status = "primary", 
-                     solidHeader = TRUE, 
-                     width = 4,
-                     radioButtons(
-                       "label_type", "Choose Label Type", 
-                       choices = c("Country", "Region"), 
-                       selected = "Country"
+                   # Row for country selection and download
+                   fluidRow(
+                     box(
+                       title = "Select Countries and Download", 
+                       status = "primary", 
+                       solidHeader = TRUE, 
+                       width = 4,
+                       selectInput(
+                         "countries_first", 
+                         label = "Select Countries:", 
+                         choices = c("USA", "Canada", "Mexico"),  
+                         selected = NULL, 
+                         multiple = TRUE,
+                         width = "100%"
+                       ),
+                       downloadButton("downloadGDPDoc", "Download GDP Analysis Report")
+                     ),
+                     
+                     box(
+                       title = "Select Label Type", 
+                       status = "primary", 
+                       solidHeader = TRUE, 
+                       width = 4,
+                       radioButtons(
+                         "label_type", "Choose Label Type", 
+                         choices = c("Country", "Region"), 
+                         selected = "Country"
+                       )
                      )
-                   )
-                 ),
-                 
-                 # Row for displaying the plot
-                 fluidRow(
-                   box(
-                     title = "Dot Plot Visualization", 
-                     status = "primary", 
-                     solidHeader = TRUE, 
-                     width = 12,
-                     plotlyOutput("dot_plot", height = "500px")
+                   ),
+                   
+                   # Row for displaying the plot
+                   fluidRow(
+                     box(
+                       title = "Dot Plot Visualization", 
+                       status = "primary", 
+                       solidHeader = TRUE, 
+                       width = 12,
+                       plotlyOutput("dot_plot", height = "500px")
+                     )
                    )
                  )
         )
@@ -3276,8 +3268,45 @@ server <- function(input, output, session) {
     data %>% filter(country_name %in% input$countries_first)
   })
   
-  # Render Plotly plot
+  # Dynamically render tab content
+  output$tab_content <- renderUI({
+    if (input$tabs == "Dashboard") {
+      fluidRow(
+        box(
+          title = "Dashboard Description", 
+          status = "primary", 
+          solidHeader = TRUE, 
+          width = 12,
+          "Welcome to the Worldwide Bureaucracy Indicators (WWBI).
+          The Worldwide Bureaucracy Indicators (WWBI) database is a unique cross-national dataset on public sector employment and wages that aims to fill an information gap."
+        )
+      )
+    } else if (input$tabs == "Wage Bill and GDP Graphs") {
+      fluidRow(
+        box(
+          title = "Dot Plot: Wage Bill vs. GDP per Capita (Log Scale)", 
+          status = "primary", 
+          solidHeader = TRUE, 
+          width = 12,
+          p("This visualization explores the relationship between wage bill (as an indicator) and GDP per capita (log scale). 
+                You can select specific countries to highlight and observe their trends.")
+        )
+      )
+    }
+  })
+  
+  # Sidebar navigation updates tab selection
+  observeEvent(input$nav_dashboard, {
+    updateTabsetPanel(session, "tabs", selected = "Dashboard")
+  })
+  
+  observeEvent(input$nav_wage_gdp, {
+    updateTabsetPanel(session, "tabs", selected = "Wage Bill and GDP Graphs")
+  })
+  
+  # Ensure the plot is rendered only when the correct tab is selected
   output$dot_plot <- renderPlotly({
+    req(input$tabs == "Wage Bill and GDP Graphs")  # Only render when tab is active
     data_to_plot <- selected_data()
     
     plot_ly(data = data_to_plot, 
@@ -3296,10 +3325,7 @@ server <- function(input, output, session) {
   })
 }
 
-shinyApp(ui, server)
-
-
-
+shinyApp(ui = ui, server = server)
 
 
 
