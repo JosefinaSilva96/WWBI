@@ -2966,163 +2966,11 @@ shinyApp(ui, server)
 
 
 
+# ---------------------------
+# UI
+# ---------------------------
 
 
-
-# Sample data for demonstration
-merged_data <- data.frame(
-  country_name = c("USA", "Canada", "Germany", "France", "Brazil"),
-  wage_bill = c(500, 300, 450, 400, 350),
-  gdp_per_capita = c(60000, 45000, 50000, 47000, 15000),
-  stringsAsFactors = FALSE
-)
-
-ui <- bootstrapPage(
-  theme = bs_theme(version = 5, bootswatch = 'quartz'),
-  
-  # Custom CSS for the sidebar
-  tags$style(HTML("
-    #sidebar {
-      height: 100vh;
-      background: linear-gradient(to bottom, #56ccf2, #2f80ed);
-      padding: 20px;
-      color: white;
-    }
-    #sidebar .nav-item {
-      margin: 15px 0;
-      font-size: 18px;
-      font-weight: bold;
-      color: white;
-      text-decoration: none;
-    }
-    #sidebar .nav-item.active {
-      background-color: #eb2f96;
-      padding: 10px;
-      border-radius: 20px;
-      color: white;
-    }
-    #sidebar .nav-item:hover {
-      cursor: pointer;
-      color: #eb2f96;
-    }
-  ")),
-  
-  # Layout with sidebar and content
-  div(
-    class = "d-flex",
-    
-    # Sidebar
-    div(
-      id = "sidebar",
-      div(class = "nav-item", actionLink("nav_overview", "Overview")),
-      div(class = "nav-item", actionLink("nav_education", "Education")),
-      div(class = "nav-item", actionLink("nav_health", "Health")),
-      div(class = "nav-item", actionLink("nav_about", "About"))
-    ),
-    
-    # Main content area
-    div(
-      class = "flex-grow-1 p-4",
-      h2("WWB Indicators"),
-      uiOutput("main_content")
-    )
-  )
-)
-
-server <- function(input, output, session) {
-  
-  # Reactive value to track active tab
-  active_tab <- reactiveVal("overview")
-  
-  # Update the active tab when clicking on sidebar items
-  observeEvent(input$nav_overview, {
-    active_tab("overview")
-  })
-  observeEvent(input$nav_education, {
-    active_tab("wagebill")
-  })
-  observeEvent(input$nav_health, {
-    active_tab("health")
-  })
-  observeEvent(input$nav_about, {
-    active_tab("about")
-  })
-  
-  # Dynamic main content based on active tab
-  output$main_content <- renderUI({
-    tab <- active_tab()
-    
-    if (tab == "overview") {
-      div(
-        h3("Dashboard Overview"),
-        p("Welcome to the Worldwide Bureaucracy Indicators (WWBI). This dashboard provides insights into public sector employment and wages. Use the menu to navigate.")
-      )
-    } else if (tab == "wagebill") {
-      div(
-        h3("Wage Bill Graphs"),
-        plotlyOutput("wagebill_graph", height = "400px")
-      )
-    } else if (tab == "health") {
-      div(
-        h3("Health Graphs"),
-        plotlyOutput("health_graph", height = "400px")
-      )
-    } else if (tab == "about") {
-      div(
-        h3("About"),
-        p("This dashboard was created to explore data on public sector employment and wages.")
-      )
-    }
-  })
-  
-  # Education graph
-  output$education_graph <- renderPlotly({
-    plot_ly(
-      data = merged_data,
-      x = ~country_name,
-      y = ~wage_bill,
-      type = "bar",
-      text = ~paste0("Wage Bill: ", wage_bill),
-      marker = list(color = 'rgba(0, 123, 255, 0.7)')
-    ) %>%
-      layout(
-        title = list(text = "Education Wage Bill by Country", font = list(size = 14)),
-        xaxis = list(title = "", tickangle = -45),
-        yaxis = list(title = "Wage Bill")
-      )
-  })
-  
-  # Health graph
-  output$health_graph <- renderPlotly({
-    plot_ly(
-      data = merged_data,
-      x = ~country_name,
-      y = ~gdp_per_capita,
-      type = "scatter",
-      mode = "markers",
-      text = ~paste0("GDP per Capita: ", gdp_per_capita),
-      marker = list(size = 10, color = 'rgba(255, 123, 0, 0.7)')
-    ) %>%
-      layout(
-        title = list(text = "Health Indicators by Country", font = list(size = 14)),
-        xaxis = list(title = "Country"),
-        yaxis = list(title = "GDP per Capita")
-      )
-  })
-}
-
-shinyApp(ui = ui, server = server)
-
-
-
-library(shiny)
-library(bslib)
-library(plotly)
-library(dplyr)
-library(ggplot2)
-
-
-# Define UI using bootstrapPage with a fixed sidebar and dynamic main content
 ui <- bootstrapPage(
   theme = bs_theme(version = 5, bootswatch = 'quartz'),
   
@@ -3157,7 +3005,7 @@ ui <- bootstrapPage(
   div(
     class = "d-flex",
     
-    # Sidebar: action links for all the sections handled in the server
+    # Sidebar: action links for all sections except the former "Indicators & Widgets" tab
     div(
       id = "sidebar",
       div(class = "nav-item", actionLink("nav_dashboard", "Dashboard")),
@@ -3172,8 +3020,7 @@ ui <- bootstrapPage(
       div(class = "nav-item", actionLink("nav_public_graphs", "Public Sector Graphs")),
       div(class = "nav-item", actionLink("nav_wagepremium_gender", "Wage Premium Gender Graphs")),
       div(class = "nav-item", actionLink("nav_female_leadership", "Female Leadership Graphs")),
-      div(class = "nav-item", actionLink("nav_download_all", "Download All Graphs")),
-      div(class = "nav-item", actionLink("nav_indicators", "Indicators & Widgets"))
+      div(class = "nav-item", actionLink("nav_download_all", "Download All Graphs"))
     ),
     
     # Main content area: header and dynamic UI output
@@ -3185,13 +3032,15 @@ ui <- bootstrapPage(
   )
 )
 
+# ---------------------------
+# SERVER
+# ---------------------------
 server <- function(input, output, session) {
   
-  ## -------------------------------
-  ## 1. Track the active tab via a reactive value  
+  # 1. Track the active tab via a reactive value  
   active_tab <- reactiveVal("dashboard")
   
-  # Update active_tab when each sidebar actionLink is clicked
+  # Update active_tab when each sidebar link is clicked
   observeEvent(input$nav_dashboard,         { active_tab("dashboard") })
   observeEvent(input$nav_metadata,          { active_tab("metadata") })
   observeEvent(input$nav_wagebill,          { active_tab("wagebill") })
@@ -3205,11 +3054,8 @@ server <- function(input, output, session) {
   observeEvent(input$nav_wagepremium_gender,{ active_tab("wagepremium_gender") })
   observeEvent(input$nav_female_leadership, { active_tab("female_leadership") })
   observeEvent(input$nav_download_all,      { active_tab("download_all") })
-  observeEvent(input$nav_indicators,        { active_tab("indicators") })
   
-  
-  ## -------------------------------
-  ## 2. Render the main dynamic content UI based on active_tab
+  # 2. Render the main dynamic UI based on active_tab
   output$main_content <- renderUI({
     tab <- active_tab()
     
@@ -3218,25 +3064,55 @@ server <- function(input, output, session) {
         h3("Dashboard"),
         fluidRow(
           div(style = "border: 1px solid #ddd; padding: 20px;",
-              "Welcome to the Worldwide Bureaucracy Indicators (WWBI). The WWBI database is a unique cross–national dataset on public sector employment and wages, helping researchers and policymakers understand state capacity."
+              "The Worldwide Bureaucracy Indicators (WWBI) database is a unique cross-national dataset on public sector employment and wages that aims to fill an information gap, thereby helping researchers, development practitioners, and policymakers gain a better understanding of the personnel dimensions of state capability, the footprint of the public sector within the overall labor market, and the fiscal implications of the public sector wage bill. The dataset is derived from administrative data and household surveys, thereby complementing existing, expert perception-based approaches."
           )
         )
       )
       
     } else if(tab == "metadata") {
+      # --- METADATA TAB NOW INCLUDES INDICATORS & WIDGETS ---
       tagList(
-        h3("Metadata"),
-        p("Metadata content goes here …")
+        h3("Metadata & Indicators"),
+        fluidRow(
+          infoBoxOutput("numberIndicatorsBox", width = 6),
+          infoBoxOutput("numberCountriesBox", width = 6)
+        ),
+        fluidRow(
+          infoBoxOutput("temporalCoverageAnnualBox", width = 6),
+          infoBoxOutput("temporalCoverageYearsBox", width = 6)
+        ),
+        fluidRow(
+          infoBoxOutput("lastUpdatedBox", width = 6)
+        ),
+        fluidRow(
+          div(style = "border: 1px solid #ddd; padding: 10px;",
+              "This map shows which countries have reported data for the selected indicator.")
+        ),
+        fluidRow(
+          column(6,
+                 selectInput("indicatorSelect", "Select Indicator", 
+                             choices = unique(data_wwbi$indicator_name), selected = NULL)
+          ),
+          column(6,
+                 selectInput("yearSelect", "Select Year", 
+                             choices = 2010:2022, selected = 2022)
+          )
+        ),
+        fluidRow(
+          textOutput("countryCount")
+        ),
+        fluidRow(
+          leafletOutput("worldMap", height = "600px")
+        )
       )
       
     } else if(tab == "wagebill") {
       tagList(
         h3("Wage Bill Graphs"),
         fluidRow(
-          plotlyOutput("plot", height = "500px")
+          plotlyOutput("plotwagebill", height = "500px")
         )
       )
-      
     } else if(tab == "wagebill_gdp") {
       tagList(
         h3("Wage Bill & GDP Graphs"),
@@ -3424,73 +3300,76 @@ server <- function(input, output, session) {
           downloadButton("downloadAllGraphsDoc", "Download Full Report")
         )
       )
-      
-    } else if(tab == "indicators") {
-      tagList(
-        h3("Indicators and Widgets"),
-        fluidRow(
-          infoBoxOutput("numberIndicatorsBox", width = 6),
-          infoBoxOutput("numberCountriesBox", width = 6),
-          infoBoxOutput("temporalCoverageAnnualBox", width = 6),
-          infoBoxOutput("temporalCoverageYearsBox", width = 6),
-          infoBoxOutput("lastUpdatedBox", width = 6)
-        ),
-        fluidRow(
-          div(style = "border: 1px solid #ddd; padding: 10px;",
-              "This map shows which countries have reported data for the selected indicator.")
-        ),
-        fluidRow(
-          column(6,
-                 selectInput("indicatorSelect", "Select Indicator", 
-                             choices = unique(data_wwbi$indicator_name), selected = NULL)
-          ),
-          column(6,
-                 selectInput("yearSelect", "Select Year", 
-                             choices = 2010:2022, selected = 2022)
-          )
-        ),
-        fluidRow(
-          textOutput("countryCount")
-        ),
-        fluidRow(
-          leafletOutput("worldMap", height = "600px")
-        )
-      )
     }
   })
   
+  # ---------------------------
+  # 3. All your original outputs and downloadHandlers follow.
+  # (For brevity, the code below is the same as in your original server code.)
+  data_wb <- reactive({
+    req(input$countries_wb)
+    wage_bill_publicexp %>% filter(country_name %in% input$countries_wb)
+  })
   
-  ## -------------------------------
-  ## 3. All your original outputs and downloadHandlers:
+  # 4. Render the wage bill graph
+  output$plotwagebill <- renderPlotly({
+    d <- data_wb()
+    
+    plot_ly(data = d,
+            x = ~year,
+            y = ~value,         # Change if your column is named differently
+            color = ~country_name,
+            type = "scatter",
+            mode = "lines+markers") %>%
+      layout(title = "Wage Bill as % of Public Expenditure Over Time",
+             xaxis = list(title = "Year"),
+             yaxis = list(title = "Wage Bill (% of Public Expenditure)"))
+  })
   
-  # Wage Bill Graph (for tab "wagebill")
-  output$plot <- renderPlotly({
-    req(input$countries)
-    data_to_plot <- if (input$indicator == "Wage bill as a percentage of GDP") {
-      wage_bill_gdp %>% filter(country_name %in% input$countries)
-    } else {
-      wage_bill_publicexp %>% filter(country_name %in% input$countries)
-    }
+   # Reactive expression to select the appropriate dataset based on the indicator
+    selected_data <- reactive({
+      req(input$countries)  # Ensure 'countries' input is available
+      
+      # Check which indicator was selected and filter corresponding data
+      if (input$indicator == "Wage bill as a percentage of GDP") {
+        data <- wage_bill_gdp %>% filter(country_name %in% input$countries)
+      } else {
+        data <- wage_bill_publicexp %>% filter(country_name %in% input$countries)
+      }
+      
+      return(data)
+    })
+  
+  # Render Plotly plot for the main indicator
+  output$plotwagebill <- renderPlotly({
+    data_to_plot <- selected_data()
+    
+    # Define plot titles and plot mode based on selected indicator
     title_text <- ifelse(input$indicator == "Wage bill as a percentage of GDP",
                          "Wage Bill as % of GDP Over Time",
                          "Wage Bill as % of Public Expenditure Over Time")
-    plot_mode <- 'lines+markers'
+    plot_mode <- 'lines+markers'  # Common plot mode for both indicators
+    
+    # Dynamically assign color based on input$label_type (Country or Region)
     color_variable <- ifelse(input$label_type == "Country", "country_name", "region")
-    plot_ly(data = data_to_plot, 
-            x = ~year, 
-            y = ~value, 
-            color = as.formula(paste("~", color_variable)), 
-            type = 'scatter', 
-            mode = plot_mode,
-            marker = list(size = 8)) %>%
+    
+    # Create the Plotly plot
+    plot <- plot_ly(data = data_to_plot, 
+                    x = ~year, 
+                    y = ~value, 
+                    color = as.formula(paste("~", color_variable)),  # Dynamically assign color
+                    type = 'scatter', 
+                    mode = plot_mode,
+                    marker = list(size = 8)) %>%
       layout(title = title_text,
              xaxis = list(title = "Year", dtick = 2),
              yaxis = list(title = ifelse(input$indicator == "Wage bill as a percentage of GDP", 
                                          "Wage Bill (% of GDP)", "Wage Bill (%)")),
-             legend = list(title = list(text = ifelse(input$label_type == "Country", "Country", "Region"))))
+             legend = list(title = list(text = ifelse(input$label_type == "Country", "Country", "Region"))))  # Dynamic legend title
+    
+    plot  # Return the final plot
   })
   
-  # Download Word report for Wage Bill Analysis
   output$downloadWord <- downloadHandler(
     filename = function() { paste0("Wage_Bill_Analysis_", Sys.Date(), ".docx") },
     content = function(file) {
@@ -3529,7 +3408,6 @@ server <- function(input, output, session) {
     }
   )
   
-  # Dot Plot for Wage Bill vs GDP (for tab "wagebill_gdp")
   output$dot_plot <- renderPlotly({
     req(input$countries_first)
     filtered_data_df <- merged_data %>% 
@@ -3562,7 +3440,6 @@ server <- function(input, output, session) {
              showlegend = FALSE)
   })
   
-  # Download GDP Report
   output$downloadGDPDoc <- downloadHandler(
     filename = function() { paste0("Wage_Bill_vs_GDP_Report_", Sys.Date(), ".docx") },
     content = function(file) {
@@ -3585,7 +3462,6 @@ server <- function(input, output, session) {
     }
   )
   
-  ## Public Sector Workforce outputs:
   filtered_workforce_data <- reactive({
     req(input$countries_workforce)
     public_sector_workforce %>% group_by(country_name, indicator_name) %>% slice_max(order_by = year, n = 1) %>% ungroup()
@@ -3602,7 +3478,8 @@ server <- function(input, output, session) {
             type = "bar",
             text = ~paste("Country:", country_name, "<br>Indicator:", indicator_name, "<br>Value:", round(value_percentage, 1), "%"),
             textposition = "auto",
-            colors = c("Public Administration" = "#568340", "Education" = "#B3242B", "Health" = "#003366", "Other" = "#A9A9A9")) %>%
+            colors = c("Public Administration" = "#568340", "Education" = "#B3242B", 
+                       "Health" = "#003366", "Other" = "#A9A9A9")) %>%
       layout(barmode = "stack",
              title = "Public Workforce Distribution by Country",
              xaxis = list(title = "Country"),
@@ -3635,7 +3512,8 @@ server <- function(input, output, session) {
             orientation = "h",
             text = ~paste0(round(value_percentage, 1), "%"),
             textposition = "inside",
-            colors = c("Public Administration" = "#568340", "Education" = "#B3242B", "Health" = "#003366", "Other" = "#A9A9A9")) %>%
+            colors = c("Public Administration" = "#568340", "Education" = "#B3242B", 
+                       "Health" = "#003366", "Other" = "#A9A9A9")) %>%
       layout(barmode = "stack",
              title = paste("Sectoral Distribution of Public Sector Workforce in", input$selected_country, "(", first_year, "&", last_year, ")"),
              xaxis = list(title = "Percentage (%)"),
@@ -3653,7 +3531,8 @@ server <- function(input, output, session) {
       first_graph_data <- filtered_workforce_data() %>% filter(country_name %in% input$countries_workforce)
       first_graph_ggplot <- ggplot(first_graph_data, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
         geom_bar(stat = "identity", position = "stack") +
-        scale_fill_manual(values = c("Public Administration" = "#568340", "Education" = "#B3242B", "Health" = "#003366", "Other" = "#A9A9A9")) +
+        scale_fill_manual(values = c("Public Administration" = "#568340", "Education" = "#B3242B", 
+                                     "Health" = "#003366", "Other" = "#A9A9A9")) +
         labs(title = "Public Workforce Distribution by Country", x = "Country", y = "Workforce Distribution (%)") +
         theme_minimal()
       ggsave("first_graph.png", plot = first_graph_ggplot, width = 6, height = 4)
@@ -3674,7 +3553,8 @@ server <- function(input, output, session) {
             group_by(year, indicator_name) %>% summarise(value_percentage = mean(value_percentage, na.rm = TRUE), .groups = "drop")
           second_graph_ggplot <- ggplot(second_graph_data, aes(x = value_percentage, y = factor(year, levels = c(last_year, first_year)), fill = indicator_name)) +
             geom_bar(stat = "identity", position = "stack", orientation = "horizontal") +
-            scale_fill_manual(values = c("Public Administration" = "#568340", "Education" = "#B3242B", "Health" = "#003366", "Other" = "#A9A9A9")) +
+            scale_fill_manual(values = c("Public Administration" = "#568340", "Education" = "#B3242B", 
+                                         "Health" = "#003366", "Other" = "#A9A9A9")) +
             labs(title = paste("Sectoral Distribution of Public Sector Workforce in", input$selected_country), x = "Percentage (%)", y = "Year") +
             theme_minimal()
           ggsave("second_graph.png", plot = second_graph_ggplot, width = 6, height = 4)
@@ -3687,7 +3567,6 @@ server <- function(input, output, session) {
     }
   )
   
-  ## Gender Workforce outputs:
   output$employment_plot <- renderPlotly({
     filtered_data <- gender_workforce %>% filter(country_name %in% input$countries_workforce)
     if(nrow(filtered_data) == 0) return(NULL)
@@ -3744,6 +3623,13 @@ server <- function(input, output, session) {
              yaxis = list(title = "Female Employment (%)"),
              legend = list(title = list(text = "<b>Sector</b>")),
              hovermode = "closest")
+    plot <- plot %>% add_annotations(x = data_to_plot_long$year, 
+                                     y = data_to_plot_long$value, 
+                                     text = round(data_to_plot_long$value, 2),
+                                     showarrow = FALSE,
+                                     font = list(size = 12, color = "black"),
+                                     xanchor = "center",
+                                     yanchor = "bottom")
     plot
   })
   
@@ -3792,265 +3678,6 @@ server <- function(input, output, session) {
     }
   )
   
-  ## Tertiary Education outputs:
-  output$barPlot <- renderPlotly({
-    if(is.null(input$selected_countries) || length(input$selected_countries) == 0) return(NULL)
-    filtered_data <- tertiary_education %>% filter(country_name %in% input$selected_countries)
-    if(nrow(filtered_data) == 0) return(NULL)
-    plot_ly(data = filtered_data,
-            x = ~country_name,
-            y = ~value_percentage,
-            color = ~indicator_name,
-            colors = c("Individuals with tertiary education as a share of public paid employees" = "#003366", 
-                       "Individuals with tertiary education as a share of private paid employees" = "#B3242B"),
-            type = 'bar',
-            barmode = 'group') %>%
-      layout(title = "Tertiary Education by Sector and Country",
-             xaxis = list(title = "Country"),
-             yaxis = list(title = "Tertiary Education (%)"),
-             bargap = 0.2)
-  })
-  
-  output$downloadGraphsWordEducation <- downloadHandler(
-    filename = function() { paste0("Tertiary_Education_Analysis_", Sys.Date(), ".docx") },
-    content = function(file) {
-      doc <- read_docx()
-      report_title <- "Tertiary Education Analysis"
-      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
-      doc <- doc %>% body_add_fpar(fpar(ftext(report_title, prop = title_style)))
-      filtered_data <- tertiary_education %>% filter(country_name %in% input$selected_countries)
-      if(nrow(filtered_data) == 0) return(NULL)
-      bar_plot <- plot_ly(data = filtered_data,
-                          x = ~country_name,
-                          y = ~value_percentage,
-                          color = ~indicator_name,
-                          colors = c("Individuals with tertiary education as a share of public paid employees" = "#003366", 
-                                     "Individuals with tertiary education as a share of private paid employees" = "#B3242B"),
-                          type = 'bar',
-                          barmode = 'group') %>%
-        layout(title = "Tertiary Education by Sector and Country",
-               xaxis = list(title = "Country"),
-               yaxis = list(title = "Tertiary Education (%)"),
-               bargap = 0.2)
-      ggsave("bar_plot.png", plot = bar_plot, width = 6, height = 4)
-      doc <- doc %>% body_add_par("Tertiary Education by Sector and Country", style = "heading 1") %>% 
-        body_add_img(src = "bar_plot.png", width = 6, height = 4) %>% 
-        body_add_par("This graph shows the share of individuals with tertiary education in the public and private sectors for the selected countries.", style = "Normal")
-      print(doc, target = file)
-    }
-  )
-  
-  ## Public Sector Wage Premium outputs:
-  output$dotPlot <- renderPlotly({
-    req(input$countries_first)
-    filtered_data <- public_wage_premium[public_wage_premium$country_name %in% input$countries_first, ]
-    if(nrow(filtered_data) == 0) return(NULL)
-    filtered_data$color <- ifelse(filtered_data$country_name == input$countries_first[1], "red", "blue")
-    plot_ly(data = filtered_data,
-            x = ~country_name,
-            y = ~value_percentage,
-            color = ~color,
-            colors = c("#003366", "#B3242B"),
-            type = 'scatter',
-            mode = 'markers',
-            marker = list(size = 12)) %>%
-      layout(title = "Public Sector Wage Premium (Compared to All Private Employees) by Country",
-             xaxis = list(title = "Country"),
-             yaxis = list(title = "Public Sector Wage Premium (%)"),
-             showlegend = FALSE)
-  })
-  
-  output$barPloteduc <- renderPlotly({
-    filtered_data <- public_wage_premium_educ[public_wage_premium_educ$country_name == input$selected_country, ]
-    plot_ly(data = filtered_data,
-            x = ~indicator_name,
-            y = ~value_percentage,
-            color = ~indicator_name,
-            colors = c("No Education" = "#003366",
-                       "Primary Education" = "#B3242B", 
-                       "Secondary Education" = "#333333", 
-                       "Tertiary Education" = "#006400"),
-            type = 'bar') %>%
-      layout(title = "Public Sector Wage Premium by Education Level (Compared to Private Formal Workers)",
-             xaxis = list(title = "Education Level", tickangle = 0),
-             yaxis = list(title = "Wage Premium (%)"),
-             barmode = 'group',
-             bargap = 0.2,
-             showlegend = TRUE,
-             legend = list(title = list(text = "Education Level")))
-  })
-  
-  ## Public Sector Graphs outputs:
-  output$firstGraphpublic <- renderPlotly({
-    data_to_plot <- public_sector_emp_temp_last %>% filter(country_name %in% input$countries_first)
-    data_to_plot_long <- data_to_plot %>% select(country_name, indicator_label, year, value) %>% mutate(indicator_label = factor(indicator_label))
-    plot <- plot_ly(data = data_to_plot_long, 
-                    x = ~country_name, 
-                    y = ~value, 
-                    color = ~indicator_label, 
-                    type = 'scatter',
-                    mode = 'markers',  
-                    marker = list(size = 8)) %>%
-      layout(title = "Public sector employment (last year available)",
-             xaxis = list(title = "Country", tickangle = 45),
-             yaxis = list(title = "Value"),
-             legend = list(title = list(text = "Indicator")))
-    plot
-  })
-  
-  output$secondGraphpublic <- renderPlotly({
-    data_to_plot <- public_sector_emp_temp %>% filter(country_name == input$country_second)
-    data_to_plot_long <- data_to_plot %>% select(year, indicator_label, value) %>% mutate(indicator_label = factor(indicator_label))
-    plot <- plot_ly(data = data_to_plot_long, 
-                    x = ~year, 
-                    y = ~value, 
-                    color = ~indicator_label, 
-                    text = ~paste("Value:", round(value, 2)),
-                    type = 'scatter', 
-                    mode = 'lines+markers',
-                    marker = list(size = 8)) %>%
-      layout(title = paste("Public sector employment,", input$country_second, "over time"),
-             xaxis = list(title = "Year", tickangle = 45, dtick = 2),
-             yaxis = list(title = "Employment Value"),
-             legend = list(title = list(text = "Indicator")))
-    plot <- plot %>% add_annotations(x = data_to_plot_long$year, 
-                                     y = data_to_plot_long$value, 
-                                     text = round(data_to_plot_long$value, 2),
-                                     showarrow = FALSE,
-                                     font = list(size = 12, color = "black"),
-                                     xanchor = "center",
-                                     yanchor = "bottom")
-    plot
-  })
-  
-  output$downloadGraphsWord <- downloadHandler(
-    filename = function() { paste0("Public_Sector_Analysis_", Sys.Date(), ".docx") },
-    content = function(file) {
-      print(input$countries_first)
-      print(input$country_second)
-      countries <- if(!is.null(input$countries_first) && length(input$countries_first) > 0) input$countries_first[1] else "Unknown Country"
-      report_title <- paste("Public Sector Employment Analysis Report -", countries)
-      doc <- read_docx()
-      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
-      doc <- doc %>% body_add_fpar(fpar(ftext(report_title, prop = title_style)))
-      doc <- doc %>% body_add_par("Introduction", style = "heading 2") %>% 
-        body_add_par("This report presents evidence on public sector employment and compensation practices for the selected countries.", style = "Normal")
-      if("firstGraph" %in% input$selected_graphs_public && length(input$countries_first) > 0) {
-        data_to_plot <- public_sector_emp_temp_last %>% filter(country_name %in% input$countries_first)
-        data_to_plot_long <- data_to_plot %>% select(country_name, indicator_label, year, value) %>% mutate(indicator_label = factor(indicator_label))
-        first_graph <- ggplot(data_to_plot_long, aes(x = country_name, y = value, color = indicator_label)) +
-          geom_point(size = 3) +
-          labs(title = "Public Sector Employment (Multi-Country)", x = "Country", y = "Value") +
-          theme_minimal()
-        ggsave("C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/first_graph.png", plot = first_graph, width = 6, height = 4)
-        doc <- doc %>% body_add_par("First Graph: Public Sector Employment (Multi-Country)", style = "heading 1") %>% 
-          body_add_img(src = "C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/first_graph.png", width = 6, height = 4) %>% 
-          body_add_par("This graph shows public sector employment across multiple countries.", style = "Normal")
-      }
-      if("secondGraph" %in% input$selected_graphs_public && !is.null(input$country_second)) {
-        data_to_plot <- public_sector_emp_temp %>% filter(country_name == input$country_second)
-        data_to_plot_long <- data_to_plot %>% select(year, indicator_label, value) %>% mutate(indicator_label = factor(indicator_label))
-        second_graph <- ggplot(data_to_plot_long, aes(x = year, y = value, color = indicator_label)) +
-          geom_line(size = 1) +
-          geom_point(size = 3) +
-          labs(title = paste("Public Sector Employment in", input$country_second, "Over Time"), x = "Year", y = "Employment Value") +
-          theme_minimal()
-        ggsave("C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/second_graph.png", plot = second_graph, width = 6, height = 4)
-        doc <- doc %>% body_add_par("Second Graph: Public Sector Employment (Single Country)", style = "heading 1") %>% 
-          body_add_img(src = "C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/second_graph.png", width = 6, height = 4) %>% 
-          body_add_par("This graph shows public sector employment trends over time for the selected country.", style = "Normal")
-      }
-      print(doc, target = file)
-    }
-  )
-  
-  ## Wage Premium Gender Graphs outputs:
-  output$firstGraphgender <- renderPlotly({
-    data_to_plot <- gender_wage_premium_last %>% filter(country_name %in% input$countries_first)
-    data_to_plot_long <- data_to_plot %>% select(country_name, indicator_label, year, value) %>% mutate(indicator_label = factor(indicator_label))
-    plot <- plot_ly(data = data_to_plot_long, 
-                    x = ~country_name, 
-                    y = ~value, 
-                    color = ~indicator_label, 
-                    type = 'scatter',
-                    mode = 'markers',  
-                    marker = list(size = 8)) %>%
-      layout(title = "Public sector wage premium, by gender (last year available)",
-             xaxis = list(title = "Country", tickangle = 45),
-             yaxis = list(title = "Value"),
-             legend = list(title = list(text = "Indicator")))
-    plot
-  })
-  
-  output$secondGraphgender <- renderPlotly({
-    data_to_plot <- gender_wage_premium %>% filter(country_name == input$country_second)
-    data_to_plot_long <- data_to_plot %>% select(year, indicator_label, value) %>% mutate(indicator_label = factor(indicator_label))
-    plot <- plot_ly(data = data_to_plot_long, 
-                    x = ~year, 
-                    y = ~value, 
-                    color = ~indicator_label, 
-                    text = ~paste("Value:", round(value, 2)),
-                    type = 'scatter', 
-                    mode = 'lines+markers',
-                    marker = list(size = 8)) %>%
-      layout(title = paste("Public sector wage premium, by gender in", input$country_second, "over time"),
-             xaxis = list(title = "Year", tickangle = 45, dtick = 2),
-             yaxis = list(title = "Wage Premium Value"),
-             legend = list(title = list(text = "Indicator")))
-    plot <- plot %>% add_annotations(x = data_to_plot_long$year, 
-                                     y = data_to_plot_long$value, 
-                                     text = round(data_to_plot_long$value, 2),
-                                     showarrow = FALSE,
-                                     font = list(size = 12, color = "black"),
-                                     xanchor = "center",
-                                     yanchor = "bottom")
-    plot
-  })
-  
-  output$downloadGraphsWordgender <- downloadHandler(
-    filename = function() { paste0("Wage_Premium_Gender_Graphs_", Sys.Date(), ".docx") },
-    content = function(file) {
-      print(input$countries_first)
-      print(input$country_second)
-      countries <- ifelse(!is.null(input$countries_first) && length(input$countries_first) > 0, input$countries_first[1], "Unknown Country")
-      report_title <- paste("Wage Premium Gender Analysis Report -", countries)
-      doc <- read_docx()
-      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
-      doc <- doc %>% body_add_fpar(fpar(ftext(report_title, prop = title_style)))
-      doc <- doc %>% body_add_par("Introduction", style = "heading 2") %>% 
-        body_add_par("This report presents evidence on public sector employment and compensation practices for the selected countries.", style = "Normal")
-      if("firstGraphgender" %in% input$graphs_to_download && length(input$countries_first) > 0) {
-        data_to_plot <- gender_wage_premium_last %>% filter(country_name %in% input$countries_first)
-        data_to_plot_long <- data_to_plot %>% select(country_name, indicator_label, year, value) %>% mutate(indicator_label = factor(indicator_label))
-        first_graph_wage_premium_gender <- ggplot(data_to_plot_long, aes(x = country_name, y = value, color = indicator_label)) +
-          geom_point(size = 3) +
-          labs(title = "Wage Premium Gender (Multi-Country)", x = "Country", y = "Value") +
-          theme_minimal()
-        graph_path1 <- "C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/first_graph_wage_premium_gender.png"
-        ggsave(graph_path1, plot = first_graph_wage_premium_gender, width = 6, height = 4)
-        doc <- doc %>% body_add_par("First Graph: Wage Premium Gender (Multi-Country)", style = "heading 1") %>% 
-          body_add_img(src = graph_path1, width = 6, height = 4) %>% 
-          body_add_par("This graph shows the wage premium by gender across multiple countries.", style = "Normal")
-      }
-      if("secondGraphgender" %in% input$graphs_to_download && !is.null(input$country_second)) {
-        data_to_plot <- gender_wage_premium %>% filter(country_name == input$country_second)
-        data_to_plot_long <- data_to_plot %>% select(year, indicator_name, value) %>% mutate(indicator_name = factor(indicator_name))
-        second_graph_wage_premium_gender <- ggplot(data_to_plot_long, aes(x = year, y = value, color = indicator_name)) +
-          geom_line(size = 1) +
-          geom_point(size = 3) +
-          labs(title = paste("Public sector wage premium, by gender in", input$country_second, "Over Time"), x = "Year", y = "Employment Value") +
-          theme_minimal()
-        graph_path2 <- "C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/second_graph_wage_premium_gender.png"
-        ggsave(graph_path2, plot = second_graph_wage_premium_gender, width = 6, height = 4)
-        doc <- doc %>% body_add_par("Second Graph: Public Sector Employment (Single Country)", style = "heading 1") %>% 
-          body_add_img(src = graph_path2, width = 6, height = 4) %>% 
-          body_add_par("This graph shows the wage premium by gender trends over time for the selected country.", style = "Normal")
-      }
-      print(doc, target = file)
-    }
-  )
-  
-  ## Female Leadership outputs:
   output$barPlotwomen <- renderPlotly({
     if(is.null(input$selected_countries) || length(input$selected_countries) == 0) return(NULL)
     filtered_data <- gender_leadership %>% filter(country_name %in% input$selected_countries)
@@ -4098,7 +3725,6 @@ server <- function(input, output, session) {
     }
   )
   
-  ## Download All Graphs Report:
   output$downloadAllGraphsDoc <- downloadHandler(
     filename = function() { paste0("Comprehensive_Wage_Bill_Report_", Sys.Date(), ".docx") },
     content = function(file) {
@@ -4128,7 +3754,6 @@ server <- function(input, output, session) {
     }
   )
   
-  ## Indicators and Map outputs:
   output$worldMap <- renderLeaflet({
     data_values <- filtered_data_for_map()
     color_pal <- colorNumeric("Greens", domain = c(min(data_values$value_percentage, na.rm = TRUE), 
@@ -4172,26 +3797,29 @@ server <- function(input, output, session) {
     })
   })
   
+  # Change infoBox colors to "purple" to match the quartz theme
   output$numberIndicatorsBox <- renderInfoBox({
-    infoBox("Indicators", 302, icon = icon("list"), color = "blue")
+    infoBox("Indicators", 302, icon = icon("list"), color = "purple")
   })
   
   output$numberCountriesBox <- renderInfoBox({
-    infoBox("Economies", length(unique(data_wwbi$country_name)), icon = icon("globe"), color = "blue")
+    infoBox("Economies", length(unique(data_wwbi$country_name)), icon = icon("globe"), color = "purple")
   })
   
   output$temporalCoverageAnnualBox <- renderInfoBox({
-    infoBox("Temporal Coverage (Annual)", "2000-2022", icon = icon("calendar"), color = "blue")
+    infoBox("Temporal Coverage (Annual)", "2000-2022", icon = icon("calendar"), color = "purple")
   })
   
   output$temporalCoverageYearsBox <- renderInfoBox({
-    infoBox("Temporal Coverage (Years)", "22", icon = icon("calendar"), color = "blue")
+    infoBox("Temporal Coverage (Years)", "22", icon = icon("calendar"), color = "purple")
   })
   
   output$lastUpdatedBox <- renderInfoBox({
-    infoBox("Last Updated", "2022", icon = icon("clock"), color = "blue")
+    infoBox("Last Updated", "2022", icon = icon("clock"), color = "purple")
   })
   
 }
 
 shinyApp(ui = ui, server = server)
+
+
