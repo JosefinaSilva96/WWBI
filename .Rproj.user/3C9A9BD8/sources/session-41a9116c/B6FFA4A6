@@ -12,13 +12,13 @@
     "properties": {
         "expression": "wage_bill_publicexp",
         "caption": "wage_bill_publicexp",
-        "totalObservations": "196",
-        "displayedObservations": "196",
+        "totalObservations": "4234",
+        "displayedObservations": "4234",
         "variables": "8",
-        "cacheKey": "36B8FF49",
+        "cacheKey": "8E7C9878",
         "object": "wage_bill_publicexp",
         "environment": "",
-        "contentUrl": "grid_resource/gridviewer.html?env=&obj=wage_bill_publicexp&cache_key=36B8FF49&max_display_columns=50",
+        "contentUrl": "grid_resource/gridviewer.html?env=&obj=wage_bill_publicexp&cache_key=8E7C9878&max_display_columns=50",
         "preview": "0",
         "source_window_id": "",
         "Source": "Source"
