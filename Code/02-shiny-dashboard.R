@@ -3135,12 +3135,20 @@ server <- function(input, output, session) {
       
     } else if(tab == "wagebill") {
       tagList(
-        h3("Wage Bill Graphs"),
+        h3("Wage Bill as % of Public Expenditure"),
+        fluidRow(
+          column(4,
+                 selectInput("countries", "Select Countries:",
+                             choices = unique(wage_bill_publicexp$country_name),
+                             selected = unique(wage_bill_publicexp$country_name)[1],
+                             multiple = TRUE)
+          )
+        ),
         fluidRow(
           plotlyOutput("plotwagebill", height = "500px")
         )
       )
-    } else if(tab == "wagebill_gdp") {
+    }else if(tab == "wagebill_gdp") {
       tagList(
         h3("Wage Bill & GDP Graphs"),
         fluidRow(
@@ -3333,40 +3341,15 @@ server <- function(input, output, session) {
   # ---------------------------
   # 3. All your original outputs and downloadHandlers follow.
   # (For brevity, the code below is the same as in your original server code.)
-  data_wb <- reactive({
-    req(input$countries)
-    wage_bill_publicexp %>% filter(country_name %in% input$countries)
+  selected_data <- reactive({
+    req(input$countries, input$indicator_name)
+    if (input$indicator_name == "Wage bill as a percentage of GDP") {
+      data <- wage_bill_gdp %>% filter(country_name %in% input$countries)
+    } else {
+      data <- wage_bill_publicexp %>% filter(country_name %in% input$countries)
+    }
+    data
   })
-  
-  # 4. Render the wage bill graph
-  output$plotwagebill <- renderPlotly({
-    d <- data_wb()
-    
-    plot_ly(data = d,
-            x = ~year,
-            y = ~value,         # Change if your column is named differently
-            color = ~country_name,
-            type = "scatter",
-            mode = "lines+markers") %>%
-      layout(title = "Wage Bill as % of Public Expenditure Over Time",
-             xaxis = list(title = "Year"),
-             yaxis = list(title = "Wage Bill (% of Public Expenditure)"))
-  })
-  
-   # Reactive expression to select the appropriate dataset based on the indicator
-    selected_data <- reactive({
-      req(input$countries)  # Ensure 'countries' input is available
-      
-      # Check which indicator was selected and filter corresponding data
-      if (input$indicator_name == "Wage bill as a percentage of GDP") {
-        data <- wage_bill_gdp %>% filter(country_name %in% input$countries)
-      } else {
-        data <- wage_bill_publicexp %>% filter(country_name %in% input$countries)
-      }
-      
-      return(data)
-    })
-  
   # Render Plotly plot for the main indicator
   output$plotwagebill <- renderPlotly({
     data_to_plot <- selected_data()
