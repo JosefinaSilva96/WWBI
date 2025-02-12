@@ -3307,8 +3307,8 @@ server <- function(input, output, session) {
   # 3. All your original outputs and downloadHandlers follow.
   # (For brevity, the code below is the same as in your original server code.)
   data_wb <- reactive({
-    req(input$countries_wb)
-    wage_bill_publicexp %>% filter(country_name %in% input$countries_wb)
+    req(input$countries)
+    wage_bill_publicexp %>% filter(country_name %in% input$countries)
   })
   
   # 4. Render the wage bill graph
