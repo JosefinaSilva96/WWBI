@@ -71,7 +71,7 @@ mena_countries <- c("Algeria", "Bahrain", "Egypt", "Iran", "Iraq", "Israel", "Jo
 data_wwbi[, region := fifelse(country_name %in% mena_countries, "MENA",
                               fifelse(continent == "Africa", "Sub-Saharan Africa", continent))]
 
-data_wwbi <- as.data.frame(data_wwbi)
+
 
 #Load gdp data base 
 
@@ -145,6 +145,33 @@ countries <- unique(data_wwbi$country_name)  # Extract unique country names from
 
 
 indicator <- unique(data_wwbi$indicator_name)
+
+# Assign continents using countrycode()
+
+# Convert data_wwbi to a data.table (if it isn't already)
+setDT(data_wwbi)
+
+# Now add the continent column using :=
+
+data_wwbi[, continent := countrycode(country_name, origin = "country.name", destination = "continent")]
+
+
+
+# Manually assign continent for unmatched countries
+
+data_wwbi[country_name == "Kosovo", continent := "Europe"]
+data_wwbi[country_name == "Micronesia", continent := "Oceania"]
+
+# Define MENA countries
+mena_countries <- c("Algeria", "Bahrain", "Egypt", "Iran", "Iraq", "Israel", "Jordan", 
+                    "Kuwait", "Lebanon", "Libya", "Morocco", "Oman", "Palestine", "Qatar", 
+                    "Saudi Arabia", "Syria", "Tunisia", "United Arab Emirates", "Yemen")
+
+# Create a region column that classifies Africa into MENA and Sub-Saharan Africa
+data_wwbi[, region := fifelse(country_name %in% mena_countries, "MENA",
+                              fifelse(continent == "Africa", "Sub-Saharan Africa", continent))]
+
+data_wwbi <- as.data.frame(data_wwbi)
 
 # Filter the data using dplyr
 
@@ -234,7 +261,7 @@ regional_mean_wbgdp <- regional_mean_wbgdp %>%
   rename(country_name = region)
 
 regional_mean <- regional_mean %>%
-  rename(value = mean_value)
+  rename(mean_value = value)
 
 wage_bill_gdp <- bind_rows(wage_bill_gdp, regional_mean_wbgdp)
 
@@ -3331,7 +3358,7 @@ server <- function(input, output, session) {
       req(input$countries)  # Ensure 'countries' input is available
       
       # Check which indicator was selected and filter corresponding data
-      if (input$indicator == "Wage bill as a percentage of GDP") {
+      if (input$indicator_name == "Wage bill as a percentage of GDP") {
         data <- wage_bill_gdp %>% filter(country_name %in% input$countries)
       } else {
         data <- wage_bill_publicexp %>% filter(country_name %in% input$countries)
@@ -3363,7 +3390,7 @@ server <- function(input, output, session) {
                     marker = list(size = 8)) %>%
       layout(title = title_text,
              xaxis = list(title = "Year", dtick = 2),
-             yaxis = list(title = ifelse(input$indicator == "Wage bill as a percentage of GDP", 
+             yaxis = list(title = ifelse(input$indicator_name == "Wage bill as a percentage of GDP", 
                                          "Wage Bill (% of GDP)", "Wage Bill (%)")),
              legend = list(title = list(text = ifelse(input$label_type == "Country", "Country", "Region"))))  # Dynamic legend title
     
