@@ -848,8 +848,6 @@ ui <- bootstrapPage(
 
 # SERVER
 
-
-
 server <- function(input, output, session) {
   
   # 1. Track the active tab via a reactive value  
@@ -878,14 +876,14 @@ server <- function(input, output, session) {
       tagList(
         h3("Dashboard"),
         fluidRow(
-          div(style = "border: 1px solid #ddd; padding: 20px;",
-              "The Worldwide Bureaucracy Indicators (WWBI) database is a unique cross-national dataset on public sector employment and wages that aims to fill an information gap, thereby helping researchers, development practitioners, and policymakers gain a better understanding of the personnel dimensions of state capability, the footprint of the public sector within the overall labor market, and the fiscal implications of the public sector wage bill. The dataset is derived from administrative data and household surveys, thereby complementing existing, expert perception-based approaches."
-          )
+          div(style = "border: 2px solid white; padding: 15px; border-radius: 10px; 
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
+              "The Worldwide Bureaucracy Indicators (WWBI) database provides insights on public sector employment and wages.")
         )
       )
       
     } else if(tab == "metadata") {
-      # --- METADATA TAB NOW INCLUDES INDICATORS & WIDGETS ---
       tagList(
         h3("Metadata & Indicators"),
         fluidRow(
@@ -900,7 +898,7 @@ server <- function(input, output, session) {
           infoBoxOutput("lastUpdatedBox", width = 6)
         ),
         fluidRow(
-          div(style = "border: 1px solid #ddd; padding: 10px;",
+          div(style = "border: 1px solid white; padding: 10px;",
               "This map shows which countries have reported data for the selected indicator.")
         ),
         fluidRow(
@@ -920,9 +918,16 @@ server <- function(input, output, session) {
           leafletOutput("worldMap", height = "600px")
         )
       )
-    }else if(tab == "wagebill") {
+      
+    } else if(tab == "wagebill") {
       tagList(
         h3("Wage Bill Graphs"),
+        fluidRow(
+          div(style = "border: 2px solid white; padding: 10px; 
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
+              "This visualization explores the wage bill over time for selected countries.")
+        ),
         fluidRow(
           column(4,
                  selectInput("countries", "Select Countries:",
@@ -944,13 +949,15 @@ server <- function(input, output, session) {
           downloadButton("downloadWord", "Download Report in Word")
         )
       )
-    }else if(tab == "wagebill_gdp") {
+      
+    } else if(tab == "wagebill_gdp") {
       tagList(
         h3("Wage Bill & GDP Graphs"),
         fluidRow(
-          div(style="border: 1px solid #ddd; padding: 10px;",
-              p("This visualization explores the relationship between wage bill and GDP per capita (log scale).")
-          )
+          div(style = "border: 2px solid white; padding: 10px; 
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
+              "This visualization explores the relationship between wage bill and GDP per capita (log scale).")
         ),
         fluidRow(
           column(4,
@@ -973,6 +980,12 @@ server <- function(input, output, session) {
       tagList(
         h3("Public Sector Workforce Graphs"),
         fluidRow(
+          div(style = "border: 2px solid white; padding: 10px; 
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
+              "This visualization explores the relationship between wage bill and GDP per capita (log scale).")
+        ),
+        fluidRow(
           selectInput("countries_workforce", "Select Countries for Workforce Graph",
                       choices = unique(public_sector_workforce$country_name), multiple = TRUE)
         ),
@@ -994,32 +1007,16 @@ server <- function(input, output, session) {
         )
       )
       
-    } else if(tab == "gender_workforce") {
-      tagList(
-        h3("Gender Workforce Graphs"),
-        fluidRow(
-          selectInput("countries_workforce", "Select Countries for Workforce Graph", 
-                      choices = unique(public_sector_workforce$country_name), multiple = TRUE)
-        ),
-        fluidRow(
-          plotlyOutput("employment_plot", height = "600px")
-        ),
-        fluidRow(
-          selectInput("selected_country", "Select Country for Second Graph", 
-                      choices = unique(gender_workforce$country_name), multiple = FALSE)
-        ),
-        fluidRow(
-          plotlyOutput("employment_plot_overtime", height = "600px")
-        ),
-        fluidRow(
-          downloadButton("downloadGraphsWordworkforce", "Download Gender Workforce Report")
-        )
-      )
-      
     } else if(tab == "education") {
       tagList(
         h3("Tertiary Education Graphs"),
         fluidRow(
+          fluidRow(
+            div(style = "border: 2px solid white; padding: 10px; 
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
+                "This visualization explores the relationship between wage bill and GDP per capita (log scale).")
+          ),
           selectInput("selected_countries", "Select Countries", 
                       choices = unique(tertiary_education$country_name), multiple = TRUE)
         ),
@@ -1031,58 +1028,15 @@ server <- function(input, output, session) {
         )
       )
       
-    } else if(tab == "wagepremium") {
-      tagList(
-        h3("Public Sector Wage Premium"),
-        fluidRow(
-          selectInput("countries_first", "Select Countries for First Graph", 
-                      choices = unique(public_wage_premium$country_name), multiple = TRUE)
-        ),
-        fluidRow(
-          plotlyOutput("dotPlot")
-        )
-      )
-      
-    } else if(tab == "public_educ") {
-      tagList(
-        h3("Public Sector Education Graphs"),
-        fluidRow(
-          selectInput("selected_country", "Select Country for Graph", 
-                      choices = unique(public_wage_premium_educ$country_name), multiple = FALSE)
-        ),
-        fluidRow(
-          plotlyOutput("barPloteduc")
-        )
-      )
-      
-    } else if(tab == "public_graphs") {
-      tagList(
-        h3("Public Sector Graphs"),
-        fluidRow(
-          selectInput("countries_first", "Select Countries for First Graph", 
-                      choices = unique(public_sector_emp_temp_last$country_name), multiple = TRUE)
-        ),
-        fluidRow(
-          plotlyOutput("firstGraphpublic")
-        ),
-        fluidRow(
-          selectInput("country_second", "Select Country for Second Graph", 
-                      choices = unique(public_sector_emp_temp$country_name), multiple = FALSE)
-        ),
-        fluidRow(
-          plotlyOutput("secondGraphpublic")
-        ),
-        fluidRow(
-          checkboxGroupInput("selected_graphs_public", "Select Graphs to Download:", 
-                             choices = c("Multi-Country Graph" = "firstGraph", "Single-Country Graph" = "secondGraph"), 
-                             selected = c("firstGraph", "secondGraph")),
-          downloadButton("downloadGraphsWord", "Download Graphs as Word File")
-        )
-      )
-      
     } else if(tab == "wagepremium_gender") {
       tagList(
         h3("Wage Premium Gender Graphs"),
+        fluidRow(
+          div(style = "border: 2px solid white; padding: 10px; 
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
+              "This visualization explores the relationship between wage bill and GDP per capita (log scale).")
+        ),
         fluidRow(
           selectInput("countries_first", "Select Countries for First Graph", 
                       choices = unique(gender_wage_premium_last$country_name), multiple = TRUE)
@@ -1105,26 +1059,11 @@ server <- function(input, output, session) {
         )
       )
       
-    } else if(tab == "female_leadership") {
-      tagList(
-        h3("Female Leadership Graphs"),
-        fluidRow(
-          selectInput("selected_countries", "Select Countries", 
-                      choices = unique(gender_leadership$country_name), multiple = TRUE)
-        ),
-        fluidRow(
-          plotlyOutput("barPlotwomen", height = "600px")
-        ),
-        fluidRow(
-          downloadButton("downloadGraphsWordfemale", "Download Female Leadership Report")
-        )
-      )
-      
     } else if(tab == "download_all") {
       tagList(
         h3("Download All Graphs"),
         fluidRow(
-          div(style = "border: 1px solid #ddd; padding: 10px;",
+          div(style = "border: 1px solid white; padding: 10px;",
               "Download a comprehensive report containing all visualizations and analyses.")
         ),
         fluidRow(
@@ -1133,7 +1072,8 @@ server <- function(input, output, session) {
       )
     }
   })
-  
+
+
   # ---------------------------
   # 3. All your original outputs and downloadHandlers follow.
   # (For brevity, the code below is the same as in your original server code.)
