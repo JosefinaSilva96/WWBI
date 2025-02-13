@@ -35,6 +35,8 @@ library(bslib)
 library(shinythemes)
 library(countrycode)
 library(bs4Dash)
+library(wbstats)
+
 
 
 
@@ -68,9 +70,26 @@ mena_countries <- c("Algeria", "Bahrain", "Egypt", "Iran", "Iraq", "Israel", "Jo
                     "Saudi Arabia", "Syria", "Tunisia", "United Arab Emirates", "Yemen")
 
 # Create a region column that classifies Africa into MENA and Sub-Saharan Africa
+
 data_wwbi[, region := fifelse(country_name %in% mena_countries, "MENA",
                               fifelse(continent == "Africa", "Sub-Saharan Africa", continent))]
 
+
+# Get the latest World Bank country metadata, including income groups
+
+wb_metadata <- wb_cachelist$countries[, c("iso3c", "income_level")]
+
+# Ensure your dataset has ISO3 country codes
+
+data_wwbi[, iso3c := countrycode(country_name, origin = "country.name", destination = "iso3c")]
+
+# Merge income group data
+
+data_wwbi <- merge(data_wwbi, wb_metadata, by = "iso3c", all.x = TRUE)
+
+# Rename column for clarity
+
+setnames(data_wwbi, "income_level", "income_group")
 
 
 #Load gdp data base 
