@@ -1113,7 +1113,9 @@ server <- function(input, output, session) {
   # ---------------------------
   # 3. All your original outputs and downloadHandlers follow.
   # (For brevity, the code below is the same as in your original server code.)
+  
   # Reactive expression: select the appropriate dataset based on the radio buttons
+  
   selected_data <- reactive({
     req(input$countries)  # Wait until the user selects at least one country
     if (input$graph_choice == "GDP") {
