@@ -263,6 +263,7 @@ regional_mean <- regional_mean %>%
 
 wage_bill_publicexp <- bind_rows(wage_bill_publicexp, regional_mean)
 
+data_wwbi <- bind_rows(data_wwbi, regional_mean)
 
 income_mean <- wage_bill_publicexp %>%
   filter(indicator_name == "Wage bill as a percentage of Public Expenditure") %>%
@@ -279,6 +280,8 @@ income_mean <- income_mean %>%
 
 wage_bill_publicexp <- bind_rows(wage_bill_publicexp, income_mean)
 
+data_wwbi <- bind_rows(data_wwbi, income_mean)
+
 # Filter the data for the specific indicator "Wage bill as a percentage of GDP"
 
 wage_bill_gdp <- data_wwbi[data_wwbi$indicator_name == "Wage bill as a percentage of GDP", ]
@@ -290,6 +293,8 @@ wage_bill_gdp <- wage_bill_gdp %>%
                values_to = "value") %>%
   mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
   filter(!is.na(value)) #4104 obs
+
+
 
 regional_mean_wbgdp <- wage_bill_gdp %>%
   filter(indicator_name == "Wage bill as a percentage of GDP") %>%
@@ -780,6 +785,19 @@ ui <- bootstrapPage(
       padding-left: 15px;
       display: none;
     }
+    /* Custom Info Box Styling */
+    .custom-info-box {
+      background: linear-gradient(to right, #56ccf2, #eb2f96);
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      text-align: center;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+      margin: 10px 0;
+      border: 1px solid white;
+    }
 ")),
   
   # JavaScript to Toggle Sections
@@ -879,23 +897,22 @@ server <- function(input, output, session) {
           div(style = "border: 2px solid white; padding: 15px; border-radius: 10px; 
                       background: linear-gradient(to right, #4A90E2, #D4145A);
                       color: white; font-size: 16px; text-align: center;",
-              "The Worldwide Bureaucracy Indicators (WWBI) database provides insights on public sector employment and wages.")
+              "The Worldwide Bureaucracy Indicators (WWBI) database is a unique cross-national dataset on public sector employment and wages that aims to fill an information gap, thereby helping researchers, development practitioners, and policymakers gain a better understanding of the personnel dimensions of state capability, the footprint of the public sector within the overall labor market, and the fiscal implications of the public sector wage bill. The dataset is derived from administrative data and household surveys, thereby complementing existing, expert perception-based approaches.")
         )
       )
       
     } else if(tab == "metadata") {
       tagList(
-        h3("Metadata & Indicators"),
+        h3("Metadata"),
+        # Custom-styled InfoBoxes with gradient background
         fluidRow(
-          infoBoxOutput("numberIndicatorsBox", width = 6),
-          infoBoxOutput("numberCountriesBox", width = 6)
+          column(4, div(class = "custom-infobox", infoBox("Indicators", 302, icon = icon("list")))),
+          column(4, div(class = "custom-infobox", infoBox("Economies", length(unique(data_wwbi$country_name)), icon = icon("globe")))),
+          column(4, div(class = "custom-infobox", infoBox("Temporal Coverage (Annual)", "2000-2022", icon = icon("calendar"))))
         ),
         fluidRow(
-          infoBoxOutput("temporalCoverageAnnualBox", width = 6),
-          infoBoxOutput("temporalCoverageYearsBox", width = 6)
-        ),
-        fluidRow(
-          infoBoxOutput("lastUpdatedBox", width = 6)
+          column(4, div(class = "custom-infobox", infoBox("Temporal Coverage (Years)", "22", icon = icon("calendar")))),
+          column(4, div(class = "custom-infobox", infoBox("Last Updated", "2022", icon = icon("clock"))))
         ),
         fluidRow(
           div(style = "border: 1px solid white; padding: 10px;",
