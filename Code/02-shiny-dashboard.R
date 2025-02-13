@@ -83,6 +83,8 @@ wb_metadata <- wb_cachelist$countries[, c("iso3c", "income_level")]
 
 data_wwbi[, iso3c := countrycode(country_name, origin = "country.name", destination = "iso3c")]
 
+wb_metadata <- wb_metadata %>% rename(income_group = income_level)
+
 # Merge income group data
 
 data_wwbi <- merge(data_wwbi, wb_metadata, by = "iso3c", all.x = TRUE)
@@ -176,6 +178,7 @@ data_wwbi[, continent := countrycode(country_name, origin = "country.name", dest
 
 
 
+
 # Manually assign continent for unmatched countries
 
 data_wwbi[country_name == "Kosovo", continent := "Europe"]
@@ -257,6 +260,20 @@ regional_mean <- regional_mean %>%
 wage_bill_publicexp <- bind_rows(wage_bill_publicexp, regional_mean)
 
 
+income_mean <- wage_bill_publicexp %>%
+  filter(indicator_name == "Wage bill as a percentage of Public Expenditure") %>%
+  group_by(income_group, year, indicator_name) %>%
+  summarise(mean_value = mean(value, na.rm = TRUE), .groups = 'drop')
+
+
+income_mean <- income_mean %>%
+  rename(country_name = income_group)
+
+income_mean <- income_mean %>%
+  rename(value = mean_value)
+
+
+wage_bill_publicexp <- bind_rows(wage_bill_publicexp, income_mean)
 
 # Filter the data for the specific indicator "Wage bill as a percentage of GDP"
 
