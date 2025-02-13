@@ -733,32 +733,54 @@ ui <- bootstrapPage(
       padding: 20px;
       color: white;
     }
-    .nav-item {
+    
+    /* General Sidebar Button Styling */
+    .nav-item, .nav-sub-item {
+      display: block;
       margin: 10px 0;
+      padding: 12px 15px;
       font-size: 18px;
       font-weight: bold;
-      color: white;
+      text-align: left;
       text-decoration: none;
+      color: white;
+      border-radius: 25px; /* Rounded corners */
+      background: transparent;
+      transition: all 0.3s ease-in-out;
+    }
+    
+    /* Pink Active Button */
+    .nav-item.active, .nav-sub-item.active {
+      background-color: #eb2f96 !important; /* Pink color */
+      color: white !important;
+    }
+    
+    /* Hover Effect */
+    .nav-item:hover, .nav-sub-item:hover {
       cursor: pointer;
+      background-color: rgba(255, 255, 255, 0.2);
+      color: white;
     }
-    .nav-item:hover {
-      color: #eb2f96;
-    }
+
+    /* Section Styling */
     .nav-section {
       font-size: 20px;
       font-weight: bold;
-      margin: 15px 0;
+      margin-top: 15px;
+      color: white;
+      padding-left: 10px;
       cursor: pointer;
     }
-    .nav-sub-item {
-      margin-left: 20px;
-      font-size: 16px;
-      color: #d1e9ff;
+
+    /* Hidden collapsible sections */
+    #macro_section, 
+    #public_sector_section, 
+    #public_sector_workforce_section, 
+    #public_sector_wages_section {
+      padding-left: 15px;
+      display: none;
     }
-    .nav-sub-item:hover {
-      color: #eb2f96;
-    }
-  ")),
+")),
   
   # JavaScript to Toggle Sections
   tags$script(HTML("
@@ -788,27 +810,29 @@ ui <- bootstrapPage(
           div(class = "nav-sub-item", actionLink("nav_wagebill", "Wage Bill Graphs")),
           div(class = "nav-sub-item", actionLink("nav_wagebill_gdp", "Wage Bill & GDP Graphs"))
       ),
+      
       # Collapsible Section - The Size of the Public Sector
       div(class = "nav-section", onclick = "toggleSection('public_sector_section')", "The Size of the Public Sector"),
       div(id = "public_sector_section", style = "display: none;",
           div(class = "nav-sub-item", actionLink("nav_public_workforce", "Public Sector Wage Premium")),
-          div(class = "nav-sub-item", actionLink("nav_public_educ", "Public Sector Graphs")),
+          div(class = "nav-sub-item", actionLink("nav_public_graphs", "Public Sector Graphs"))
       ),
-      # Collapsible Section -  Characteristics of public sector workforce
-      div(class = "nav-section", onclick = "toggleSection('public_sector_workforce_section')", "The Size of the Public Sector"),
+      
+      # Collapsible Section - Characteristics of Public Sector Workforce
+      div(class = "nav-section", onclick = "toggleSection('public_sector_workforce_section')", "Characteristics of Public Sector Workforce"),
       div(id = "public_sector_workforce_section", style = "display: none;",
-          div(class = "nav-sub-item", actionLink("nav_public_workforce", "Public Sector Workforce Graphs")),
-          div(class = "nav-sub-item", actionLink("nav_public_educ", "Gender Workforce Graphs")), 
-          div(class = "nav-sub-item", actionLink("nav_public_educ", "Tertiary Education Graphs")),
+          div(class = "nav-sub-item", actionLink("nav_gender_workforce", "Gender Workforce Graphs")), 
+          div(class = "nav-sub-item", actionLink("nav_education", "Tertiary Education Graphs")),
           div(class = "nav-sub-item", actionLink("nav_public_educ", "Public Sector Education Graphs")),
-          div(class = "nav-sub-item", actionLink("nav_public_educ", "Female Leadership Graphs")),
+          div(class = "nav-sub-item", actionLink("nav_female_leadership", "Female Leadership Graphs"))
       ),
-      # Collapsible Section -  Competitiveness of public sector wages
-      div(class = "nav-section", onclick = "toggleSection('public_sector_wages_section')", "The Size of the Public Sector"),
+      
+      # Collapsible Section - Competitiveness of Public Sector Wages
+      div(class = "nav-section", onclick = "toggleSection('public_sector_wages_section')", "Competitiveness of Public Sector Wages"),
       div(id = "public_sector_wages_section", style = "display: none;",
-          div(class = "nav-sub-item", actionLink("nav_public_workforce", "Wage Premium Gender Graphs")),
-          
+          div(class = "nav-sub-item", actionLink("nav_wagepremium_gender", "Wage Premium Gender Graphs"))
       ),
+      
       div(class = "nav-item", actionLink("nav_download_all", "Download All Graphs"))
     ),
     
@@ -821,9 +845,9 @@ ui <- bootstrapPage(
   )
 )
 
-# ---------------------------
+
 # SERVER
-# ---------------------------
+
 
 
 server <- function(input, output, session) {
@@ -1673,164 +1697,6 @@ server <- function(input, output, session) {
     infoBox("Last Updated", "2022", icon = icon("clock"), color = "purple")
   })
   
-}
-
-shinyApp(ui = ui, server = server)
-
-###############################
-
-
-ui <- bootstrapPage(
-  theme = bs_theme(version = 5, bootswatch = 'quartz'),
-  
-  # Custom CSS for the sidebar
-  tags$style(HTML("
-    #sidebar {
-      height: 100vh;
-      background: linear-gradient(to bottom, #56ccf2, #2f80ed);
-      padding: 20px;
-      color: white;
-    }
-    .nav-item {
-      margin: 10px 0;
-      font-size: 18px;
-      font-weight: bold;
-      color: white;
-      text-decoration: none;
-      cursor: pointer;
-    }
-    .nav-item:hover {
-      color: #eb2f96;
-    }
-    .nav-section {
-      font-size: 20px;
-      font-weight: bold;
-      margin: 15px 0;
-      cursor: pointer;
-    }
-    .nav-sub-item {
-      margin-left: 20px;
-      font-size: 16px;
-      color: #d1e9ff;
-    }
-    .nav-sub-item:hover {
-      color: #eb2f96;
-    }
-  ")),
-  
-  # JavaScript to Toggle Sections
-  tags$script(HTML("
-    function toggleSection(sectionId) {
-      var section = document.getElementById(sectionId);
-      if (section.style.display === 'none') {
-        section.style.display = 'block';
-      } else {
-        section.style.display = 'none';
-      }
-    }
-  ")),
-  
-  # Layout with sidebar and main content
-  div(
-    class = "d-flex",
-    
-    # Sidebar
-    div(
-      id = "sidebar",
-      div(class = "nav-item", actionLink("nav_dashboard", "Dashboard")),
-      div(class = "nav-item", actionLink("nav_metadata", "Metadata")),
-      
-      # Collapsible Section - The Macro Fundamentals
-      div(class = "nav-section", onclick = "toggleSection('macro_section')", "The Macro Fundamentals"),
-      div(id = "macro_section", style = "display: none;",
-          div(class = "nav-sub-item", actionLink("nav_wagebill", "Wage Bill Graphs")),
-          div(class = "nav-sub-item", actionLink("nav_wagebill_gdp", "Wage Bill & GDP Graphs"))
-      ),
-      
-      div(class = "nav-item", actionLink("nav_public_workforce", "Public Sector Workforce Graphs")),
-      div(class = "nav-item", actionLink("nav_gender_workforce", "Gender Workforce Graphs")),
-      div(class = "nav-item", actionLink("nav_education", "Tertiary Education Graphs")),
-      div(class = "nav-item", actionLink("nav_wagepremium", "Public Sector Wage Premium")),
-      div(class = "nav-item", actionLink("nav_download_all", "Download All Graphs"))
-    ),
-    
-    # Main content area
-    div(
-      class = "flex-grow-1 p-4",
-      h2("WWB Indicators"),
-      uiOutput("main_content")
-    )
-  )
-)
-
-
-server <- function(input, output, session) {
-  # Track active tab
-  active_tab <- reactiveVal("dashboard")
-  
-  observeEvent(input$nav_dashboard,         { active_tab("dashboard") })
-  observeEvent(input$nav_metadata,          { active_tab("metadata") })
-  observeEvent(input$nav_wagebill,          { active_tab("wagebill") })
-  observeEvent(input$nav_wagebill_gdp,      { active_tab("wagebill_gdp") })
-  observeEvent(input$nav_public_workforce,  { active_tab("public_workforce") })
-  observeEvent(input$nav_gender_workforce,  { active_tab("gender_workforce") })
-  observeEvent(input$nav_education,         { active_tab("education") })
-  observeEvent(input$nav_wagepremium,       { active_tab("wagepremium") })
-  observeEvent(input$nav_download_all,      { active_tab("download_all") })
-  
-  output$main_content <- renderUI({
-    tab <- active_tab()
-    
-    if (tab == "dashboard") {
-      tagList(h3("Dashboard"), p("Dashboard content here."))
-      
-    } else if (tab == "metadata") {
-      tagList(h3("Metadata & Indicators"), p("Metadata content here."))
-      
-    } else if (tab == "wagebill") {
-      tagList(
-        h3("Wage Bill Graphs"),
-        fluidRow(
-          column(4,
-                 selectInput("countries", "Select Countries:", 
-                             choices = unique(wage_bill_publicexp$country_name),
-                             multiple = TRUE)
-          ),
-          column(4,
-                 radioButtons("graph_choice", "Graph Type:",
-                              choices = c("Wage Bill as % of Public Expenditure" = "Public",
-                                          "Wage Bill as % of GDP" = "GDP"),
-                              selected = "Public")
-          )
-        ),
-        fluidRow(
-          plotlyOutput("plotwagebill", height = "500px")
-        ),
-        fluidRow(
-          downloadButton("downloadWord", "Download Report in Word")
-        )
-      )
-      
-    } else if (tab == "wagebill_gdp") {
-      tagList(
-        h3("Wage Bill & GDP Graphs"),
-        fluidRow(
-          column(4,
-                 selectInput("countries_first", "Select Countries:", 
-                             choices = unique(merged_data$country_name), 
-                             multiple = TRUE)
-          ),
-          column(4,
-                 radioButtons("label_type", "Choose Label Type", 
-                              choices = c("Country", "Region"), selected = "Country")
-          )
-        ),
-        fluidRow(
-          plotlyOutput("dot_plot", height = "500px")
-        )
-      )
-    }
-  })
 }
 
 shinyApp(ui = ui, server = server)
