@@ -722,7 +722,6 @@ gender_leadership <- gender_leadership %>%
 # UI
 # ---------------------------
 
-
 ui <- bootstrapPage(
   theme = bs_theme(version = 5, bootswatch = 'quartz'),
   
@@ -734,22 +733,42 @@ ui <- bootstrapPage(
       padding: 20px;
       color: white;
     }
-    #sidebar .nav-item {
-      margin: 15px 0;
+    .nav-item {
+      margin: 10px 0;
       font-size: 18px;
       font-weight: bold;
       color: white;
       text-decoration: none;
-    }
-    #sidebar .nav-item.active {
-      background-color: #eb2f96;
-      padding: 10px;
-      border-radius: 20px;
-      color: white;
-    }
-    #sidebar .nav-item:hover {
       cursor: pointer;
+    }
+    .nav-item:hover {
       color: #eb2f96;
+    }
+    .nav-section {
+      font-size: 20px;
+      font-weight: bold;
+      margin: 15px 0;
+      cursor: pointer;
+    }
+    .nav-sub-item {
+      margin-left: 20px;
+      font-size: 16px;
+      color: #d1e9ff;
+    }
+    .nav-sub-item:hover {
+      color: #eb2f96;
+    }
+  ")),
+  
+  # JavaScript to Toggle Sections
+  tags$script(HTML("
+    function toggleSection(sectionId) {
+      var section = document.getElementById(sectionId);
+      if (section.style.display === 'none') {
+        section.style.display = 'block';
+      } else {
+        section.style.display = 'none';
+      }
     }
   ")),
   
@@ -757,28 +776,43 @@ ui <- bootstrapPage(
   div(
     class = "d-flex",
     
-    # Sidebar: action links for all sections except the former "Indicators & Widgets" tab
+    # Sidebar
     div(
       id = "sidebar",
       div(class = "nav-item", actionLink("nav_dashboard", "Dashboard")),
       div(class = "nav-item", actionLink("nav_metadata", "Metadata")),
-    # Collapsible Section - The Macro Fundamentals
-    div(class = "nav-section", onclick = "toggleSection('macro_section')", "The Macro Fundamentals"),
-    div(id = "macro_section", style = "display: none;",
-        div(class = "nav-sub-item", actionLink("nav_wagebill", "Wage Bill Graphs")),
-        div(class = "nav-sub-item", actionLink("nav_wagebill_gdp", "Wage Bill & GDP Graphs"))
+      
+      # Collapsible Section - The Macro Fundamentals
+      div(class = "nav-section", onclick = "toggleSection('macro_section')", "The Macro Fundamentals"),
+      div(id = "macro_section", style = "display: none;",
+          div(class = "nav-sub-item", actionLink("nav_wagebill", "Wage Bill Graphs")),
+          div(class = "nav-sub-item", actionLink("nav_wagebill_gdp", "Wage Bill & GDP Graphs"))
+      ),
+      # Collapsible Section - The Size of the Public Sector
+      div(class = "nav-section", onclick = "toggleSection('public_sector_section')", "The Size of the Public Sector"),
+      div(id = "public_sector_section", style = "display: none;",
+          div(class = "nav-sub-item", actionLink("nav_public_workforce", "Public Sector Wage Premium")),
+          div(class = "nav-sub-item", actionLink("nav_public_educ", "Public Sector Graphs")),
+      ),
+      # Collapsible Section -  Characteristics of public sector workforce
+      div(class = "nav-section", onclick = "toggleSection('public_sector_workforce_section')", "The Size of the Public Sector"),
+      div(id = "public_sector_workforce_section", style = "display: none;",
+          div(class = "nav-sub-item", actionLink("nav_public_workforce", "Public Sector Workforce Graphs")),
+          div(class = "nav-sub-item", actionLink("nav_public_educ", "Gender Workforce Graphs")), 
+          div(class = "nav-sub-item", actionLink("nav_public_educ", "Tertiary Education Graphs")),
+          div(class = "nav-sub-item", actionLink("nav_public_educ", "Public Sector Education Graphs")),
+          div(class = "nav-sub-item", actionLink("nav_public_educ", "Female Leadership Graphs")),
+      ),
+      # Collapsible Section -  Competitiveness of public sector wages
+      div(class = "nav-section", onclick = "toggleSection('public_sector_wages_section')", "The Size of the Public Sector"),
+      div(id = "public_sector_wages_section", style = "display: none;",
+          div(class = "nav-sub-item", actionLink("nav_public_workforce", "Wage Premium Gender Graphs")),
+          
+      ),
+      div(class = "nav-item", actionLink("nav_download_all", "Download All Graphs"))
     ),
-    div(class = "nav-item", actionLink("nav_public_workforce", "Public Sector Workforce Graphs")),
-    div(class = "nav-item", actionLink("nav_gender_workforce", "Gender Workforce Graphs")),
-    div(class = "nav-item", actionLink("nav_education", "Tertiary Education Graphs")),
-    div(class = "nav-item", actionLink("nav_wagepremium", "Public Sector Wage Premium")),
-    div(class = "nav-item", actionLink("nav_public_educ", "Public Sector Education Graphs")),
-    div(class = "nav-item", actionLink("nav_public_graphs", "Public Sector Graphs")),
-    div(class = "nav-item", actionLink("nav_wagepremium_gender", "Wage Premium Gender Graphs")),
-    div(class = "nav-item", actionLink("nav_female_leadership", "Female Leadership Graphs")),
-    div(class = "nav-item", actionLink("nav_download_all", "Download All Graphs"))
-  ),
-    # Main content area: header and dynamic UI output
+    
+    # Main content area
     div(
       class = "flex-grow-1 p-4",
       h2("WWB Indicators"),
