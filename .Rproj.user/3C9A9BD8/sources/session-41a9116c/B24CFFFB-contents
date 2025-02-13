@@ -65,6 +65,7 @@ data_wwbi[country_name == "Kosovo", continent := "Europe"]
 data_wwbi[country_name == "Micronesia", continent := "Oceania"]
 
 # Define MENA countries
+
 mena_countries <- c("Algeria", "Bahrain", "Egypt", "Iran", "Iraq", "Israel", "Jordan", 
                     "Kuwait", "Lebanon", "Libya", "Morocco", "Oman", "Palestine", "Qatar", 
                     "Saudi Arabia", "Syria", "Tunisia", "United Arab Emirates", "Yemen")
@@ -91,7 +92,7 @@ data_wwbi <- merge(data_wwbi, wb_metadata, by = "iso3c", all.x = TRUE)
 
 # Rename column for clarity
 
-setnames(data_wwbi, "income_level", "income_group")
+setnames(data_wwbi, "income_group", "income_level")
 
 
 #Load gdp data base 
@@ -169,7 +170,8 @@ indicator <- unique(data_wwbi$indicator_name)
 
 # Assign continents using countrycode()
 
-# Convert data_wwbi to a data.table (if it isn't already)
+# Convert data_wwbi to a data.table 
+
 setDT(data_wwbi)
 
 # Now add the continent column using :=
@@ -185,11 +187,13 @@ data_wwbi[country_name == "Kosovo", continent := "Europe"]
 data_wwbi[country_name == "Micronesia", continent := "Oceania"]
 
 # Define MENA countries
+
 mena_countries <- c("Algeria", "Bahrain", "Egypt", "Iran", "Iraq", "Israel", "Jordan", 
                     "Kuwait", "Lebanon", "Libya", "Morocco", "Oman", "Palestine", "Qatar", 
                     "Saudi Arabia", "Syria", "Tunisia", "United Arab Emirates", "Yemen")
 
 # Create a region column that classifies Africa into MENA and Sub-Saharan Africa
+
 data_wwbi[, region := fifelse(country_name %in% mena_countries, "MENA",
                               fifelse(continent == "Africa", "Sub-Saharan Africa", continent))]
 
@@ -262,12 +266,12 @@ wage_bill_publicexp <- bind_rows(wage_bill_publicexp, regional_mean)
 
 income_mean <- wage_bill_publicexp %>%
   filter(indicator_name == "Wage bill as a percentage of Public Expenditure") %>%
-  group_by(income_group, year, indicator_name) %>%
+  group_by(income_level, year, indicator_name) %>%
   summarise(mean_value = mean(value, na.rm = TRUE), .groups = 'drop')
 
 
 income_mean <- income_mean %>%
-  rename(country_name = income_group)
+  rename(country_name = income_level)
 
 income_mean <- income_mean %>%
   rename(value = mean_value)
@@ -758,19 +762,22 @@ ui <- bootstrapPage(
       id = "sidebar",
       div(class = "nav-item", actionLink("nav_dashboard", "Dashboard")),
       div(class = "nav-item", actionLink("nav_metadata", "Metadata")),
-      div(class = "nav-item", actionLink("nav_wagebill", "Wage Bill Graphs")),
-      div(class = "nav-item", actionLink("nav_wagebill_gdp", "Wage Bill & GDP Graphs")),
-      div(class = "nav-item", actionLink("nav_public_workforce", "Public Sector Workforce Graphs")),
-      div(class = "nav-item", actionLink("nav_gender_workforce", "Gender Workforce Graphs")),
-      div(class = "nav-item", actionLink("nav_education", "Tertiary Education Graphs")),
-      div(class = "nav-item", actionLink("nav_wagepremium", "Public Sector Wage Premium")),
-      div(class = "nav-item", actionLink("nav_public_educ", "Public Sector Education Graphs")),
-      div(class = "nav-item", actionLink("nav_public_graphs", "Public Sector Graphs")),
-      div(class = "nav-item", actionLink("nav_wagepremium_gender", "Wage Premium Gender Graphs")),
-      div(class = "nav-item", actionLink("nav_female_leadership", "Female Leadership Graphs")),
-      div(class = "nav-item", actionLink("nav_download_all", "Download All Graphs"))
+    # Collapsible Section - The Macro Fundamentals
+    div(class = "nav-section", onclick = "toggleSection('macro_section')", "The Macro Fundamentals"),
+    div(id = "macro_section", style = "display: none;",
+        div(class = "nav-sub-item", actionLink("nav_wagebill", "Wage Bill Graphs")),
+        div(class = "nav-sub-item", actionLink("nav_wagebill_gdp", "Wage Bill & GDP Graphs"))
     ),
-    
+    div(class = "nav-item", actionLink("nav_public_workforce", "Public Sector Workforce Graphs")),
+    div(class = "nav-item", actionLink("nav_gender_workforce", "Gender Workforce Graphs")),
+    div(class = "nav-item", actionLink("nav_education", "Tertiary Education Graphs")),
+    div(class = "nav-item", actionLink("nav_wagepremium", "Public Sector Wage Premium")),
+    div(class = "nav-item", actionLink("nav_public_educ", "Public Sector Education Graphs")),
+    div(class = "nav-item", actionLink("nav_public_graphs", "Public Sector Graphs")),
+    div(class = "nav-item", actionLink("nav_wagepremium_gender", "Wage Premium Gender Graphs")),
+    div(class = "nav-item", actionLink("nav_female_leadership", "Female Leadership Graphs")),
+    div(class = "nav-item", actionLink("nav_download_all", "Download All Graphs"))
+  ),
     # Main content area: header and dynamic UI output
     div(
       class = "flex-grow-1 p-4",
@@ -783,6 +790,8 @@ ui <- bootstrapPage(
 # ---------------------------
 # SERVER
 # ---------------------------
+
+
 server <- function(input, output, session) {
   
   # 1. Track the active tab via a reactive value  
@@ -1632,4 +1641,161 @@ server <- function(input, output, session) {
 
 shinyApp(ui = ui, server = server)
 
+###############################
+
+
+ui <- bootstrapPage(
+  theme = bs_theme(version = 5, bootswatch = 'quartz'),
+  
+  # Custom CSS for the sidebar
+  tags$style(HTML("
+    #sidebar {
+      height: 100vh;
+      background: linear-gradient(to bottom, #56ccf2, #2f80ed);
+      padding: 20px;
+      color: white;
+    }
+    .nav-item {
+      margin: 10px 0;
+      font-size: 18px;
+      font-weight: bold;
+      color: white;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .nav-item:hover {
+      color: #eb2f96;
+    }
+    .nav-section {
+      font-size: 20px;
+      font-weight: bold;
+      margin: 15px 0;
+      cursor: pointer;
+    }
+    .nav-sub-item {
+      margin-left: 20px;
+      font-size: 16px;
+      color: #d1e9ff;
+    }
+    .nav-sub-item:hover {
+      color: #eb2f96;
+    }
+  ")),
+  
+  # JavaScript to Toggle Sections
+  tags$script(HTML("
+    function toggleSection(sectionId) {
+      var section = document.getElementById(sectionId);
+      if (section.style.display === 'none') {
+        section.style.display = 'block';
+      } else {
+        section.style.display = 'none';
+      }
+    }
+  ")),
+  
+  # Layout with sidebar and main content
+  div(
+    class = "d-flex",
+    
+    # Sidebar
+    div(
+      id = "sidebar",
+      div(class = "nav-item", actionLink("nav_dashboard", "Dashboard")),
+      div(class = "nav-item", actionLink("nav_metadata", "Metadata")),
+      
+      # Collapsible Section - The Macro Fundamentals
+      div(class = "nav-section", onclick = "toggleSection('macro_section')", "The Macro Fundamentals"),
+      div(id = "macro_section", style = "display: none;",
+          div(class = "nav-sub-item", actionLink("nav_wagebill", "Wage Bill Graphs")),
+          div(class = "nav-sub-item", actionLink("nav_wagebill_gdp", "Wage Bill & GDP Graphs"))
+      ),
+      
+      div(class = "nav-item", actionLink("nav_public_workforce", "Public Sector Workforce Graphs")),
+      div(class = "nav-item", actionLink("nav_gender_workforce", "Gender Workforce Graphs")),
+      div(class = "nav-item", actionLink("nav_education", "Tertiary Education Graphs")),
+      div(class = "nav-item", actionLink("nav_wagepremium", "Public Sector Wage Premium")),
+      div(class = "nav-item", actionLink("nav_download_all", "Download All Graphs"))
+    ),
+    
+    # Main content area
+    div(
+      class = "flex-grow-1 p-4",
+      h2("WWB Indicators"),
+      uiOutput("main_content")
+    )
+  )
+)
+
+
+server <- function(input, output, session) {
+  # Track active tab
+  active_tab <- reactiveVal("dashboard")
+  
+  observeEvent(input$nav_dashboard,         { active_tab("dashboard") })
+  observeEvent(input$nav_metadata,          { active_tab("metadata") })
+  observeEvent(input$nav_wagebill,          { active_tab("wagebill") })
+  observeEvent(input$nav_wagebill_gdp,      { active_tab("wagebill_gdp") })
+  observeEvent(input$nav_public_workforce,  { active_tab("public_workforce") })
+  observeEvent(input$nav_gender_workforce,  { active_tab("gender_workforce") })
+  observeEvent(input$nav_education,         { active_tab("education") })
+  observeEvent(input$nav_wagepremium,       { active_tab("wagepremium") })
+  observeEvent(input$nav_download_all,      { active_tab("download_all") })
+  
+  output$main_content <- renderUI({
+    tab <- active_tab()
+    
+    if (tab == "dashboard") {
+      tagList(h3("Dashboard"), p("Dashboard content here."))
+      
+    } else if (tab == "metadata") {
+      tagList(h3("Metadata & Indicators"), p("Metadata content here."))
+      
+    } else if (tab == "wagebill") {
+      tagList(
+        h3("Wage Bill Graphs"),
+        fluidRow(
+          column(4,
+                 selectInput("countries", "Select Countries:", 
+                             choices = unique(wage_bill_publicexp$country_name),
+                             multiple = TRUE)
+          ),
+          column(4,
+                 radioButtons("graph_choice", "Graph Type:",
+                              choices = c("Wage Bill as % of Public Expenditure" = "Public",
+                                          "Wage Bill as % of GDP" = "GDP"),
+                              selected = "Public")
+          )
+        ),
+        fluidRow(
+          plotlyOutput("plotwagebill", height = "500px")
+        ),
+        fluidRow(
+          downloadButton("downloadWord", "Download Report in Word")
+        )
+      )
+      
+    } else if (tab == "wagebill_gdp") {
+      tagList(
+        h3("Wage Bill & GDP Graphs"),
+        fluidRow(
+          column(4,
+                 selectInput("countries_first", "Select Countries:", 
+                             choices = unique(merged_data$country_name), 
+                             multiple = TRUE)
+          ),
+          column(4,
+                 radioButtons("label_type", "Choose Label Type", 
+                              choices = c("Country", "Region"), selected = "Country")
+          )
+        ),
+        fluidRow(
+          plotlyOutput("dot_plot", height = "500px")
+        )
+      )
+    }
+  })
+}
+
+shinyApp(ui = ui, server = server)
 
