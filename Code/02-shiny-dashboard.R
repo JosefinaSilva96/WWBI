@@ -1153,6 +1153,8 @@ server <- function(input, output, session) {
       doc <- doc %>% body_add_par(intro_text, style = "Normal")
       
       # --- Dynamic Analysis Paragraph ---
+      selected_countries <- input$countries  # User-selected comparison countries
+      
       # Get data for the selected country
       data_country <- wage_bill_publicexp %>% filter(country_name == first_country)
       
@@ -1164,28 +1166,54 @@ server <- function(input, output, session) {
       if (length(value_2010) == 0) value_2010 <- NA
       if (length(value_2022) == 0) value_2022 <- NA
       
-      # Construct the analysis text
+      # Determine whether the wage bill is "low," "moderate," or "high" compared to selected peers
+      avg_peer_wage <- wage_bill_publicexp %>%
+        filter(country_name %in% selected_countries, year == 2022) %>%
+        summarise(mean_wage = mean(value, na.rm = TRUE)) %>%
+        pull(mean_wage)
+      
+      comparison_text <- if (!is.na(value_2022) && !is.na(avg_peer_wage)) {
+        if (value_2022 < avg_peer_wage * 0.8) {
+          "a relatively low"
+        } else if (value_2022 > avg_peer_wage * 1.2) {
+          "a relatively high"
+        } else {
+          "a moderate"
+        }
+      } else {
+        "an uncertain"
+      }
+      
+      # Select top 3 highest wage bill countries among the user's selection
+      top_countries <- wage_bill_publicexp %>%
+        filter(country_name %in% selected_countries, year == 2022) %>%
+        arrange(desc(value)) %>%
+        slice(1:3) %>%
+        pull(country_name)
+      
+      top_countries_text <- paste(top_countries, collapse = ", ")
+      
+      # Construct the final analysis text dynamically
       analysis_text <- paste0(
-        first_country, " has a relatively low public sector wage compared to its peers. ",
-        "The country’s wage bill as a percentage of public expenditures has followed a relatively low and stable trend over the past decade. ",
+        first_country, " has ", comparison_text, " public sector wage compared to its peers. ",
+        "The country’s wage bill as a percentage of public expenditures has followed a relatively stable trend over the past decade. ",
         "In 2010, the wage bill accounted for around ", 
         ifelse(is.na(value_2010), "N/A", round(value_2010, 1)), 
-        " percent of public expenditures, but this gradually declined, reaching its lowest point of ", 
+        " percent of public expenditures, but this gradually changed, reaching ", 
         ifelse(is.na(value_2022), "N/A", round(value_2022, 1)), 
         " percent in 2022. ",
         "Compared to other countries in the region and global comparators, ", first_country, 
-        " consistently allocates a smaller proportion of its budget to public sector wages. ",
+        " allocates ", comparison_text, " proportion of its budget to public sector wages. ",
         "For instance, in 2022, ", first_country, "’s wage bill stands at ", 
         ifelse(is.na(value_2022), "N/A", round(value_2022, 1)), 
-        " percent, whereas countries like Pakistan, Indonesia, and the Philippines have much higher wage bills during the same period. ",
-        "This trend reflects ", first_country, "’s cautious approach to public sector wage spending, but it also raises questions about whether this low level of spending affects the government's ability to effectively deliver public services."
+        " percent, whereas countries like ", top_countries_text, " had much higher wage bills during the same period. ",
+        "This trend reflects ", first_country, "’s approach to public sector wage spending, but it also raises questions about whether this level of spending affects the government's ability to effectively deliver public services."
       )
       
       doc <- doc %>% body_add_par(analysis_text, style = "Normal")
       
       # --- Add the Graph Based on User Selection ---
       if (input$graph_choice == "GDP") {
-        # Filter wage_bill_gdp data
         graph_data <- wage_bill_gdp %>% filter(country_name %in% input$countries)
         
         graph <- ggplot(graph_data, aes(x = year, y = value, color = country_name)) +
@@ -1204,7 +1232,6 @@ server <- function(input, output, session) {
                        style = "Normal")
         
       } else {
-        # Filter wage_bill_publicexp data
         graph_data <- wage_bill_publicexp %>% filter(country_name %in% input$countries)
         
         graph <- ggplot(graph_data, aes(x = year, y = value, color = country_name)) +
@@ -1640,4 +1667,7 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui = ui, server = server)
+
+
+###############################################
 
