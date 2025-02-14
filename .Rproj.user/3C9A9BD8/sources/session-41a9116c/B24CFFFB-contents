@@ -957,8 +957,35 @@ server <- function(input, output, session) {
           downloadButton("downloadWagePremiumReport", "Download Public Sector Wage Premium Report")
         )
       )
-  
-    
+    } else if(tab == "public_educ") {
+      tagList(
+        h3("Public Sector Education Graphs"),
+        
+        # Description Box
+        fluidRow(
+          div(style = "border: 2px solid white; padding: 10px; 
+                  background: linear-gradient(to right, #4A90E2, #D4145A);
+                  color: white; font-size: 16px; text-align: center;",
+              "This visualization explores the public sector wage premium by education level, compared to private formal workers.")
+        ),
+        
+        # Country Selection
+        fluidRow(
+          selectInput("selected_country", "Select Country for Graph", 
+                      choices = unique(public_wage_premium_educ$country_name), 
+                      multiple = FALSE)
+        ),
+        
+        # Bar Plot Output
+        fluidRow(
+          plotlyOutput("education_wage_premium_plot", height = "600px")
+        ),
+        
+        # Download Button
+        fluidRow(
+          downloadButton("downloadEducationWagePremium", "Download Wage Premium Report (Word)")
+        )
+      )
     } else if(tab == "download_all") {
       tagList(
         h3("Download All Graphs"),
@@ -1449,24 +1476,44 @@ server <- function(input, output, session) {
       # Introduction
       doc <- doc %>% body_add_par("This report presents an analysis of public sector wage premium compared to all private sector employees across selected countries.", style = "Normal")
       
-      # Save Dot Plot as Image
-      filtered_data <- public_wage_premium %>% filter(country_name %in% input$countries_wage_premium)
+      # Filter Data for Selected Countries
+      filtered_data <- public_wage_premium %>% 
+        filter(country_name %in% input$countries_wage_premium) %>%
+        drop_na(value_percentage)  # Remove NA values
       
-      ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = value_percentage)) +
-        geom_point(size = 5, color = "#722F37") +
+      # Ensure the data exists
+      if (nrow(filtered_data) == 0) {
+        doc <- doc %>% body_add_par("No data available for the selected countries.", style = "Normal")
+        print(doc, target = file)
+        return()
+      }
+      
+      # Convert value_percentage to numeric (just in case)
+      filtered_data$value_percentage <- as.numeric(filtered_data$value_percentage)
+      
+      # Assign Colors: First Selected Country = Red, Others = Dark Blue
+      filtered_data <- filtered_data %>%
+        mutate(color = ifelse(country_name == input$countries_wage_premium[1], "#B3242B", "#003366"))
+      
+      # Create the Dot Plot with Different Colors
+      ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, color = color)) +
+        geom_point(size = 5) +
+        scale_color_identity() +  # Use assigned colors directly
         labs(title = "Public Sector Wage Premium by Country", x = "Country", y = "Wage Premium (%)") +
         theme_minimal()
       
+      # Save Dot Plot as Image
       img_path <- tempfile(fileext = ".png")
       ggsave(img_path, plot = ggplot_obj, width = 8, height = 6)
       
-      # Add Image to Word
+      # Add Image to Word Document
       doc <- doc %>% body_add_img(src = img_path, width = 6, height = 4)
       
       # Save the Word Document
       print(doc, target = file)
     }
   )
+  
   output$employment_plot <- renderPlotly({
     filtered_data <- gender_workforce %>% filter(country_name %in% input$countries_workforce)
     if(nrow(filtered_data) == 0) return(NULL)
@@ -1577,7 +1624,108 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
+  # Wage premium by Education Level 
   
+  # Render the Public Sector Wage Premium by Education Level Graph
+  output$education_wage_premium_plot <- renderPlotly({
+    
+    req(input$selected_country)  # Ensure a country is selected
+    
+    # Filter the dataset for the selected country
+    filtered_data <- public_wage_premium_educ %>%
+      filter(country_name == input$selected_country) %>%
+      drop_na(value_percentage)  # Remove NAs
+    
+    # Ensure data exists
+    if (nrow(filtered_data) == 0) {
+      return(NULL)
+    }
+    
+    # Define custom colors for education levels
+    education_colors <- c(
+      "No Education" = "#003366",       # Dark Blue
+      "Primary Education" = "#B3242B",  # Dark Red
+      "Secondary Education" = "#3B3B3B",# Dark Gray/Black
+      "Tertiary Education" = "#006400"  # Dark Green
+    )
+    
+    # Create the bar plot
+    p <- ggplot(filtered_data, aes(x = indicator_name, y = value_percentage, fill = indicator_name)) +
+      geom_bar(stat = "identity") +
+      scale_fill_manual(values = education_colors) +
+      labs(
+        title = "Public Sector Wage Premium by Education Level (Compared to Private Formal Workers)",
+        x = "Education Level",
+        y = "Wage Premium (%)"
+      ) +
+      theme_minimal()
+    
+    ggplotly(p)  # Convert ggplot to Plotly for interactivity
+    
+  })
+  
+  # -----------------------------------
+  # 📄 Download Handler for Word Report
+  # -----------------------------------
+  output$downloadEducationWagePremium <- downloadHandler(
+    filename = function() {
+      paste0("Public_Sector_Wage_Premium_Education_", Sys.Date(), ".docx")
+    },
+    content = function(file) {
+      
+      # Create Word Document
+      doc <- read_docx()
+      
+      # Define Title Style
+      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
+      doc <- doc %>% body_add_fpar(fpar(ftext("Public Sector Wage Premium by Education Level", prop = title_style)))
+      
+      # Add Introduction
+      doc <- doc %>% body_add_par(
+        paste0("This report presents an analysis of public sector wage premiums based on different education levels for ", 
+               input$selected_country, ". The comparison is made against private sector formal workers."), 
+        style = "Normal"
+      )
+      
+      # Filter Data
+      filtered_data <- public_wage_premium_educ %>%
+        filter(country_name == input$selected_country) %>%
+        drop_na(value_percentage)
+      
+      # Ensure data exists
+      if (nrow(filtered_data) == 0) {
+        doc <- doc %>% body_add_par("No data available for the selected country.", style = "Normal")
+        print(doc, target = file)
+        return()
+      }
+      
+      # Save Bar Plot as Image
+      img_path <- tempfile(fileext = ".png")
+      
+      ggplot_obj <- ggplot(filtered_data, aes(x = indicator_name, y = value_percentage, fill = indicator_name)) +
+        geom_bar(stat = "identity") +
+        scale_fill_manual(values = c(
+          "No Education" = "#003366",
+          "Primary Education" = "#B3242B",
+          "Secondary Education" = "#3B3B3B",
+          "Tertiary Education" = "#006400"
+        )) +
+        labs(
+          title = "Public Sector Wage Premium by Education Level (Compared to Private Formal Workers)",
+          x = "Education Level",
+          y = "Wage Premium (%)"
+        ) +
+        theme_minimal()
+      
+      ggsave(img_path, plot = ggplot_obj, width = 8, height = 6)
+      
+      # Add Image to Word Document
+      doc <- doc %>% body_add_img(src = img_path, width = 6, height = 4)
+      
+      # Save the Word Document
+      print(doc, target = file)
+    }
+  )
   output$barPlotwomen <- renderPlotly({
     if(is.null(input$selected_countries) || length(input$selected_countries) == 0) return(NULL)
     filtered_data <- gender_leadership %>% filter(country_name %in% input$selected_countries)
