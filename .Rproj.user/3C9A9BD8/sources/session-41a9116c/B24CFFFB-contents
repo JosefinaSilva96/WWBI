@@ -1396,19 +1396,32 @@ server <- function(input, output, session) {
   output$dotPlot <- renderPlotly({
     req(input$countries_wage_premium)
     
-    # Filter Data
+    # Filter dataset & select only relevant columns
     filtered_data <- public_wage_premium %>% 
-      filter(country_name %in% input$countries_wage_premium)
+      filter(country_name %in% input$countries_wage_premium) %>%
+      select(country_name, value_percentage) %>%
+      drop_na(value_percentage)  # Remove any NA values
+    
+    # Check if there's data after filtering
+    if (nrow(filtered_data) == 0) {
+      return(NULL)  # Prevents errors when no data is available
+    }
+    
+    # Assign colors: First country -> Red, Others -> Dark Blue
+    filtered_data <- filtered_data %>%
+      mutate(color = ifelse(country_name == input$countries_wage_premium[1], "#B3242B", "#003366"))
     
     # Generate Dot Plot
     plot <- plot_ly(
       data = filtered_data,
       x = ~country_name,
-      y = ~public_wage_premium,
+      y = ~value_percentage,
       type = "scatter",
       mode = "markers",
-      marker = list(size = 10, color = "#722F37", opacity = 0.8),
-      text = ~paste0("Country: ", country_name, "<br>Wage Premium: ", round(public_wage_premium, 1), "%"),
+      marker = list(size = 10, opacity = 0.8),
+      color = ~color,  # Assign color dynamically
+      colors = c("#B3242B", "#003366"),  # Red & Dark Blue
+      text = ~paste0("Country: ", country_name, "<br>Wage Premium: ", round(value_percentage, 1), "%"),
       hoverinfo = "text"
     ) %>%
       layout(
@@ -1420,7 +1433,7 @@ server <- function(input, output, session) {
     
     plot
   })
-  
+
   # Download the Report as a Word Document
   output$downloadWagePremiumReport <- downloadHandler(
     filename = function() { paste0("Public_Sector_Wage_Premium_", Sys.Date(), ".docx") },
@@ -1439,7 +1452,7 @@ server <- function(input, output, session) {
       # Save Dot Plot as Image
       filtered_data <- public_wage_premium %>% filter(country_name %in% input$countries_wage_premium)
       
-      ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = public_wage_premium)) +
+      ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = value_percentage)) +
         geom_point(size = 5, color = "#722F37") +
         labs(title = "Public Sector Wage Premium by Country", x = "Country", y = "Wage Premium (%)") +
         theme_minimal()
