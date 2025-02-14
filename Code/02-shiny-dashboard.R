@@ -986,6 +986,45 @@ server <- function(input, output, session) {
           downloadButton("downloadEducationWagePremium", "Download Wage Premium Report (Word)")
         )
       )
+    } else if(tab == "public_graphs") {
+      tagList(
+        h3("Public Sector Employment Graphs"),
+        
+        # Description Box
+        fluidRow(
+          div(style = "border: 2px solid white; padding: 10px; 
+                  background: linear-gradient(to right, #4A90E2, #D4145A);
+                  color: white; font-size: 16px; text-align: center;",
+              "This visualization explores public sector employment across selected countries and its trend over time.")
+        ),
+        
+        # Multi-Country Selection for First Graph
+        fluidRow(
+          selectInput("countries_first", "Select Countries for First Graph", 
+                      choices = unique(public_sector_emp_temp_last$country_name), multiple = TRUE)
+        ),
+        
+        # Dot Plot Output
+        fluidRow(
+          plotlyOutput("firstGraphpublic", height = "600px")
+        ),
+        
+        # Single-Country Selection for Line Graph
+        fluidRow(
+          selectInput("country_second", "Select Country for Second Graph", 
+                      choices = unique(public_sector_emp_temp$country_name), multiple = FALSE)
+        ),
+        
+        # Line Plot Output
+        fluidRow(
+          plotlyOutput("secondGraphpublic", height = "600px")
+        ),
+        
+        # Download Button
+        fluidRow(
+          downloadButton("downloadGraphsWord", "Download Graphs as Word File")
+        )
+      )
     } else if(tab == "download_all") {
       tagList(
         h3("Download All Graphs"),
@@ -1723,6 +1762,65 @@ server <- function(input, output, session) {
       doc <- doc %>% body_add_img(src = img_path, width = 6, height = 4)
       
       # Save the Word Document
+      print(doc, target = file)
+    }
+  )
+  #Public Sector Graphs 
+  # First Graph - Multi-Country Dot Plot
+  output$firstGraphpublic <- renderPlotly({
+    filtered_data <- public_sector_emp_temp_last %>% 
+      filter(country_name %in% input$countries_first)
+    
+    ggplotly(
+      ggplot(filtered_data, aes(x = country_name, y = value, color = indicator_name)) +
+        geom_point(size = 4) +
+        labs(title = "Public Sector Employment (Last Year Available)", x = "Country", y = "Value") +
+        theme_minimal()
+    )
+  })
+  
+  # Second Graph - Single-Country Line Plot
+  output$secondGraphpublic <- renderPlotly({
+    filtered_data <- public_sector_emp_temp %>% 
+      filter(country_name == input$country_second)
+    
+    ggplotly(
+      ggplot(filtered_data, aes(x = year, y = value, color = indicator_name)) +
+        geom_line(size = 1.2) +
+        geom_point(size = 3) +
+        labs(title = "Public Sector Employment Over Time", x = "Year", y = "Value") +
+        theme_minimal()
+    )
+  })
+  
+  # Download Handler - Save Graphs to Word Document
+  output$downloadGraphsWord <- downloadHandler(
+    filename = function() {
+      paste0("Public_Sector_Employment_", Sys.Date(), ".docx")
+    },
+    content = function(file) {
+      doc <- read_docx()
+      
+      # Title
+      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
+      doc <- doc %>% body_add_fpar(fpar(ftext("Public Sector Employment Analysis", prop = title_style)))
+      
+      # Intro Text
+      doc <- doc %>% body_add_par("This report presents the analysis of public sector employment across selected countries and its trend over time.", style = "Normal")
+      
+      # First Graph - Save as Image
+      img_path1 <- tempfile(fileext = ".png")
+      ggsave(img_path1, plot = last_plot(), width = 8, height = 6)
+      doc <- doc %>% body_add_par("Public Sector Employment - Last Year Available", style = "heading 2")
+      doc <- doc %>% body_add_img(src = img_path1, width = 6, height = 4)
+      
+      # Second Graph - Save as Image
+      img_path2 <- tempfile(fileext = ".png")
+      ggsave(img_path2, plot = last_plot(), width = 8, height = 6)
+      doc <- doc %>% body_add_par("Public Sector Employment Over Time", style = "heading 2")
+      doc <- doc %>% body_add_img(src = img_path2, width = 6, height = 4)
+      
+      # Save the Document
       print(doc, target = file)
     }
   )
