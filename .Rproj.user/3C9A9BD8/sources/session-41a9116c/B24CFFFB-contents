@@ -202,13 +202,7 @@ print(selected_data_long)
 
 print(data_gdp)
 
-
-# Filter the data for the specific indicator "Wage bill as a percentage of Public Expenditure"
-
-wage_bill_publicexp <- data_wwbi[data_wwbi$indicator_name == "Wage bill as a percentage of Public Expenditure", ]
-
-
-wage_bill_publicexp <- wage_bill_publicexp %>%
+data_wwbi_long <- data_wwbi %>%
   pivot_longer(cols = starts_with("year_"), 
                names_to = "year", 
                values_to = "value") %>%
@@ -216,8 +210,7 @@ wage_bill_publicexp <- wage_bill_publicexp %>%
   filter(!is.na(value)) #4096 obs
 
 
-regional_mean <- wage_bill_publicexp %>%
-  filter(indicator_name == "Wage bill as a percentage of Public Expenditure") %>%
+regional_mean<- data_wwbi_long %>%
   group_by(region, year, indicator_name) %>%
   summarise(mean_value = mean(value, na.rm = TRUE), .groups = 'drop')
 
@@ -228,11 +221,9 @@ regional_mean <- regional_mean %>%
 regional_mean <- regional_mean %>%
   rename(value = mean_value)
 
-wage_bill_publicexp <- bind_rows(wage_bill_publicexp, regional_mean)
+data_wwbi_long <- bind_rows(data_wwbi_long, regional_mean)
 
-
-income_mean <- wage_bill_publicexp %>%
-  filter(indicator_name == "Wage bill as a percentage of Public Expenditure") %>%
+income_mean <- data_wwbi_long %>%
   group_by(income_level, year, indicator_name) %>%
   summarise(mean_value = mean(value, na.rm = TRUE), .groups = 'drop')
 
@@ -244,83 +235,29 @@ income_mean <- income_mean %>%
   rename(value = mean_value)
 
 
-wage_bill_publicexp <- bind_rows(wage_bill_publicexp, income_mean)
+data_wwbi_long <- bind_rows(data_wwbi_long, income_mean)
 
+
+
+
+# Filter the data for the specific indicator "Wage bill as a percentage of Public Expenditure"
+
+wage_bill_publicexp <- data_wwbi_long[data_wwbi_long$indicator_name == "Wage bill as a percentage of Public Expenditure", ]
 
 
 # Filter the data for the specific indicator "Wage bill as a percentage of GDP"
 
-wage_bill_gdp <- data_wwbi[data_wwbi$indicator_name == "Wage bill as a percentage of GDP", ]
-
-
-wage_bill_gdp <- wage_bill_gdp %>%
-  pivot_longer(cols = starts_with("year_"), 
-               names_to = "year", 
-               values_to = "value") %>%
-  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
-  filter(!is.na(value)) #4104 obs
-
-
-
-regional_mean_wbgdp <- wage_bill_gdp %>%
-  filter(indicator_name == "Wage bill as a percentage of GDP") %>%
-  group_by(region, year, indicator_name) %>%
-  summarise(mean_value = mean(value, na.rm = TRUE), .groups = 'drop')
-
-
-regional_mean_wbgdp <- regional_mean_wbgdp %>%
-  rename(country_name = region)
-
-regional_mean_wbgdp <- regional_mean_wbgdp %>%
-  rename(value = mean_value)
-
-wage_bill_gdp <- bind_rows(wage_bill_gdp, regional_mean_wbgdp)
-
-income_mean <- wage_bill_gdp %>%
-  filter(indicator_name == "Wage bill as a percentage of GDP") %>%
-  group_by(income_level, year, indicator_name) %>%
-  summarise(mean_value = mean(value, na.rm = TRUE), .groups = 'drop')
-
-
-income_mean <- income_mean %>%
-  rename(country_name = income_level)
-
-income_mean <- income_mean %>%
-  rename(value = mean_value)
-
-
-wage_bill_gdp <- bind_rows(wage_bill_gdp, income_mean)
-
-
-
+wage_bill_gdp <- data_wwbi_long[data_wwbi_long$indicator_name == "Wage bill as a percentage of GDP", ]
 
 
 # Filter the data for the specific indicator "Public sector employment, as a share of formal employment and paid employment "
 
-public_sector_emp <- data_wwbi[data_wwbi$indicator_name %in% c("Public sector employment, as a share of formal employment", 
+public_sector_emp <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Public sector employment, as a share of formal employment", 
                                                                "Public sector employment, as a share of paid employment", 
                                                                "Public sector employment, as a share of total employment"), ]
 
-public_sector_emp_temp <- data_wwbi[data_wwbi$indicator_name %in% c("Public sector employment, as a share of formal employment", 
+public_sector_emp_temp <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Public sector employment, as a share of formal employment", 
                                                                "Public sector employment, as a share of paid employment"), ]
-
-
-
-
-public_sector_emp_temp <- public_sector_emp_temp %>%
-  pivot_longer(cols = starts_with("year_"), 
-               names_to = "year", 
-               values_to = "value") %>%
-  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
-  filter(!is.na(value)) #2015 obs
-
-
-public_sector_emp <- public_sector_emp %>%
-  pivot_longer(cols = starts_with("year_"), 
-               names_to = "year", 
-               values_to = "value") %>%
-  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
-  filter(!is.na(value)) #2015 obs
 
 
 
@@ -359,17 +296,9 @@ public_sector_emp_temp_last <- public_sector_emp %>%
 
 # Filter the data for the specific indicator "Characteristics of the public sector workforce"
 
-public_sector_workforce <- data_wwbi[data_wwbi$indicator_name %in% c("Education workers, as a share of public total employees", 
+public_sector_workforce <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Education workers, as a share of public total employees", 
                                                                "Health workers, as a share of public total employees", 
                                                                "Public Administration workers, as a share of public total employees"), ]
-
-public_sector_workforce <- public_sector_workforce %>%
-  pivot_longer(cols = starts_with("year_"), 
-               names_to = "year", 
-               values_to = "value") %>%
-  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
-  filter(!is.na(value)) #1043 obs
-
 
 public_sector_workforce <- public_sector_workforce %>%
   mutate(value_percentage = value * 100)
@@ -455,16 +384,8 @@ public_sector_workforce_first_last <- public_sector_workforce_first_last %>%
 # Filter the data for the specific indicator "Characteristics of the gender workforce"
 
 
-gender_workforce <- data_wwbi[data_wwbi$indicator_name %in% c("Females, as a share of public paid employees", 
+gender_workforce <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Females, as a share of public paid employees", 
                                                                "Females, as a share of private paid employees"), ]
-
-gender_workforce <- gender_workforce %>%
-  pivot_longer(cols = starts_with("year_"), 
-               names_to = "year", 
-               values_to = "value") %>%
-  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
-  filter(!is.na(value)) #1967 obs 
-
 
 gender_workforce <- gender_workforce %>%
   mutate(value_percentage = value * 100)
@@ -514,16 +435,8 @@ merged_data <- merged_data %>%
 
 # Tertiary education by sector 
 
-tertiary_education <- data_wwbi[data_wwbi$indicator_name %in% c("Individuals with tertiary education as a share of public paid employees", 
+tertiary_education <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Individuals with tertiary education as a share of public paid employees", 
                                                               "Individuals with tertiary education as a share of private paid employees"), ]
-
-tertiary_education <- tertiary_education %>%
-  pivot_longer(cols = starts_with("year_"), 
-               names_to = "year", 
-               values_to = "value") %>%
-  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
-  filter(!is.na(value)) #1967 obs 
-
 
 tertiary_education <- tertiary_education %>%
   mutate(value_percentage = value * 100)
@@ -540,14 +453,7 @@ tertiary_education <- tertiary_education %>%
 
 # Public sector wage premium 
 
-public_wage_premium <- data_wwbi[data_wwbi$indicator_name %in% c("Public sector wage premium (compared to all private employees)"), ]
-
-public_wage_premium <- public_wage_premium %>%
-  pivot_longer(cols = starts_with("year_"), 
-               names_to = "year", 
-               values_to = "value") %>%
-  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
-  filter(!is.na(value)) #1967 obs 
+public_wage_premium <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Public sector wage premium (compared to all private employees)"), ]
 
 
 public_wage_premium <- public_wage_premium %>%
@@ -565,18 +471,10 @@ public_wage_premium <- public_wage_premium %>%
 #Public sector wage premium by education level (compared to private formal workers)
 
 
-public_wage_premium_educ <- data_wwbi[data_wwbi$indicator_name %in% c("Public sector wage premium, by education level: Tertiary Education (compared to formal wage employees)", 
+public_wage_premium_educ <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Public sector wage premium, by education level: Tertiary Education (compared to formal wage employees)", 
                                                                       "Public sector wage premium, by education level: Secondary Education (compared to formal wage employees)", 
                                                                       "Public sector wage premium, by education level: Primary Education (compared to formal wage employees)", 
                                                                       "Public sector wage premium, by education level: No Education (compared to formal wage employees)"), ]
-
-public_wage_premium_educ <- public_wage_premium_educ %>%
-  pivot_longer(cols = starts_with("year_"), 
-               names_to = "year", 
-               values_to = "value") %>%
-  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
-  filter(!is.na(value)) #1967 obs 
-
 
 public_wage_premium_educ <- public_wage_premium_educ %>%
   mutate(value_percentage = value * 100)
@@ -612,15 +510,8 @@ public_wage_premium_educ <- public_wage_premium_educ %>%
 # Filter the data for the specific indicator "Public sector wage premium, by gender: Female (compared to all private employees) and
 # Public sector wage premium, by gender: Male (compared to all private employees)"
 
-gender_wage_premium <- data_wwbi[data_wwbi$indicator_name %in% c("Public sector wage premium, by gender: Female (compared to all private employees)", 
+gender_wage_premium <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Public sector wage premium, by gender: Female (compared to all private employees)", 
                                                                "Public sector wage premium, by gender: Male (compared to all private employees)"), ]
-
-gender_wage_premium <- gender_wage_premium %>%
-  pivot_longer(cols = starts_with("year_"), 
-               names_to = "year", 
-               values_to = "value") %>%
-  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
-  filter(!is.na(value)) #1698 obs
 
 gender_wage_premium <- gender_wage_premium %>%
   select(year, indicator_name, value, country_name,region) %>%
@@ -665,17 +556,10 @@ public_sector_emp_temp_last <- public_sector_emp_temp_last %>%
 
 #Female Leadership 
 
-gender_leadership <- data_wwbi[data_wwbi$indicator_name %in% c("Females, as a share of public paid employees by occupational group: Managers", 
+gender_leadership <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Females, as a share of public paid employees by occupational group: Managers", 
                                                                  "Females, as a share of public paid employees by occupational group: Clerks", 
                                                                "Females, as a share of private paid employees by occupational group: Managers", 
                                                                "Females, as a share of private paid employees by occupational group: Clerks" ), ]
-
-gender_leadership <- gender_leadership %>%
-  pivot_longer(cols = starts_with("year_"), 
-               names_to = "year", 
-               values_to = "value") %>%
-  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
-  filter(!is.na(value)) #1698 obs
 
 gender_leadership <- gender_leadership %>%
   select(year, indicator_name, value, country_name,region) %>%
@@ -1059,7 +943,22 @@ server <- function(input, output, session) {
           downloadButton("downloadGraphsWordgender", "Download Graphs as Word File")
         )
       )
-      
+    } else if(tab == "wagepremium") {
+      tagList(
+        h3("Public Sector Wage Premium"),
+        fluidRow(
+          selectInput("countries_wage_premium", "Select Countries for First Graph", 
+                      choices = unique(public_wage_premium$country_name), multiple = TRUE)
+        ),
+        fluidRow(
+          plotlyOutput("dotPlot", height = "500px")
+        ),
+        fluidRow(
+          downloadButton("downloadWagePremiumReport", "Download Public Sector Wage Premium Report")
+        )
+      )
+  
+    
     } else if(tab == "download_all") {
       tagList(
         h3("Download All Graphs"),
@@ -1429,6 +1328,132 @@ server <- function(input, output, session) {
     }
   )
   
+  #Tertiary Education 
+  
+  output$barPlot <- renderPlotly({
+    req(input$selected_countries)
+    
+    # Filter Data
+    filtered_data <- tertiary_education %>% 
+      filter(country_name %in% input$selected_countries)
+    
+    # Define Colors
+    custom_colors <- c("Individuals with tertiary education as a share of private paid employees" = "#B3242B", 
+                       "Individuals with tertiary education as a share of public paid employees" = "#003366")
+    
+    # Generate Bar Plot
+    plot <- filtered_data %>%
+      plot_ly(x = ~country_name, y = ~value_percentage, 
+              color = ~indicator_name, colors = custom_colors, 
+              type = 'bar', barmode = 'group', text = ~paste0(round(value_percentage, 1), "%"),
+              textposition = "auto") %>%
+      layout(title = "Tertiary Education by Sector and Country",
+             xaxis = list(title = "Country"),
+             yaxis = list(title = "Tertiary Education (%)"),
+             legend = list(title = list(text = "<b>Sector</b>")))
+    
+    plot
+  })
+  
+  output$downloadGraphsWordEducation <- downloadHandler(
+    filename = function() { paste0("Tertiary_Education_Report_", Sys.Date(), ".docx") },
+    content = function(file) {
+      
+      # Create Word Document
+      doc <- read_docx()
+      
+      # Title Style
+      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
+      doc <- doc %>% body_add_fpar(fpar(ftext("Tertiary Education Analysis", prop = title_style)))
+      
+      # Introduction
+      doc <- doc %>% body_add_par("This report presents an analysis of tertiary education among public and private sector employees across selected countries.", style = "Normal")
+      
+      # Save Bar Plot as an Image
+      filtered_data <- tertiary_education %>% 
+        filter(country_name %in% input$selected_countries)
+      
+      ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
+        geom_bar(stat = "identity", position = "dodge") +
+        scale_fill_manual(values = c("Individuals with tertiary education as a share of private paid employees" = "#B3242B", 
+                                     "Individuals with tertiary education as a share of public paid employees" = "#003366")) +
+        labs(title = "Tertiary Education by Sector and Country", x = "Country", y = "Tertiary Education (%)") +
+        theme_minimal()
+      
+      img_path <- tempfile(fileext = ".png")
+      ggsave(img_path, plot = ggplot_obj, width = 8, height = 6)
+      
+      # Add Image to Word
+      doc <- doc %>% body_add_img(src = img_path, width = 6, height = 4)
+      
+      # Save the Word Document
+      print(doc, target = file)
+    }
+  )
+  #Public Sector Wage Premium 
+  # Render the Dot Plot for Public Sector Wage Premium
+  
+  output$dotPlot <- renderPlotly({
+    req(input$countries_wage_premium)
+    
+    # Filter Data
+    filtered_data <- public_wage_premium %>% 
+      filter(country_name %in% input$countries_wage_premium)
+    
+    # Generate Dot Plot
+    plot <- plot_ly(
+      data = filtered_data,
+      x = ~country_name,
+      y = ~wage_premium_percentage,
+      type = "scatter",
+      mode = "markers",
+      marker = list(size = 10, color = "#722F37", opacity = 0.8),
+      text = ~paste0("Country: ", country_name, "<br>Wage Premium: ", round(wage_premium_percentage, 1), "%"),
+      hoverinfo = "text"
+    ) %>%
+      layout(
+        title = "Public Sector Wage Premium (Compared to All Private Employees) by Country",
+        xaxis = list(title = "Country"),
+        yaxis = list(title = "Public Sector Wage Premium (%)"),
+        showlegend = FALSE
+      )
+    
+    plot
+  })
+  
+  # Download the Report as a Word Document
+  output$downloadWagePremiumReport <- downloadHandler(
+    filename = function() { paste0("Public_Sector_Wage_Premium_", Sys.Date(), ".docx") },
+    content = function(file) {
+      
+      # Create Word Document
+      doc <- read_docx()
+      
+      # Define Title Style
+      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
+      doc <- doc %>% body_add_fpar(fpar(ftext("Public Sector Wage Premium Analysis", prop = title_style)))
+      
+      # Introduction
+      doc <- doc %>% body_add_par("This report presents an analysis of public sector wage premium compared to all private sector employees across selected countries.", style = "Normal")
+      
+      # Save Dot Plot as Image
+      filtered_data <- public_wage_premium %>% filter(country_name %in% input$countries_wage_premium)
+      
+      ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = wage_premium_percentage)) +
+        geom_point(size = 5, color = "#722F37") +
+        labs(title = "Public Sector Wage Premium by Country", x = "Country", y = "Wage Premium (%)") +
+        theme_minimal()
+      
+      img_path <- tempfile(fileext = ".png")
+      ggsave(img_path, plot = ggplot_obj, width = 8, height = 6)
+      
+      # Add Image to Word
+      doc <- doc %>% body_add_img(src = img_path, width = 6, height = 4)
+      
+      # Save the Word Document
+      print(doc, target = file)
+    }
+  )
   output$employment_plot <- renderPlotly({
     filtered_data <- gender_workforce %>% filter(country_name %in% input$countries_workforce)
     if(nrow(filtered_data) == 0) return(NULL)
