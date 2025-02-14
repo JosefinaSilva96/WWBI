@@ -700,8 +700,8 @@ ui <- bootstrapPage(
       # Collapsible Section - The Size of the Public Sector
       div(class = "nav-section", onclick = "toggleSection('public_sector_section')", "The Size of the Public Sector"),
       div(id = "public_sector_section", style = "display: none;",
-          div(class = "nav-sub-item", actionLink("nav_public_workforce", "Public Sector Wage Premium")),
-          div(class = "nav-sub-item", actionLink("nav_public_graphs", "Public Sector Graphs"))
+          div(class = "nav-sub-item", actionLink("nav_wagepremium", "Public Sector Wage Premium")),
+          div(class = "nav-sub-item", actionLink("nav_public_workforce", "Public Sector Workforce Graphs"))
       ),
       
       # Collapsible Section - Characteristics of Public Sector Workforce
@@ -1404,11 +1404,11 @@ server <- function(input, output, session) {
     plot <- plot_ly(
       data = filtered_data,
       x = ~country_name,
-      y = ~wage_premium_percentage,
+      y = ~public_wage_premium,
       type = "scatter",
       mode = "markers",
       marker = list(size = 10, color = "#722F37", opacity = 0.8),
-      text = ~paste0("Country: ", country_name, "<br>Wage Premium: ", round(wage_premium_percentage, 1), "%"),
+      text = ~paste0("Country: ", country_name, "<br>Wage Premium: ", round(public_wage_premium, 1), "%"),
       hoverinfo = "text"
     ) %>%
       layout(
@@ -1439,7 +1439,7 @@ server <- function(input, output, session) {
       # Save Dot Plot as Image
       filtered_data <- public_wage_premium %>% filter(country_name %in% input$countries_wage_premium)
       
-      ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = wage_premium_percentage)) +
+      ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = public_wage_premium)) +
         geom_point(size = 5, color = "#722F37") +
         labs(title = "Public Sector Wage Premium by Country", x = "Country", y = "Wage Premium (%)") +
         theme_minimal()
