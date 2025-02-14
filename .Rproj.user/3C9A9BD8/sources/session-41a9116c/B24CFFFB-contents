@@ -701,7 +701,8 @@ ui <- bootstrapPage(
       div(class = "nav-section", onclick = "toggleSection('public_sector_section')", "The Size of the Public Sector"),
       div(id = "public_sector_section", style = "display: none;",
           div(class = "nav-sub-item", actionLink("nav_wagepremium", "Public Sector Wage Premium")),
-          div(class = "nav-sub-item", actionLink("nav_public_workforce", "Public Sector Workforce Graphs"))
+          div(class = "nav-sub-item", actionLink("nav_public_workforce", "Public Sector Workforce Graphs")), 
+          div(class = "nav-sub-item", actionLink("nav_public_graphs", "Public Sector Employment"))
       ),
       
       # Collapsible Section - Characteristics of Public Sector Workforce
@@ -1809,14 +1810,29 @@ server <- function(input, output, session) {
       doc <- doc %>% body_add_par("This report presents the analysis of public sector employment across selected countries and its trend over time.", style = "Normal")
       
       # First Graph - Save as Image
+      first_graph <- ggplot(public_sector_emp_temp_last %>% filter(country_name %in% input$countries_first), 
+                            aes(x = country_name, y = value, color = indicator_name)) +
+        geom_point(size = 4) +
+        labs(title = "Public Sector Employment (Last Year Available)", x = "Country", y = "Value") +
+        theme_minimal()
+      
       img_path1 <- tempfile(fileext = ".png")
-      ggsave(img_path1, plot = last_plot(), width = 8, height = 6)
+      ggsave(img_path1, plot = first_graph, width = 8, height = 6)
+      
       doc <- doc %>% body_add_par("Public Sector Employment - Last Year Available", style = "heading 2")
       doc <- doc %>% body_add_img(src = img_path1, width = 6, height = 4)
       
       # Second Graph - Save as Image
+      second_graph <- ggplot(public_sector_emp_temp %>% filter(country_name == input$country_second), 
+                             aes(x = year, y = value, color = indicator_name)) +
+        geom_line(size = 1.2) +
+        geom_point(size = 3) +
+        labs(title = "Public Sector Employment Over Time", x = "Year", y = "Value") +
+        theme_minimal()
+      
       img_path2 <- tempfile(fileext = ".png")
-      ggsave(img_path2, plot = last_plot(), width = 8, height = 6)
+      ggsave(img_path2, plot = second_graph, width = 8, height = 6)
+      
       doc <- doc %>% body_add_par("Public Sector Employment Over Time", style = "heading 2")
       doc <- doc %>% body_add_img(src = img_path2, width = 6, height = 4)
       
@@ -1824,6 +1840,9 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
+
+  #Women Leadership 
+  
   output$barPlotwomen <- renderPlotly({
     if(is.null(input$selected_countries) || length(input$selected_countries) == 0) return(NULL)
     filtered_data <- gender_leadership %>% filter(country_name %in% input$selected_countries)
