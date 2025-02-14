@@ -53,6 +53,8 @@ data_wwbi <- read_dta(file.path(data_path, "data_wwbi.dta"))
 # Add continent column
 
 # Ensure data_wwbi is a data.table
+
+
 setDT(data_wwbi)  
 
 # Assign continents using countrycode()
