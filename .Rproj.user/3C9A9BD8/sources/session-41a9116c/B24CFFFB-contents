@@ -700,8 +700,8 @@ ui <- bootstrapPage(
       # Collapsible Section - The Size of the Public Sector
       div(class = "nav-section", onclick = "toggleSection('public_sector_section')", "The Size of the Public Sector"),
       div(id = "public_sector_section", style = "display: none;",
-          div(class = "nav-sub-item", actionLink("nav_public_workforce", "Public Sector Wage Premium")),
-          div(class = "nav-sub-item", actionLink("nav_public_graphs", "Public Sector Graphs"))
+          div(class = "nav-sub-item", actionLink("nav_wagepremium", "Public Sector Wage Premium")),
+          div(class = "nav-sub-item", actionLink("nav_public_workforce", "Public Sector Workforce Graphs"))
       ),
       
       # Collapsible Section - Characteristics of Public Sector Workforce
