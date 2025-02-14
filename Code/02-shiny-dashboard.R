@@ -53,6 +53,8 @@ data_wwbi <- read_dta(file.path(data_path, "data_wwbi.dta"))
 # Add continent column
 
 # Ensure data_wwbi is a data.table
+
+
 setDT(data_wwbi)  
 
 # Assign continents using countrycode()
@@ -107,10 +109,6 @@ world_spdf <- ne_countries(scale = "medium", returnclass = "sf")
 
 color_palette <- colorFactor(c("lightgreen", "lightgray"), domain = c("reported", "not_reported"))
 
-
-selectInput("countrySelect", "Select Country", 
-            choices = unique(data_wwbi$country_name), 
-            multiple = TRUE)
 
 colnames(world_spdf)[colnames(world_spdf) == "name"] <- "country_name"
 
@@ -168,34 +166,7 @@ countries <- unique(data_wwbi$country_name)  # Extract unique country names from
 
 indicator <- unique(data_wwbi$indicator_name)
 
-# Assign continents using countrycode()
-
-# Convert data_wwbi to a data.table 
-
-setDT(data_wwbi)
-
-# Now add the continent column using :=
-
-data_wwbi[, continent := countrycode(country_name, origin = "country.name", destination = "continent")]
-
-
-
-
-# Manually assign continent for unmatched countries
-
-data_wwbi[country_name == "Kosovo", continent := "Europe"]
-data_wwbi[country_name == "Micronesia", continent := "Oceania"]
-
-# Define MENA countries
-
-mena_countries <- c("Algeria", "Bahrain", "Egypt", "Iran", "Iraq", "Israel", "Jordan", 
-                    "Kuwait", "Lebanon", "Libya", "Morocco", "Oman", "Palestine", "Qatar", 
-                    "Saudi Arabia", "Syria", "Tunisia", "United Arab Emirates", "Yemen")
-
-# Create a region column that classifies Africa into MENA and Sub-Saharan Africa
-
-data_wwbi[, region := fifelse(country_name %in% mena_countries, "MENA",
-                              fifelse(continent == "Africa", "Sub-Saharan Africa", continent))]
+# Transform data.table to a data.frame 
 
 data_wwbi <- as.data.frame(data_wwbi)
 
@@ -203,7 +174,7 @@ data_wwbi <- as.data.frame(data_wwbi)
 
 selected_data_long <- data_wwbi %>%
   filter(indicator_name == indicator & country_name %in% countries) %>%
-  select(country_name, indicator_name,region, starts_with("year_"))  # Select relevant columns
+  select(country_name, indicator_name,region,income_level,  starts_with("year_"))  # Select relevant columns
 
 
 # Reshape the data using pivot_longer
@@ -225,9 +196,6 @@ data_gdp <- data_gdp %>%
   mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
   filter(!is.na(value))  # Remove rows with NA values
 
-
-
-
 # View the reshaped data
 
 print(selected_data_long)
@@ -238,7 +206,6 @@ print(data_gdp)
 # Filter the data for the specific indicator "Wage bill as a percentage of Public Expenditure"
 
 wage_bill_publicexp <- data_wwbi[data_wwbi$indicator_name == "Wage bill as a percentage of Public Expenditure", ]
-
 
 
 wage_bill_publicexp <- wage_bill_publicexp %>%
@@ -263,7 +230,6 @@ regional_mean <- regional_mean %>%
 
 wage_bill_publicexp <- bind_rows(wage_bill_publicexp, regional_mean)
 
-data_wwbi <- bind_rows(data_wwbi, regional_mean)
 
 income_mean <- wage_bill_publicexp %>%
   filter(indicator_name == "Wage bill as a percentage of Public Expenditure") %>%
@@ -280,7 +246,7 @@ income_mean <- income_mean %>%
 
 wage_bill_publicexp <- bind_rows(wage_bill_publicexp, income_mean)
 
-data_wwbi <- bind_rows(data_wwbi, income_mean)
+
 
 # Filter the data for the specific indicator "Wage bill as a percentage of GDP"
 
@@ -305,10 +271,28 @@ regional_mean_wbgdp <- wage_bill_gdp %>%
 regional_mean_wbgdp <- regional_mean_wbgdp %>%
   rename(country_name = region)
 
-regional_mean <- regional_mean %>%
-  rename(mean_value = value)
+regional_mean_wbgdp <- regional_mean_wbgdp %>%
+  rename(value = mean_value)
 
 wage_bill_gdp <- bind_rows(wage_bill_gdp, regional_mean_wbgdp)
+
+income_mean <- wage_bill_gdp %>%
+  filter(indicator_name == "Wage bill as a percentage of GDP") %>%
+  group_by(income_level, year, indicator_name) %>%
+  summarise(mean_value = mean(value, na.rm = TRUE), .groups = 'drop')
+
+
+income_mean <- income_mean %>%
+  rename(country_name = income_level)
+
+income_mean <- income_mean %>%
+  rename(value = mean_value)
+
+
+wage_bill_gdp <- bind_rows(wage_bill_gdp, income_mean)
+
+
+
 
 
 # Filter the data for the specific indicator "Public sector employment, as a share of formal employment and paid employment "
