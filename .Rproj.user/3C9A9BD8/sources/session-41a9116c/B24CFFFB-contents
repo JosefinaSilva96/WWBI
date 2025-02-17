@@ -936,32 +936,43 @@ server <- function(input, output, session) {
         )
     } else if(tab == "wagepremium_gender") {
       tagList(
-        h3("Wage Premium Gender Graphs"),
+        h3("Wage Premium by Gender Graphs"),
+        
+        # Description Box
         fluidRow(
           div(style = "border: 2px solid white; padding: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
-              "This visualization explores the relationship between wage bill and GDP per capita (log scale).")
+                  background: linear-gradient(to right, #4A90E2, #D4145A);
+                  color: white; font-size: 16px; text-align: center;",
+              "This visualization explores the public sector wage premium by gender across selected countries and its trend over time.")
         ),
+        
+        # Multi-Country Selection for First Graph
         fluidRow(
           selectInput("countries_first", "Select Countries for First Graph", 
-                      choices = unique(gender_wage_premium_last$country_name), multiple = TRUE)
+                      choices = unique(gender_wage_premium_last$country_name), 
+                      multiple = TRUE)
         ),
+        
+        # First Graph Output - Multi-Country Dot Plot
         fluidRow(
-          plotlyOutput("firstGraphgender")
+          plotlyOutput("firstGraphGenderWagePremium", height = "600px")
         ),
+        
+        # Single-Country Selection for Second Graph
         fluidRow(
           selectInput("country_second", "Select Country for Second Graph", 
-                      choices = unique(gender_wage_premium$country_name), multiple = FALSE)
+                      choices = unique(gender_wage_premium$country_name), 
+                      multiple = FALSE)
         ),
+        
+        # Second Graph Output - Single-Country Line Plot
         fluidRow(
-          plotlyOutput("secondGraphgender")
+          plotlyOutput("secondGraphGenderWagePremium", height = "600px")
         ),
+        
+        # Download Button
         fluidRow(
-          checkboxGroupInput("selected_graphs_public", "Select Graphs to Download:", 
-                             choices = c("Multi-Country Graph" = "firstGraph", "Single-Country Graph" = "secondGraph"), 
-                             selected = c("firstGraph", "secondGraph")),
-          downloadButton("downloadGraphsWordgender", "Download Graphs as Word File")
+          downloadButton("downloadGraphsWordGenderWagePremium", "Download Gender Wage Premium Report (Word)")
         )
       )
     } else if(tab == "wagepremium") {
@@ -1788,6 +1799,7 @@ server <- function(input, output, session) {
     }
   )
   #Public Sector Graphs 
+  
   # First Graph - Multi-Country Dot Plot
   output$firstGraphpublic <- renderPlotly({
     filtered_data <- public_sector_emp_temp_last %>% 
@@ -1862,6 +1874,94 @@ server <- function(input, output, session) {
     }
   )
 
+#Gender Wage premium 
+  
+  # First Graph - Multi-Country Dot Plot for Wage Premium by Gender
+  output$firstGraphGenderWagePremium <- renderPlotly({
+    filtered_data <- gender_wage_premium_last %>% 
+      filter(country_name %in% input$countries_first)
+    
+    ggplotly(
+      ggplot(filtered_data, aes(x = country_name, y = value, color = indicator_label)) +
+        geom_point(size = 4) +
+        labs(title = "Public Sector Wage Premium by Gender (Last Year Available)", 
+             x = "Country", 
+             y = "Wage Premium (%)") +
+        theme_minimal()
+    )
+  })
+  
+  # Second Graph - Single-Country Line Plot for Wage Premium by Gender Over Time
+  output$secondGraphGenderWagePremium <- renderPlotly({
+    filtered_data <- gender_wage_premium %>% 
+      filter(country_name == input$country_second)
+    
+    ggplotly(
+      ggplot(filtered_data, aes(x = year, y = value, color = indicator_label)) +
+        geom_line(size = 1.2) +
+        geom_point(size = 3) +
+        labs(title = "Public Sector Wage Premium by Gender Over Time", 
+             x = "Year", 
+             y = "Wage Premium (%)") +
+        theme_minimal()
+    )
+  })
+  
+  # Download Handler - Save Gender Wage Premium Graphs to Word Document
+  output$downloadGraphsWordGenderWagePremium <- downloadHandler(
+    filename = function() {
+      paste0("Public_Sector_Wage_Premium_Gender_", Sys.Date(), ".docx")
+    },
+    content = function(file) {
+      doc <- read_docx()
+      
+      # Title
+      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
+      doc <- doc %>% body_add_fpar(fpar(ftext("Public Sector Wage Premium by Gender", prop = title_style)))
+      
+      # Intro Text
+      doc <- doc %>% body_add_par(
+        "This report presents an analysis of public sector wage premium by gender across selected countries and its trend over time.", 
+        style = "Normal"
+      )
+      
+      # First Graph - Save as Image
+      first_graph <- ggplot(gender_wage_premium_last %>% filter(country_name %in% input$countries_first), 
+                            aes(x = country_name, y = value, color = indicator_label)) +
+        geom_point(size = 4) +
+        labs(title = "Public Sector Wage Premium by Gender (Last Year Available)", 
+             x = "Country", 
+             y = "Wage Premium (%)") +
+        theme_minimal()
+      
+      img_path1 <- tempfile(fileext = ".png")
+      ggsave(img_path1, plot = first_graph, width = 8, height = 6)
+      
+      doc <- doc %>% body_add_par("Public Sector Wage Premium by Gender - Last Year Available", style = "heading 2")
+      doc <- doc %>% body_add_img(src = img_path1, width = 6, height = 4)
+      
+      # Second Graph - Save as Image
+      second_graph <- ggplot(gender_wage_premium %>% filter(country_name == input$country_second), 
+                             aes(x = year, y = value, color = indicator_label)) +
+        geom_line(size = 1.2) +
+        geom_point(size = 3) +
+        labs(title = "Public Sector Wage Premium by Gender Over Time", 
+             x = "Year", 
+             y = "Wage Premium (%)") +
+        theme_minimal()
+      
+      img_path2 <- tempfile(fileext = ".png")
+      ggsave(img_path2, plot = second_graph, width = 8, height = 6)
+      
+      doc <- doc %>% body_add_par("Public Sector Wage Premium by Gender Over Time", style = "heading 2")
+      doc <- doc %>% body_add_img(src = img_path2, width = 6, height = 4)
+      
+      # Save the Document
+      print(doc, target = file)
+    }
+  )
+  
+  
   # Women Leadership 
   output$barPlotwomen <- renderPlotly({
     if (is.null(input$selected_countries) || length(input$selected_countries) == 0) return(NULL)
