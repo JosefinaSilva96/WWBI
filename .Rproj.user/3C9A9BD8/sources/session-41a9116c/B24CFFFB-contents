@@ -1057,6 +1057,45 @@ server <- function(input, output, session) {
           downloadButton("downloadGraphsWord", "Download Graphs as Word File")
         )
       )
+    } else if(tab == "gender_workforce") {
+      tagList(
+        h3("Gender Workforce Graphs"),
+        
+        # Description Box
+        fluidRow(
+          div(style = "border: 2px solid white; padding: 10px; 
+                  background: linear-gradient(to right, #4A90E2, #D4145A);
+                  color: white; font-size: 16px; text-align: center;",
+              "This visualization explores female employment by sector across selected countries and over time.")
+        ),
+        
+        # Multi-Country Selection for First Graph
+        fluidRow(
+          selectInput("countries_gender", "Select Countries for First Graph", 
+                      choices = unique(gender_workforce$country_name), multiple = TRUE)
+        ),
+        
+        # First Graph Output
+        fluidRow(
+          plotlyOutput("firstGraphGenderWorkforce", height = "600px")
+        ),
+        
+        # Single-Country Selection for Line Graph
+        fluidRow(
+          selectInput("country_gender", "Select Country for Second Graph", 
+                      choices = unique(gender_workforce$country_name), multiple = FALSE)
+        ),
+        
+        # Second Graph Output
+        fluidRow(
+          plotlyOutput("secondGraphGenderWorkforce", height = "600px")
+        ),
+        
+        # Download Button
+        fluidRow(
+          downloadButton("downloadGenderWorkforceReport", "Download Gender Workforce Report")
+        )
+      )
       
     } else if(tab == "download_all") {
       tagList(
@@ -1954,6 +1993,87 @@ server <- function(input, output, session) {
       ggsave(img_path2, plot = second_graph, width = 8, height = 6)
       
       doc <- doc %>% body_add_par("Public Sector Wage Premium by Gender Over Time", style = "heading 2")
+      doc <- doc %>% body_add_img(src = img_path2, width = 6, height = 4)
+      
+      # Save the Document
+      print(doc, target = file)
+    }
+  )
+  # Gender Workforce Graphs
+  
+  # First Graph - Multi-Country Dot Plot
+  output$firstGraphGenderWorkforce <- renderPlotly({
+    filtered_data <- gender_workforce %>% 
+      filter(country_name %in% input$countries_gender)
+    
+    ggplotly(
+      ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = sector)) +
+        geom_bar(stat = "identity", position = "dodge") +
+        scale_fill_manual(values = c("Private Sector" = "#B3242B", "Public Sector" = "#003366")) +
+        labs(title = "Female Employment by Sector (Last Year Available)", x = "Country", y = "Employment (%)") +
+        theme_minimal()
+    )
+  })
+  
+  # Second Graph - Single-Country Line Plot
+  output$secondGraphGenderWorkforce <- renderPlotly({
+    filtered_data <- gender_workforce %>% 
+      filter(country_name == input$country_gender)
+    
+    ggplotly(
+      ggplot(filtered_data, aes(x = year, y = value_percentage, color = sector)) +
+        geom_line(size = 1.2) +
+        geom_point(size = 3) +
+        scale_color_manual(values = c("Private Sector" = "#003366", "Public Sector" = "#B3242B")) +
+        labs(title = paste("Female Employment by Sector Over Time in", input$country_gender), 
+             x = "Year", y = "Female Employment (%)") +
+        theme_minimal()
+    )
+  })
+  
+  # Download Handler - Save Graphs to Word Document
+  output$downloadGenderWorkforceReport <- downloadHandler(
+    filename = function() { paste0("Gender_Workforce_Report_", Sys.Date(), ".docx") },
+    content = function(file) {
+      
+      # Create Word Document
+      doc <- read_docx()
+      
+      # Title Style
+      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
+      doc <- doc %>% body_add_fpar(fpar(ftext("Gender Workforce Analysis", prop = title_style)))
+      
+      # Introduction
+      doc <- doc %>% body_add_par("This report presents an analysis of female employment by sector in multiple countries and over time.", style = "Normal")
+      
+      # First Graph - Save as Image
+      first_graph <- ggplot(gender_workforce %>% filter(country_name %in% input$countries_gender), 
+                            aes(x = country_name, y = value_percentage, fill = sector)) +
+        geom_bar(stat = "identity", position = "dodge") +
+        scale_fill_manual(values = c("Private Sector" = "#B3242B", "Public Sector" = "#003366")) +
+        labs(title = "Female Employment by Sector (Last Year Available)", x = "Country", y = "Employment (%)") +
+        theme_minimal()
+      
+      img_path1 <- tempfile(fileext = ".png")
+      ggsave(img_path1, plot = first_graph, width = 8, height = 6)
+      
+      doc <- doc %>% body_add_par("Female Employment by Sector (Last Year Available)", style = "heading 2")
+      doc <- doc %>% body_add_img(src = img_path1, width = 6, height = 4)
+      
+      # Second Graph - Save as Image
+      second_graph <- ggplot(gender_workforce %>% filter(country_name == input$country_gender), 
+                             aes(x = year, y = value_percentage, color = sector)) +
+        geom_line(size = 1.2) +
+        geom_point(size = 3) +
+        scale_color_manual(values = c("Private Sector" = "#003366", "Public Sector" = "#B3242B")) +
+        labs(title = paste("Female Employment by Sector Over Time in", input$country_gender), 
+             x = "Year", y = "Female Employment (%)") +
+        theme_minimal()
+      
+      img_path2 <- tempfile(fileext = ".png")
+      ggsave(img_path2, plot = second_graph, width = 8, height = 6)
+      
+      doc <- doc %>% body_add_par("Female Employment by Sector Over Time", style = "heading 2")
       doc <- doc %>% body_add_img(src = img_path2, width = 6, height = 4)
       
       # Save the Document
