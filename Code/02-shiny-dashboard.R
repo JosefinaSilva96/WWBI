@@ -36,7 +36,8 @@ library(shinythemes)
 library(countrycode)
 library(bs4Dash)
 library(wbstats)
-
+library(webshots)
+library(htmlwidgets)
 
 
 
@@ -913,7 +914,26 @@ server <- function(input, output, session) {
           downloadButton("downloadGraphsWordEducation", "Download Tertiary Education Report")
         )
       )
-      
+    } else if(tab == "female_leadership") {
+        tagList(
+          h3("Females by Occupational Group and Sector"),
+          fluidRow(
+            div(style = "border: 2px solid white; padding: 10px; 
+                  background: linear-gradient(to right, #4A90E2, #D4145A);
+                  color: white; font-size: 16px; text-align: center;",
+                "This visualization shows the share of females in various occupational groups (Managers/Clerks) in the public and private sectors across selected countries.")
+          ),
+          fluidRow(
+            selectInput("selected_countries", "Select Countries", 
+                        choices = unique(gender_leadership$country_name), multiple = TRUE)
+          ),
+          fluidRow(
+            plotlyOutput("barPlotwomen", height = "600px")
+          ),
+          fluidRow(
+            downloadButton("downloadGraphsWordfemale", "Download Female Leadership Report")
+          )
+        )
     } else if(tab == "wagepremium_gender") {
       tagList(
         h3("Wage Premium Gender Graphs"),
@@ -1026,6 +1046,7 @@ server <- function(input, output, session) {
           downloadButton("downloadGraphsWord", "Download Graphs as Word File")
         )
       )
+      
     } else if(tab == "download_all") {
       tagList(
         h3("Download All Graphs"),
@@ -1038,8 +1059,8 @@ server <- function(input, output, session) {
         )
       )
     }
-  })
-
+  }
+)
 
   # ---------------------------
   # 3. All your original outputs and downloadHandlers follow.
@@ -1841,12 +1862,13 @@ server <- function(input, output, session) {
     }
   )
 
-  #Women Leadership 
-  
+  # Women Leadership 
   output$barPlotwomen <- renderPlotly({
-    if(is.null(input$selected_countries) || length(input$selected_countries) == 0) return(NULL)
+    if (is.null(input$selected_countries) || length(input$selected_countries) == 0) return(NULL)
+    
     filtered_data <- gender_leadership %>% filter(country_name %in% input$selected_countries)
-    if(nrow(filtered_data) == 0) return(NULL)
+    if (nrow(filtered_data) == 0) return(NULL)
+    
     plot_ly(data = filtered_data,
             x = ~country_name,
             y = ~value_percentage,
@@ -1864,12 +1886,23 @@ server <- function(input, output, session) {
   output$downloadGraphsWordfemale <- downloadHandler(
     filename = function() { paste0("Females_Occupation_Groups_Analysis_", Sys.Date(), ".docx") },
     content = function(file) {
+      
+      # Create Word Document
       doc <- read_docx()
-      report_title <- "Females by Occupational Group and Sector"
+      
+      # Title Style
       title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
-      doc <- doc %>% body_add_fpar(fpar(ftext(report_title, prop = title_style)))
+      doc <- doc %>% body_add_fpar(fpar(ftext("Females by Occupational Group and Sector", prop = title_style)))
+      
+      # Introduction
+      doc <- doc %>% body_add_par("This report presents an analysis of female representation in different occupational groups across selected countries.", style = "Normal")
+      
+      # Filter Data
       filtered_data <- gender_leadership %>% filter(country_name %in% input$selected_countries)
-      if(nrow(filtered_data) == 0) return(NULL)
+      
+      if(nrow(filtered_data) == 0) return(NULL)  # Ensure there's data to plot
+      
+      # Generate Plotly Bar Chart
       bar_plot <- plot_ly(data = filtered_data,
                           x = ~country_name,
                           y = ~value_percentage,
@@ -1882,14 +1915,20 @@ server <- function(input, output, session) {
                xaxis = list(title = "Country"),
                yaxis = list(title = "Female Share (%)"),
                bargap = 0.2)
-      ggsave("bar_plot.png", plot = bar_plot, width = 6, height = 4)
-      doc <- doc %>% body_add_par("Females by Occupational Group and Sector", style = "heading 1") %>% 
-        body_add_img(src = "bar_plot.png", width = 6, height = 4) %>% 
+      
+      # Save Plotly Chart as Image Using 
+      img_path <- tempfile(fileext = ".png")
+      ggsave(bar_plot, file = img_path)  # Instead of ggsave()
+      
+      # Add Image to Word
+      doc <- doc %>% 
+        body_add_img(src = img_path, width = 6, height = 4) %>% 
         body_add_par("This graph shows the share of females in various occupational groups (Managers/Clerks) in the public and private sectors for the selected countries.", style = "Normal")
+      
+      # Save the Word Document
       print(doc, target = file)
     }
   )
-  
   output$downloadAllGraphsDoc <- downloadHandler(
     filename = function() { paste0("Comprehensive_Wage_Bill_Report_", Sys.Date(), ".docx") },
     content = function(file) {
