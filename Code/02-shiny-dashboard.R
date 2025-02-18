@@ -587,6 +587,71 @@ gender_leadership <- gender_leadership %>%
   mutate(value_percentage = value * 100)
 
 
+#Gender Wage premium in the public sector, by industry 
+
+gender_wage_premiumpublic <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Gender wage premium in the public sector, by industry: Core Public Administration (compared to male paid employees)", 
+                                                                         "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)", 
+                                                                         "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)"), ]
+
+
+
+gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
+  mutate(value_percentage = value * 100)
+
+gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
+  group_by(country_name, year, region) %>%
+  mutate(
+    # Calculate the value for 'Other' as 100 minus the sum of specific indicators
+    other_value = 100 - sum(value_percentage[indicator_name %in% c(
+      "Gender wage premium in the public sector, by industry: Core Public Administration (compared to male paid employees)",
+      "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)",
+      "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)"
+    )], na.rm = TRUE)
+  ) %>%
+  ungroup()
+
+
+gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
+  bind_rows(
+    gender_wage_premiumpublic %>%
+      # Filter rows for the specified indicators
+      filter(indicator_name %in% c(
+        "Gender wage premium in the public sector, by industry: Core Public Administration (compared to male paid employees)",
+        "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)",
+        "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)"
+      )) %>%
+      group_by(country_name, year, region) %>%
+      summarize(
+        indicator_name = "Other",  # Set the indicator name to "Other"
+        value_percentage = first(other_value),  # Replace the value with the calculated 'other_value'
+        .groups = "drop"  # Drop the grouping after summarizing
+      ) %>%
+      ungroup()
+  )
+
+
+gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
+  select(year, indicator_name, value, country_name,region) %>%
+  mutate(indicator_name = factor(indicator_name)) %>%
+  # Modify indicator labels for shorter text
+  mutate(indicator_label = recode(indicator_name, 
+                                  "Gender wage premium in the public sector, by industry: Core Public Administration (compared to male paid employees)" = "Core Public Administration", 
+                                  "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)" = "Education", 
+                                  "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)" = "Health"))
+
+
+# Keep the last year available for each country
+
+gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
+  filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
+  group_by(country_name, indicator_label, region) %>%                      # Group by country_name (or any other variable)
+  filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
+  ungroup()                                      # Ungroup the data
+
+
+
+
+
 
 
 
