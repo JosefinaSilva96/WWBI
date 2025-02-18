@@ -1017,6 +1017,14 @@ server <- function(input, output, session) {
           plotlyOutput("barPlot", height = "600px")
         ),
         fluidRow(
+          div(style = "border: 2px solid white; padding: 10px; 
+              background: rgba(0, 0, 0, 0.4); 
+              color: white; 
+              text-align: center; 
+              border-radius: 5px; margin-top: 10px;",
+              textOutput("note_tertiaryEducation"))
+        ),
+        fluidRow(
           downloadButton("downloadGraphsWordEducation", "Download Tertiary Education Report")
         )
       )
@@ -1090,6 +1098,14 @@ server <- function(input, output, session) {
         ),
         fluidRow(
           plotlyOutput("dotPlot", height = "500px")
+        ),
+        fluidRow(
+          div(style = "border: 2px solid white; padding: 10px; 
+              background: rgba(0, 0, 0, 0.4); 
+              color: white; 
+              text-align: center; 
+              border-radius: 5px; margin-top: 10px;",
+              textOutput("note_wage_premium"))
         ),
         fluidRow(
           downloadButton("downloadWagePremiumReport", "Download Public Sector Wage Premium Report")
@@ -1630,6 +1646,9 @@ server <- function(input, output, session) {
     
     plot
   })
+  output$note_tertiaryEducation <- renderText({
+    "Note: This indicator represents the proportion of individuals with tertiary education in the public and private sectors across selected countries. It highlights differences in educational attainment among paid employees by sector."
+  })
   
   output$downloadGraphsWordEducation <- downloadHandler(
     filename = function() { paste0("Tertiary_Education_Report_", Sys.Date(), ".docx") },
@@ -1709,6 +1728,10 @@ server <- function(input, output, session) {
       )
     
     plot
+  })
+  
+  output$note_wage_premium <- renderText({
+    "Note: This indicator represents the public sector wage premium compared to all private sector employees. A positive value indicates that public sector workers earn more than their private-sector counterparts, on average."
   })
 
   # Download the Report as a Word Document
