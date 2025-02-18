@@ -1071,7 +1071,14 @@ server <- function(input, output, session) {
         fluidRow(
           plotlyOutput("firstGraphGenderWagePremium", height = "600px")
         ),
-        
+        fluidRow(
+          div(style = "border: 2px solid white; padding: 10px; 
+              background: rgba(0, 0, 0, 0.4); 
+              color: white; 
+              text-align: center; 
+              border-radius: 5px; margin-top: 10px;",
+              textOutput("note_firstGraphGenderWagePremium"))
+        ),
         # Single-Country Selection for Second Graph
         fluidRow(
           selectInput("country_second", "Select Country for Second Graph", 
@@ -1083,12 +1090,21 @@ server <- function(input, output, session) {
         fluidRow(
           plotlyOutput("secondGraphGenderWagePremium", height = "600px")
         ),
+        fluidRow(
+          div(style = "border: 2px solid white; padding: 10px; 
+              background: rgba(0, 0, 0, 0.4); 
+              color: white; 
+              text-align: center; 
+              border-radius: 5px; margin-top: 10px;",
+              textOutput("note_secondGraphGenderWagePremium"))
+        ),
         
         # Download Button
         fluidRow(
           downloadButton("downloadGraphsWordGenderWagePremium", "Download Gender Wage Premium Report (Word)")
         )
       )
+      
     } else if(tab == "wagepremium") {
       tagList(
         h3("Public Sector Wage Premium"),
@@ -1221,10 +1237,26 @@ server <- function(input, output, session) {
                       choices = unique(gender_workforce$country_name), multiple = FALSE)
         ),
         fluidRow(
+          div(style = "border: 2px solid white; padding: 10px; 
+              background: rgba(0, 0, 0, 0.4); 
+              color: white; 
+              text-align: center; 
+              border-radius: 5px; margin-top: 10px;",
+              textOutput("note_firstGraphGenderWorkforce"))
+        ),
+        fluidRow(
           plotlyOutput("secondGraphGenderWorkforce")
         ),
         fluidRow(
           downloadButton("downloadGraphsWordGender", "Download Gender Workforce Report")
+        ), 
+        fluidRow(
+          div(style = "border: 2px solid white; padding: 10px; 
+              background: rgba(0, 0, 0, 0.4); 
+              color: white; 
+              text-align: center; 
+              border-radius: 5px; margin-top: 10px;",
+              textOutput("note_secondGraphGenderWorkforce"))
         )
       )
     } else if(tab == "gender_wage_premium") {
@@ -2123,6 +2155,9 @@ server <- function(input, output, session) {
         theme_minimal()
     )
   })
+  output$note_firstGraphGenderWagePremium <- renderText({
+    "Note: This indicator represents the public sector wage premium by gender, comparing wage differences between men and women in different sectors."
+  })
   
   # Second Graph - Single-Country Line Plot for Wage Premium by Gender Over Time
   output$secondGraphGenderWagePremium <- renderPlotly({
@@ -2141,6 +2176,9 @@ server <- function(input, output, session) {
                  label = "This indicator represents the gender wage premium across industries in the public sector.", 
                  hjust = 1, size = 4, color = "black", fontface = "italic")
     )
+  })
+  output$note_secondGraphGenderWagePremium <- renderText({
+    "Note: This indicator represents the gender wage premium across industries in the public sector, showing differences between men and women over time."
   })
   
   # Download Handler - Save Gender Wage Premium Graphs to Word Document
@@ -2220,6 +2258,9 @@ server <- function(input, output, session) {
         theme_minimal()
     )
   })
+  output$note_firstGraphGenderWorkforce <- renderText({
+    "Note: This indicator represents the share of females employed in the public and private sectors. It highlights gender differences in workforce participation by sector."
+  })
   
   # Second Graph - Single-Country Line Plot
   output$secondGraphGenderWorkforce <- renderPlotly({
@@ -2242,7 +2283,9 @@ server <- function(input, output, session) {
         theme_minimal()
     )
   })
-  
+  output$note_secondGraphGenderWorkforce <- renderText({
+    "Note: This indicator represents the trend of female employment in the public and private sectors over time, allowing for a comparison of sectoral changes."
+  })
   
   # Download Handler - Save Graphs to Word Document
   output$downloadGraphsWordGender <- downloadHandler(
