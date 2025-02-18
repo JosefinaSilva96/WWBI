@@ -1134,7 +1134,14 @@ server <- function(input, output, session) {
         fluidRow(
           plotlyOutput("education_wage_premium_plot", height = "600px")
         ),
-        
+        fluidRow(
+          div(style = "border: 2px solid white; padding: 10px; 
+              background: rgba(0, 0, 0, 0.4); 
+              color: white; 
+              text-align: center; 
+              border-radius: 5px; margin-top: 10px;",
+              textOutput("note_education_wage_premium"))
+        ),
         # Download Button
         fluidRow(
           downloadButton("downloadEducationWagePremium", "Download Wage Premium Report (Word)")
@@ -1162,7 +1169,14 @@ server <- function(input, output, session) {
         fluidRow(
           plotlyOutput("firstGraphpublic", height = "600px")
         ),
-        
+        fluidRow(
+          div(style = "border: 2px solid white; padding: 10px; 
+              background: rgba(0, 0, 0, 0.4); 
+              color: white; 
+              text-align: center; 
+              border-radius: 5px; margin-top: 10px;",
+              textOutput("note_firstGraphpublic"))
+        ),
         # Single-Country Selection for Line Graph
         fluidRow(
           selectInput("country_second", "Select Country for Second Graph", 
@@ -1173,7 +1187,14 @@ server <- function(input, output, session) {
         fluidRow(
           plotlyOutput("secondGraphpublic", height = "600px")
         ),
-        
+        fluidRow(
+          div(style = "border: 2px solid white; padding: 10px; 
+              background: rgba(0, 0, 0, 0.4); 
+              color: white; 
+              text-align: center; 
+              border-radius: 5px; margin-top: 10px;",
+              textOutput("note_secondGraphpublic"))
+        ),
         # Download Button
         fluidRow(
           downloadButton("downloadGraphsWord", "Download Graphs as Word File")
@@ -1938,7 +1959,9 @@ server <- function(input, output, session) {
     ggplotly(p)  # Convert ggplot to Plotly for interactivity
     
   })
-  
+  output$note_education_wage_premium <- renderText({
+    "Note: This indicator represents the public sector wage premium across different education levels, comparing public sector wages to those of private formal workers."
+  })
   # -----------------------------------
   # 📄 Download Handler for Word Report
   # -----------------------------------
@@ -2015,6 +2038,10 @@ server <- function(input, output, session) {
         theme_minimal()
     )
   })
+  output$note_firstGraphpublic <- renderText({
+    "Note: This indicator represents public sector employment as a percentage of total employment for the most recent year available in each country."
+  })
+  
   
   # Second Graph - Single-Country Line Plot
   output$secondGraphpublic <- renderPlotly({
@@ -2028,6 +2055,9 @@ server <- function(input, output, session) {
         labs(title = "Public Sector Employment Over Time", x = "Year", y = "Value") +
         theme_minimal()
     )
+  })
+  output$note_secondGraphpublic <- renderText({
+    "Note: This indicator represents the trend in public sector employment over time, showing how employment levels have evolved across different years."
   })
   
   # Download Handler - Save Graphs to Word Document
