@@ -900,6 +900,17 @@ server <- function(input, output, session) {
           plotlyOutput("plotwagebill", height = "500px")
         ),
         fluidRow(
+          div(style = "border: 2px solid white; 
+              padding: 10px; 
+              background: linear-gradient(to right, #4A90E2, #D4145A);
+              color: white; 
+              font-size: 14px; 
+              text-align: center; 
+              border-radius: 5px;
+              margin-top: 10px;",
+              textOutput("note_wagebill"))
+        ),
+        fluidRow(
           downloadButton("downloadWord", "Download Report in Word")
         )
       )
@@ -926,7 +937,19 @@ server <- function(input, output, session) {
           )
         ),
         fluidRow(
-          plotlyOutput("dot_plot", height = "500px")
+          plotlyOutput("dot_plot", height = "500px"), 
+        ), 
+        fluidRow(
+          div(style = "border: 2px solid white; 
+              padding: 10px; 
+              background: linear-gradient(to right, #4A90E2, #D4145A);
+              color: white; 
+              font-size: 14px; 
+              text-align: center; 
+              border-radius: 5px;
+              margin-top: 10px;",
+              textOutput("note_dotplot")
+          )
         )
       )
       
@@ -947,11 +970,27 @@ server <- function(input, output, session) {
           plotlyOutput("stackedBarGraph", height = "600px")
         ),
         fluidRow(
+          div(style = "border: 2px solid white; padding: 10px; 
+              background: rgba(0, 0, 0, 0.4); 
+              color: white; 
+              text-align: center; 
+              border-radius: 5px; margin-top: 10px;",
+              textOutput("note_stackedBarGraph"))
+        ),
+        fluidRow(
           selectInput("selected_country", "Select Country for Second Graph",
                       choices = unique(public_sector_workforce$country_name), multiple = FALSE)
         ),
         fluidRow(
           plotlyOutput("horizontalStackedBar", height = "600px")
+        ),
+        fluidRow(
+          div(style = "border: 2px solid white; padding: 10px; 
+              background: rgba(0, 0, 0, 0.4); 
+              color: white; 
+              text-align: center; 
+              border-radius: 5px; margin-top: 10px;",
+              textOutput("note_horizontalStackedBar"))
         ),
         fluidRow(
           checkboxGroupInput("selected_graphs_public", "Select Graphs to Download", 
@@ -1228,6 +1267,13 @@ server <- function(input, output, session) {
              xaxis = list(title = "Year", dtick = 2),
              yaxis = list(title = y_label))
   })
+  output$note_wagebill <- renderText({
+    if (input$graph_choice == "GDP") {
+      "Note: This indicator represents the wage bill as a percentage of GDP, measuring the public sector's wage cost relative to the total economy."
+    } else {
+      "Note: This indicator represents the wage bill as a percentage of public expenditure, reflecting how much of government spending goes to wages."
+    }
+  })
   output$downloadWord <- downloadHandler(
     filename = function() {
       paste0("Wage_Bill_Analysis_", Sys.Date(), ".docx")
@@ -1353,6 +1399,10 @@ server <- function(input, output, session) {
         
         doc <- doc %>% 
           body_add_gg(value = graph, style = "centered") %>%
+          body_add_par(ifelse(input$graph_choice == "GDP",
+                              "Note: This indicator represents the wage bill as a percentage of GDP, measuring the public sector's wage cost relative to the total economy.",
+                              "Note: This indicator represents the wage bill as a percentage of public expenditure, reflecting how much of government spending goes to wages."), 
+                       style = "Normal")  %>%
           body_add_par(paste0("This graph shows the wage bill as a percentage of GDP over time for the selected countries. ",
                               "For example, in 2022, ", first_country, " had a wage bill of ", 
                               ifelse(is.na(value_2022), "N/A", round(value_2022, 1)), "% of GDP."), 
@@ -1410,9 +1460,13 @@ server <- function(input, output, session) {
       layout(title = "Wage Bill vs. Log(GDP per Capita)",
              xaxis = list(title = "Log(GDP per Capita, 2015)"),
              yaxis = list(title = "Wage Bill"),
-             showlegend = FALSE)
+             showlegend = FALSE, 
+             plot_bgcolor = "white",   # Add this line
+             paper_bgcolor = "white")
   })
-  
+  output$note_dotplot <- renderText({
+    "Note: This indicator represents the relationship between wage bill and log(GDP per capita). The trendline provides a visual reference for the overall pattern."
+  })
   output$downloadGDPDoc <- downloadHandler(
     filename = function() { paste0("Wage_Bill_vs_GDP_Report_", Sys.Date(), ".docx") },
     content = function(file) {
@@ -1430,7 +1484,9 @@ server <- function(input, output, session) {
         geom_smooth(method = "lm", color = "gray", linetype = "dashed") +
         labs(title = "Wage Bill vs. Log(GDP per Capita)", x = "Log(GDP per Capita, 2015)", y = "Wage Bill") +
         theme_minimal()
-      doc <- doc %>% body_add_gg(value = plot, style = "centered")
+      doc <- doc %>% body_add_gg(value = plot, style = "centered") %>% 
+        body_add_par("Note: This indicator represents the relationship between wage bill and log(GDP per capita). The trendline provides a visual reference for the overall pattern.", 
+                     style = "Normal")
       print(doc, target = file)
     }
   )
@@ -1460,6 +1516,9 @@ server <- function(input, output, session) {
              legend = list(title = list(text = "<b>Indicator</b>")))
   })
   
+  output$note_stackedBarGraph <- renderText({
+    "Note: This indicator represents the distribution of public sector employment across different industries (Public Administration, Education, Health, and Other) as a percentage of total public employment."
+  })
   output$messageOutput <- renderUI({
     filtered_data <- public_sector_workforce %>% filter(country_name == input$selected_country)
     if(nrow(filtered_data) < 2) {
@@ -1492,6 +1551,11 @@ server <- function(input, output, session) {
              xaxis = list(title = "Percentage (%)"),
              yaxis = list(title = "Year"),
              legend = list(title = list(text = "Sector")))
+  })
+  output$note_horizontalStackedBar <- renderText({
+    paste0("Note: This indicator represents the distribution of the public sector workforce across different industries in ", 
+           input$selected_country, 
+           " for the earliest and latest available years in the dataset. It highlights the changes in sectoral employment over time.")
   })
   
   output$downloadGraphsWordworkforce <- downloadHandler(
@@ -2017,7 +2081,10 @@ server <- function(input, output, session) {
         labs(title = "Public Sector Wage Premium by Gender Over Time", 
              x = "Year", 
              y = "Wage Premium (%)") +
-        theme_minimal()
+        theme_minimal() +
+        annotate("text", x = Inf, y = min(filtered_data$value_percentage) - 5, 
+                 label = "This indicator represents the gender wage premium across industries in the public sector.", 
+                 hjust = 1, size = 4, color = "black", fontface = "italic")
     )
   })
   
@@ -2068,7 +2135,9 @@ server <- function(input, output, session) {
       ggsave(img_path2, plot = second_graph, width = 8, height = 6)
       
       doc <- doc %>% body_add_par("Public Sector Wage Premium by Gender Over Time", style = "heading 2")
-      doc <- doc %>% body_add_img(src = img_path2, width = 6, height = 4)
+      doc <- doc %>% body_add_img(src = img_path2, width = 6, height = 4) %>% 
+        body_add_par("Note: This indicator represents the gender wage premium across industries in the public sector.", 
+                     style = "Normal")
       
       # Save the Document
       print(doc, target = file)
@@ -2254,7 +2323,10 @@ server <- function(input, output, session) {
       scale_fill_brewer(palette = "Blues") +  # Using Blues color palette
       labs(title = "Gender Wage Premium in Public Sector by Industry",
            x = "Country", y = "Wage Premium (%)") +
-      theme_minimal()
+      theme_minimal() +
+      annotate("text", x = Inf, y = min(filtered_data$value_percentage) - 5, 
+               label = "This indicator represents the gender wage premium across industries in the public sector.", 
+               hjust = 1, size = 4, color = "black", fontface = "italic")
   })
   
   # Download Handler for Word Document
@@ -2299,7 +2371,9 @@ server <- function(input, output, session) {
       # Add Image to Word
       doc <- doc %>% 
         body_add_img(src = img_path, width = 6, height = 4) %>% 
-        body_add_par("This graph shows the gender wage premium in the public sector across different industries.", style = "Normal")
+        body_add_par("This graph shows the gender wage premium in the public sector across different industries.", style = "Normal") %>% 
+        body_add_par("Note: This indicator represents the gender wage premium across industries in the public sector.", 
+                     style = "Normal")
       
       # Save the Word Document
       print(doc, target = file)
