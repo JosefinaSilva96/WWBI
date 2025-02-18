@@ -940,14 +940,9 @@ server <- function(input, output, session) {
           plotlyOutput("dot_plot", height = "500px"), 
         ), 
         fluidRow(
-          div(style = "border: 2px solid white; 
-              padding: 10px; 
-              background: linear-gradient(to right, #4A90E2, #D4145A);
-              color: white; 
-              font-size: 14px; 
-              text-align: center; 
-              border-radius: 5px;
-              margin-top: 10px;",
+          div(style = "border: 2px solid white; padding: 10px; 
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
               textOutput("note_dotplot")
           )
         )
@@ -971,10 +966,8 @@ server <- function(input, output, session) {
         ),
         fluidRow(
           div(style = "border: 2px solid white; padding: 10px; 
-              background: rgba(0, 0, 0, 0.4); 
-              color: white; 
-              text-align: center; 
-              border-radius: 5px; margin-top: 10px;",
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
               textOutput("note_stackedBarGraph"))
         ),
         fluidRow(
@@ -986,10 +979,8 @@ server <- function(input, output, session) {
         ),
         fluidRow(
           div(style = "border: 2px solid white; padding: 10px; 
-              background: rgba(0, 0, 0, 0.4); 
-              color: white; 
-              text-align: center; 
-              border-radius: 5px; margin-top: 10px;",
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
               textOutput("note_horizontalStackedBar"))
         ),
         fluidRow(
@@ -1018,10 +1009,8 @@ server <- function(input, output, session) {
         ),
         fluidRow(
           div(style = "border: 2px solid white; padding: 10px; 
-              background: rgba(0, 0, 0, 0.4); 
-              color: white; 
-              text-align: center; 
-              border-radius: 5px; margin-top: 10px;",
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
               textOutput("note_tertiaryEducation"))
         ),
         fluidRow(
@@ -1033,8 +1022,8 @@ server <- function(input, output, session) {
           h3("Females by Occupational Group and Sector"),
           fluidRow(
             div(style = "border: 2px solid white; padding: 10px; 
-                  background: linear-gradient(to right, #4A90E2, #D4145A);
-                  color: white; font-size: 16px; text-align: center;",
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
                 "This visualization shows the share of females in various occupational groups (Managers/Clerks) in the public and private sectors across selected countries.")
           ),
           fluidRow(
@@ -1046,10 +1035,8 @@ server <- function(input, output, session) {
           ),
           fluidRow(
             div(style = "border: 2px solid white; padding: 10px; 
-              background: rgba(0, 0, 0, 0.4); 
-              color: white; 
-              text-align: center; 
-              border-radius: 5px; margin-top: 10px;",
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
                 textOutput("note_barPlotwomen"))
           ),
           fluidRow(
@@ -1063,8 +1050,8 @@ server <- function(input, output, session) {
         # Description Box
         fluidRow(
           div(style = "border: 2px solid white; padding: 10px; 
-                  background: linear-gradient(to right, #4A90E2, #D4145A);
-                  color: white; font-size: 16px; text-align: center;",
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
               "This visualization explores the public sector wage premium by gender across selected countries and its trend over time.")
         ),
         
@@ -1081,10 +1068,8 @@ server <- function(input, output, session) {
         ),
         fluidRow(
           div(style = "border: 2px solid white; padding: 10px; 
-              background: rgba(0, 0, 0, 0.4); 
-              color: white; 
-              text-align: center; 
-              border-radius: 5px; margin-top: 10px;",
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
               textOutput("note_firstGraphGenderWagePremium"))
         ),
         # Single-Country Selection for Second Graph
@@ -1100,10 +1085,8 @@ server <- function(input, output, session) {
         ),
         fluidRow(
           div(style = "border: 2px solid white; padding: 10px; 
-              background: rgba(0, 0, 0, 0.4); 
-              color: white; 
-              text-align: center; 
-              border-radius: 5px; margin-top: 10px;",
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
               textOutput("note_secondGraphGenderWagePremium"))
         ),
         
@@ -1125,10 +1108,8 @@ server <- function(input, output, session) {
         ),
         fluidRow(
           div(style = "border: 2px solid white; padding: 10px; 
-              background: rgba(0, 0, 0, 0.4); 
-              color: white; 
-              text-align: center; 
-              border-radius: 5px; margin-top: 10px;",
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
               textOutput("note_wage_premium"))
         ),
         fluidRow(
@@ -1142,8 +1123,8 @@ server <- function(input, output, session) {
         # Description Box
         fluidRow(
           div(style = "border: 2px solid white; padding: 10px; 
-                  background: linear-gradient(to right, #4A90E2, #D4145A);
-                  color: white; font-size: 16px; text-align: center;",
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
               "This visualization explores the public sector wage premium by education level, compared to private formal workers.")
         ),
         
@@ -1160,10 +1141,8 @@ server <- function(input, output, session) {
         ),
         fluidRow(
           div(style = "border: 2px solid white; padding: 10px; 
-              background: rgba(0, 0, 0, 0.4); 
-              color: white; 
-              text-align: center; 
-              border-radius: 5px; margin-top: 10px;",
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
               textOutput("note_education_wage_premium"))
         ),
         # Download Button
@@ -1178,8 +1157,8 @@ server <- function(input, output, session) {
         # Description Box
         fluidRow(
           div(style = "border: 2px solid white; padding: 10px; 
-                  background: linear-gradient(to right, #4A90E2, #D4145A);
-                  color: white; font-size: 16px; text-align: center;",
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
               "This visualization explores public sector employment across selected countries and its trend over time.")
         ),
         
@@ -1195,10 +1174,8 @@ server <- function(input, output, session) {
         ),
         fluidRow(
           div(style = "border: 2px solid white; padding: 10px; 
-              background: rgba(0, 0, 0, 0.4); 
-              color: white; 
-              text-align: center; 
-              border-radius: 5px; margin-top: 10px;",
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
               textOutput("note_firstGraphpublic"))
         ),
         # Single-Country Selection for Line Graph
@@ -1213,10 +1190,8 @@ server <- function(input, output, session) {
         ),
         fluidRow(
           div(style = "border: 2px solid white; padding: 10px; 
-              background: rgba(0, 0, 0, 0.4); 
-              color: white; 
-              text-align: center; 
-              border-radius: 5px; margin-top: 10px;",
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
               textOutput("note_secondGraphpublic"))
         ),
         # Download Button
@@ -1246,10 +1221,8 @@ server <- function(input, output, session) {
         ),
         fluidRow(
           div(style = "border: 2px solid white; padding: 10px; 
-              background: rgba(0, 0, 0, 0.4); 
-              color: white; 
-              text-align: center; 
-              border-radius: 5px; margin-top: 10px;",
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
               textOutput("note_firstGraphGenderWorkforce"))
         ),
         fluidRow(
@@ -1260,10 +1233,8 @@ server <- function(input, output, session) {
         ), 
         fluidRow(
           div(style = "border: 2px solid white; padding: 10px; 
-              background: rgba(0, 0, 0, 0.4); 
-              color: white; 
-              text-align: center; 
-              border-radius: 5px; margin-top: 10px;",
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
               textOutput("note_secondGraphGenderWorkforce"))
         )
       )
@@ -1272,8 +1243,8 @@ server <- function(input, output, session) {
         h3("Gender Wage Premium in Public Sector by Industry"),
         fluidRow(
           div(style = "border: 2px solid white; padding: 10px; 
-                  background: linear-gradient(to right, #4A90E2, #D4145A);
-                  color: white; font-size: 16px; text-align: center;",
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
               "This visualization explores the gender wage premium in the public sector by industry across selected countries.")
         ),
         fluidRow(
@@ -1285,10 +1256,8 @@ server <- function(input, output, session) {
         ),
         fluidRow(
           div(style = "border: 2px solid white; padding: 10px; 
-              background: rgba(0, 0, 0, 0.4); 
-              color: white; 
-              text-align: center; 
-              border-radius: 5px; margin-top: 10px;",
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
               textOutput("note_gender_wage_barplot"))
         ),
         fluidRow(
@@ -2506,28 +2475,126 @@ server <- function(input, output, session) {
   output$downloadAllGraphsDoc <- downloadHandler(
     filename = function() { paste0("Comprehensive_Wage_Bill_Report_", Sys.Date(), ".docx") },
     content = function(file) {
-      report_title <- "Wage Bill and Public Employment Analysis Report"
+      
+      # Create a new Word Document
       doc <- read_docx()
+      
+      # Define title style
       title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
-      doc <- doc %>% body_add_fpar(fpar(ftext(report_title, prop = title_style)))
-      doc <- doc %>% body_add_par("Introduction", style = "heading 2") %>% 
-        body_add_par("This note presents evidence on public sector employment and compensation practices...", style = "Normal")
-      graph1 <- ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
-        geom_line() +
+      
+      # **1️⃣ Title Page**
+      doc <- doc %>% body_add_fpar(fpar(ftext("Wage Bill and Public Employment Analysis Report", prop = title_style)))
+      doc <- doc %>% body_add_par("This report presents an analysis of wage bill trends, public sector employment, gender representation, and wage premiums across multiple countries.", style = "Normal")
+      
+      # **2️⃣ Wage Bill Graphs**
+      doc <- doc %>% body_add_par("Wage Bill Trends", style = "heading 1")
+      
+      selected_data_df <- selected_data()
+      
+      # Wage Bill as % of GDP
+      graph_gdp <- ggplot(selected_data_df, aes(x = year, y = value, color = country_name)) +
+        geom_line(size = 1.2) +
+        geom_point(size = 3) +
         labs(title = "Wage Bill as % of GDP Over Time", x = "Year", y = "Wage Bill (% of GDP)") +
         theme_minimal()
-      doc <- doc %>% body_add_gg(graph1, style = "centered")
-      graph2 <- ggplot(selected_data(), aes(x = year, y = value, color = country_name)) +
-        geom_line() +
+      
+      img_gdp <- tempfile(fileext = ".png")
+      ggsave(img_gdp, plot = graph_gdp, width = 8, height = 6)
+      doc <- doc %>% body_add_img(src = img_gdp, width = 6, height = 4)
+      
+      # Wage Bill as % of Public Expenditure
+      graph_publicexp <- ggplot(selected_data_df, aes(x = year, y = value, color = country_name)) +
+        geom_line(size = 1.2) +
+        geom_point(size = 3) +
         labs(title = "Wage Bill as % of Public Expenditure Over Time", x = "Year", y = "Wage Bill (% of Public Expenditure)") +
         theme_minimal()
-      doc <- doc %>% body_add_gg(graph2, style = "centered")
-      dot_plot <- ggplot(filtered_data(), aes(x = log_gdp, y = indicator_value, color = country_name)) +
+      
+      img_publicexp <- tempfile(fileext = ".png")
+      ggsave(img_publicexp, plot = graph_publicexp, width = 8, height = 6)
+      doc <- doc %>% body_add_img(src = img_publicexp, width = 6, height = 4)
+      
+      # **3️⃣ Wage Bill vs GDP Scatter Plot**
+      doc <- doc %>% body_add_par("Wage Bill vs GDP Analysis", style = "heading 1")
+      
+      filtered_data_df <- merged_data %>% filter(country_name %in% input$countries_first)
+      
+      dot_plot <- ggplot(filtered_data_df, aes(x = log_gdp, y = indicator_value, color = country_name)) +
         geom_point(size = 3) +
         geom_smooth(method = "lm", color = "gray", linetype = "dashed") +
         labs(title = "Wage Bill vs. Log(GDP per Capita)", x = "Log(GDP per Capita, 2015)", y = "Wage Bill") +
         theme_minimal()
-      doc <- doc %>% body_add_gg(dot_plot, style = "centered")
+      
+      img_dotplot <- tempfile(fileext = ".png")
+      ggsave(img_dotplot, plot = dot_plot, width = 8, height = 6)
+      doc <- doc %>% body_add_img(src = img_dotplot, width = 6, height = 4)
+      
+      # **4️⃣ Public Sector Workforce Distribution**
+      doc <- doc %>% body_add_par("Public Workforce Distribution", style = "heading 1")
+      
+      filtered_workforce <- filtered_workforce_data() %>% filter(country_name %in% input$countries_workforce)
+      
+      workforce_graph <- ggplot(filtered_workforce, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
+        geom_bar(stat = "identity", position = "stack") +
+        scale_fill_manual(values = c("Public Administration" = "#568340", "Education" = "#B3242B", 
+                                     "Health" = "#003366", "Other" = "#A9A9A9")) +
+        labs(title = "Public Workforce Distribution by Country", x = "Country", y = "Workforce Distribution (%)") +
+        theme_minimal()
+      
+      img_workforce <- tempfile(fileext = ".png")
+      ggsave(img_workforce, plot = workforce_graph, width = 8, height = 6)
+      doc <- doc %>% body_add_img(src = img_workforce, width = 6, height = 4)
+      
+      # **5️⃣ Gender Wage Premium**
+      doc <- doc %>% body_add_par("Gender Wage Premium in the Public Sector", style = "heading 1")
+      
+      filtered_gender_wage <- gender_wage_premium_last %>% filter(country_name %in% input$countries_first)
+      
+      gender_wage_graph <- ggplot(filtered_gender_wage, aes(x = country_name, y = value, color = indicator_label)) +
+        geom_point(size = 4) +
+        labs(title = "Public Sector Wage Premium by Gender (Last Year Available)", x = "Country", y = "Wage Premium (%)") +
+        theme_minimal()
+      
+      img_gender_wage <- tempfile(fileext = ".png")
+      ggsave(img_gender_wage, plot = gender_wage_graph, width = 8, height = 6)
+      doc <- doc %>% body_add_img(src = img_gender_wage, width = 6, height = 4)
+      
+      # **6️⃣ Gender Workforce**
+      doc <- doc %>% body_add_par("Female Workforce Representation", style = "heading 1")
+      
+      filtered_gender_workforce <- gender_workforce %>% filter(country_name %in% input$countries_gender)
+      
+      gender_workforce_graph <- ggplot(filtered_gender_workforce, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
+        geom_bar(stat = "identity", position = "dodge") +
+        scale_fill_manual(values = c("Females, as a share of private paid employees" = "#B3242B", 
+                                     "Females, as a share of public paid employees" = "#003366")) +
+        labs(title = "Female Employment by Sector (Last Year Available)", x = "Country", y = "Employment (%)", fill = "Sector") +
+        theme_minimal()
+      
+      img_gender_workforce <- tempfile(fileext = ".png")
+      ggsave(img_gender_workforce, plot = gender_workforce_graph, width = 8, height = 6)
+      doc <- doc %>% body_add_img(src = img_gender_workforce, width = 6, height = 4)
+      
+      # **7️⃣ Women in Leadership**
+      doc <- doc %>% body_add_par("Women in Leadership Positions", style = "heading 1")
+      
+      filtered_leadership <- gender_leadership %>% filter(country_name %in% input$selected_countries)
+      
+      leadership_graph <- ggplot(filtered_leadership, aes(x = country_name, y = value_percentage, fill = indicator_label)) +
+        geom_bar(stat = "identity", position = "dodge") +
+        scale_fill_manual(values = c("Clerks-Public" = "#003366", "Managers-Public" = "#ADD8E6",
+                                     "Clerks-Private" = "#006400", "Managers-Private" = "#90EE90")) +
+        labs(title = "Females by Occupational Group and Sector", x = "Country", y = "Female Share (%)") +
+        theme_minimal()
+      
+      img_leadership <- tempfile(fileext = ".png")
+      ggsave(img_leadership, plot = leadership_graph, width = 8, height = 6)
+      doc <- doc %>% body_add_img(src = img_leadership, width = 6, height = 4)
+      
+      # **8️⃣ Final Remarks**
+      doc <- doc %>% body_add_par("Conclusion", style = "heading 1")
+      doc <- doc %>% body_add_par("This report provides a comprehensive analysis of wage bill, gender representation, and workforce participation in the public sector. The findings highlight key trends and disparities across different sectors and countries.", style = "Normal")
+      
+      # **📌 Save the Document**
       print(doc, target = file)
     }
   )
