@@ -1516,6 +1516,7 @@ server <- function(input, output, session) {
     }
   )
   #Public Sector Wage Premium 
+  
   # Render the Dot Plot for Public Sector Wage Premium
   
   output$dotPlot <- renderPlotly({
