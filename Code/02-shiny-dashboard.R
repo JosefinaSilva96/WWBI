@@ -1045,6 +1045,14 @@ server <- function(input, output, session) {
             plotlyOutput("barPlotwomen", height = "600px")
           ),
           fluidRow(
+            div(style = "border: 2px solid white; padding: 10px; 
+              background: rgba(0, 0, 0, 0.4); 
+              color: white; 
+              text-align: center; 
+              border-radius: 5px; margin-top: 10px;",
+                textOutput("note_barPlotwomen"))
+          ),
+          fluidRow(
             downloadButton("downloadGraphsWordfemale", "Download Female Leadership Report")
           )
         )
@@ -1274,6 +1282,14 @@ server <- function(input, output, session) {
         ),
         fluidRow(
           plotOutput("gender_wage_barplot", height = "600px")
+        ),
+        fluidRow(
+          div(style = "border: 2px solid white; padding: 10px; 
+              background: rgba(0, 0, 0, 0.4); 
+              color: white; 
+              text-align: center; 
+              border-radius: 5px; margin-top: 10px;",
+              textOutput("note_gender_wage_barplot"))
         ),
         fluidRow(
           downloadButton("downloadGenderWagePremium", "Download Gender Wage Premium Report")
@@ -2361,6 +2377,10 @@ server <- function(input, output, session) {
              bargap = 0.2)
   })
   
+  output$note_barPlotwomen <- renderText({
+    "Note: This indicator represents the share of females in different occupational groups (Managers/Clerks) in both the public and private sectors, highlighting gender representation disparities."
+  })
+  
   output$downloadGraphsWordfemale <- downloadHandler(
     filename = function() { paste0("Females_Occupation_Groups_Analysis_", Sys.Date(), ".docx") },
     content = function(file) {
@@ -2426,6 +2446,10 @@ server <- function(input, output, session) {
                label = "This indicator represents the gender wage premium across industries in the public sector.", 
                hjust = 1, size = 4, color = "black", fontface = "italic")
   })
+  output$note_gender_wage_barplot <- renderText({
+    "Note: This indicator represents the gender wage premium in the public sector across different industries, comparing wages of female employees to male employees."
+  })
+  
   
   # Download Handler for Word Document
   output$downloadGenderWagePremium <- downloadHandler(
