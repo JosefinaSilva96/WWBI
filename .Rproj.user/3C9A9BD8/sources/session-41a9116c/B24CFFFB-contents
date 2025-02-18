@@ -631,7 +631,7 @@ gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
 
 
 gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
-  select(year, indicator_name, value, country_name,region) %>%
+  select(year, indicator_name, value, country_name,region,value_percentage) %>%
   mutate(indicator_name = factor(indicator_name)) %>%
   # Modify indicator labels for shorter text
   mutate(indicator_label = recode(indicator_name, 
@@ -777,7 +777,8 @@ ui <- bootstrapPage(
           div(class = "nav-sub-item", actionLink("nav_gender_workforce", "Gender Workforce Graphs")), 
           div(class = "nav-sub-item", actionLink("nav_education", "Tertiary Education Graphs")),
           div(class = "nav-sub-item", actionLink("nav_public_educ", "Public Sector Education Graphs")),
-          div(class = "nav-sub-item", actionLink("nav_female_leadership", "Female Leadership Graphs"))
+          div(class = "nav-sub-item", actionLink("nav_female_leadership", "Female Leadership Graphs")),
+          div(class = "nav-sub-item", actionLink("nav_gender_wage_premium", "Gender Wage Premium Graphs")),
       ),
       
       # Collapsible Section - Competitiveness of Public Sector Wages
@@ -819,6 +820,7 @@ server <- function(input, output, session) {
   observeEvent(input$nav_public_graphs,     { active_tab("public_graphs") })
   observeEvent(input$nav_wagepremium_gender,{ active_tab("wagepremium_gender") })
   observeEvent(input$nav_female_leadership, { active_tab("female_leadership") })
+  observeEvent(input$nav_gender_wage_premium, { active_tab("gender_wage_premium") })
   observeEvent(input$nav_download_all,      { active_tab("download_all") })
   
   # 2. Render the main dynamic UI based on active_tab
@@ -1147,6 +1149,26 @@ server <- function(input, output, session) {
         ),
         fluidRow(
           downloadButton("downloadGraphsWordGender", "Download Gender Workforce Report")
+        )
+      )
+    } else if(tab == "gender_wage_premium") {
+      tagList(
+        h3("Gender Wage Premium in Public Sector by Industry"),
+        fluidRow(
+          div(style = "border: 2px solid white; padding: 10px; 
+                  background: linear-gradient(to right, #4A90E2, #D4145A);
+                  color: white; font-size: 16px; text-align: center;",
+              "This visualization explores the gender wage premium in the public sector by industry across selected countries.")
+        ),
+        fluidRow(
+          selectInput("selected_countries", "Select Countries", 
+                      choices = unique(gender_wage_premium$country_name), multiple = TRUE)
+        ),
+        fluidRow(
+          plotOutput("gender_wage_barplot", height = "600px")
+        ),
+        fluidRow(
+          downloadButton("downloadGenderWagePremium", "Download Gender Wage Premium Report")
         )
       )
     } else if(tab == "download_all") {
@@ -2212,6 +2234,79 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
+  
+  #Gender Wage premium in the public sector, by industry 
+  output$gender_wage_barplot <- renderPlot({
+    
+    # Filter data based on user selection
+    filtered_data <- gender_wage_premiumpublic %>%
+      filter(country_name %in% input$selected_countries, 
+             indicator_label %in% c("Core Public Administration", 
+                                   "Education", 
+                                   "Health", 
+                                   "Other")) 
+    
+  
+    
+    # Create ggplot
+    ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_label)) +
+      geom_bar(stat = "identity", position = "dodge") +
+      scale_fill_brewer(palette = "Blues") +  # Using Blues color palette
+      labs(title = "Gender Wage Premium in Public Sector by Industry",
+           x = "Country", y = "Wage Premium (%)") +
+      theme_minimal()
+  })
+  
+  # Download Handler for Word Document
+  output$downloadGenderWagePremium <- downloadHandler(
+    filename = function() { paste0("Gender_Wage_Premium_Report_", Sys.Date(), ".docx") },
+    content = function(file) {
+      
+      # Create Word Document
+      doc <- read_docx()
+      
+      # Title Style
+      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
+      doc <- doc %>% body_add_fpar(fpar(ftext("Gender Wage Premium in Public Sector by Industry", prop = title_style)))
+      
+      # Introduction
+      doc <- doc %>% body_add_par("This report presents an analysis of gender wage premiums in the public sector by industry (Core Public Administration, Education, and Health) across selected countries.", style = "Normal")
+      
+      # Generate ggplot Object
+      filtered_data <- gender_wage_premiumpublic %>%
+        filter(country_name %in% input$selected_countries, 
+               indicator_name %in% c("Gender wage premium in the public sector, by industry: Core Public Administration (compared to male paid employees)", 
+                                     "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)", 
+                                     "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)", 
+                                     "Other"))
+      
+      filtered_data$indicator_label <- recode(filtered_data$indicator_name,
+                                              "Gender wage premium in the public sector, by industry: Core Public Administration (compared to male paid employees)" = "Core Public Administration",
+                                              "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)" = "Education",
+                                              "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)" = "Health")
+      
+      gender_wage_plot <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_label)) +
+        geom_bar(stat = "identity", position = "dodge") +
+        scale_fill_brewer(palette = "Blues") +  # Using Blues color palette
+        labs(title = "Gender Wage Premium in Public Sector by Industry",
+             x = "Country", y = "Wage Premium (%)") +
+        theme_minimal()
+      
+      # Save ggplot as Image
+      img_path <- tempfile(fileext = ".png")
+      ggsave(filename = img_path, plot = gender_wage_plot, width = 8, height = 6, dpi = 300)
+      
+      # Add Image to Word
+      doc <- doc %>% 
+        body_add_img(src = img_path, width = 6, height = 4) %>% 
+        body_add_par("This graph shows the gender wage premium in the public sector across different industries.", style = "Normal")
+      
+      # Save the Word Document
+      print(doc, target = file)
+    }
+  )
+  
+  
   output$downloadAllGraphsDoc <- downloadHandler(
     filename = function() { paste0("Comprehensive_Wage_Bill_Report_", Sys.Date(), ".docx") },
     content = function(file) {
