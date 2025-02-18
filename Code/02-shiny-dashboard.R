@@ -1516,6 +1516,7 @@ server <- function(input, output, session) {
     }
   )
   #Public Sector Wage Premium 
+  
   # Render the Dot Plot for Public Sector Wage Premium
   
   output$dotPlot <- renderPlotly({
@@ -2078,13 +2079,14 @@ server <- function(input, output, session) {
       doc <- doc %>% body_add_par("Female Employment by Sector Over Time", style = "heading 2")
       doc <- doc %>% body_add_img(src = img_path2, width = 6, height = 4)
       
-      # Save the 
+   
       # Save the Document
       print(doc, target = file)
     }
   )
   
   # Women Leadership 
+  
   output$barPlotwomen <- renderPlotly({
     if (is.null(input$selected_countries) || length(input$selected_countries) == 0) return(NULL)
     
@@ -2124,23 +2126,17 @@ server <- function(input, output, session) {
       
       if(nrow(filtered_data) == 0) return(NULL)  # Ensure there's data to plot
       
-      # Generate Plotly Bar Chart
-      bar_plot <- plot_ly(data = filtered_data,
-                          x = ~country_name,
-                          y = ~value_percentage,
-                          color = ~indicator_label,
-                          colors = c("Clerks-Public" = "#003366", "Managers-Public" = "#ADD8E6",
-                                     "Clerks-Private" = "#006400", "Managers-Private" = "#90EE90"),
-                          type = 'bar',
-                          barmode = 'group') %>%
-        layout(title = "Females by Occupational Group and Sector",
-               xaxis = list(title = "Country"),
-               yaxis = list(title = "Female Share (%)"),
-               bargap = 0.2)
+      # Convert to ggplot Object for ggsave()
+      ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_label)) +
+        geom_bar(stat = "identity", position = "dodge") +
+        scale_fill_manual(values = c("Clerks-Public" = "#003366", "Managers-Public" = "#ADD8E6",
+                                     "Clerks-Private" = "#006400", "Managers-Private" = "#90EE90")) +
+        labs(title = "Females by Occupational Group and Sector", x = "Country", y = "Female Share (%)") +
+        theme_minimal()
       
-      # Save Plotly Chart as Image Using 
+      # Save ggplot as Image
       img_path <- tempfile(fileext = ".png")
-      ggsave(bar_plot, file = img_path)  # Instead of ggsave()
+      ggsave(filename = img_path, plot = ggplot_obj, width = 8, height = 6, dpi = 300)
       
       # Add Image to Word
       doc <- doc %>% 
