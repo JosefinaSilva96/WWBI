@@ -1824,7 +1824,9 @@ server <- function(input, output, session) {
              legend = list(title = list(text = "Sector")))
     plot
   })
-  
+  output$note_female_employment <- renderText({
+    "Note: This indicator represents female employment as a percentage of paid employees in the public and private sectors. Public sector data is displayed as bars, while private sector data is represented as scatter points."
+  })
   output$employment_plot_overtime <- renderPlotly({
     filtered_data <- gender_workforce %>% filter(country_name == input$selected_country)
     if(nrow(filtered_data) == 0) return(NULL)
