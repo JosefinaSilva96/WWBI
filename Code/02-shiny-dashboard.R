@@ -2544,7 +2544,20 @@ server <- function(input, output, session) {
       
       doc <- add_plot_to_doc(doc, dot_plot, "Wage Bill vs. Log(GDP per Capita)")
       
-      # --- 3️⃣ Public Workforce Distribution ---
+      # --- 3️⃣ Public Sector Wage Premium  ---
+      
+      doc <- doc %>% body_add_par("Public Workforce Distribution", style = "heading 1")
+      
+      filtered_workforce <- filtered_workforce_data() %>% filter(country_name %in% input$countries_workforce)
+      
+      workforce_graph <- ggplot(filtered_workforce, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
+        geom_bar(stat = "identity", position = "stack") +
+        labs(title = "Public Workforce Distribution by Country", x = "Country", y = "Workforce Distribution (%)") +
+        theme_minimal()
+      
+      doc <- add_plot_to_doc(doc, workforce_graph, "Public Workforce Distribution")
+      
+      # --- ️ Public Workforce Distribution ---
       doc <- doc %>% body_add_par("Public Workforce Distribution", style = "heading 1")
       
       filtered_workforce <- filtered_workforce_data() %>% filter(country_name %in% input$countries_workforce)
