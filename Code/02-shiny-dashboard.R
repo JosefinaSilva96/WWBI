@@ -2473,79 +2473,115 @@ server <- function(input, output, session) {
   
   
   output$downloadAllGraphsDoc <- downloadHandler(
-    filename = function() { paste0("Comprehensive_Wage_Bill_Report_", Sys.Date(), ".docx") },
+    filename = function() { 
+      paste0("Comprehensive_Wage_Bill_Report_", Sys.Date(), ".docx") 
+    },
     content = function(file) {
       
-      # Create a new Word Document
+      # Get the first selected country
+      first_country <- if (!is.null(input$countries) && length(input$countries) > 0) {
+        input$countries[1]
+      } else {
+        "Unknown Country"
+      }
+      
+      # Define document title
+      report_title <- paste("Comprehensive Wage Bill Report -", first_country)
+      
+      # Create Word document
       doc <- read_docx()
       
       # Define title style
       title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
+      doc <- doc %>% body_add_fpar(fpar(ftext(report_title, prop = title_style)))
       
-      # **1️⃣ Title Page**
-      doc <- doc %>% body_add_fpar(fpar(ftext("Wage Bill and Public Employment Analysis Report", prop = title_style)))
-      doc <- doc %>% body_add_par("This report presents an analysis of wage bill trends, public sector employment, gender representation, and wage premiums across multiple countries.", style = "Normal")
+      # Introduction
+      doc <- doc %>% body_add_par(
+        paste0("This report provides an analysis of the wage bill, public sector workforce distribution, gender employment trends, and wage premiums in ", first_country, "."),
+        style = "Normal"
+      )
       
-      # **2️⃣ Wage Bill Graphs**
+      # Helper function to add plots to the document
+      add_plot_to_doc <- function(doc, plot_obj, title) {
+        img_path <- tempfile(fileext = ".png")
+        ggsave(img_path, plot = plot_obj, width = 8, height = 6)
+        doc <- doc %>% 
+          body_add_par(title, style = "heading 2") %>% 
+          body_add_img(src = img_path, width = 6, height = 4)
+        return(doc)
+      }
+      
+      # --- 1️⃣ Wage Bill Trends ---
       doc <- doc %>% body_add_par("Wage Bill Trends", style = "heading 1")
       
       selected_data_df <- selected_data()
       
       # Wage Bill as % of GDP
       graph_gdp <- ggplot(selected_data_df, aes(x = year, y = value, color = country_name)) +
-        geom_line(size = 1.2) +
-        geom_point(size = 3) +
+        geom_line(size = 1.2) + geom_point(size = 3) +
         labs(title = "Wage Bill as % of GDP Over Time", x = "Year", y = "Wage Bill (% of GDP)") +
         theme_minimal()
       
-      img_gdp <- tempfile(fileext = ".png")
-      ggsave(img_gdp, plot = graph_gdp, width = 8, height = 6)
-      doc <- doc %>% body_add_img(src = img_gdp, width = 6, height = 4)
+      doc <- add_plot_to_doc(doc, graph_gdp, "Wage Bill as % of GDP Over Time")
       
       # Wage Bill as % of Public Expenditure
       graph_publicexp <- ggplot(selected_data_df, aes(x = year, y = value, color = country_name)) +
-        geom_line(size = 1.2) +
-        geom_point(size = 3) +
+        geom_line(size = 1.2) + geom_point(size = 3) +
         labs(title = "Wage Bill as % of Public Expenditure Over Time", x = "Year", y = "Wage Bill (% of Public Expenditure)") +
         theme_minimal()
       
-      img_publicexp <- tempfile(fileext = ".png")
-      ggsave(img_publicexp, plot = graph_publicexp, width = 8, height = 6)
-      doc <- doc %>% body_add_img(src = img_publicexp, width = 6, height = 4)
+      doc <- add_plot_to_doc(doc, graph_publicexp, "Wage Bill as % of Public Expenditure Over Time")
       
-      # **3️⃣ Wage Bill vs GDP Scatter Plot**
+      # --- 2️⃣ Wage Bill vs. GDP Scatter Plot ---
       doc <- doc %>% body_add_par("Wage Bill vs GDP Analysis", style = "heading 1")
       
       filtered_data_df <- merged_data %>% filter(country_name %in% input$countries_first)
       
       dot_plot <- ggplot(filtered_data_df, aes(x = log_gdp, y = indicator_value, color = country_name)) +
-        geom_point(size = 3) +
-        geom_smooth(method = "lm", color = "gray", linetype = "dashed") +
+        geom_point(size = 3) + geom_smooth(method = "lm", color = "gray", linetype = "dashed") +
         labs(title = "Wage Bill vs. Log(GDP per Capita)", x = "Log(GDP per Capita, 2015)", y = "Wage Bill") +
         theme_minimal()
       
-      img_dotplot <- tempfile(fileext = ".png")
-      ggsave(img_dotplot, plot = dot_plot, width = 8, height = 6)
-      doc <- doc %>% body_add_img(src = img_dotplot, width = 6, height = 4)
+      doc <- add_plot_to_doc(doc, dot_plot, "Wage Bill vs. Log(GDP per Capita)")
       
-      # **4️⃣ Public Sector Workforce Distribution**
+      # --- 3️⃣ Public Workforce Distribution ---
       doc <- doc %>% body_add_par("Public Workforce Distribution", style = "heading 1")
       
       filtered_workforce <- filtered_workforce_data() %>% filter(country_name %in% input$countries_workforce)
       
       workforce_graph <- ggplot(filtered_workforce, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
         geom_bar(stat = "identity", position = "stack") +
-        scale_fill_manual(values = c("Public Administration" = "#568340", "Education" = "#B3242B", 
-                                     "Health" = "#003366", "Other" = "#A9A9A9")) +
         labs(title = "Public Workforce Distribution by Country", x = "Country", y = "Workforce Distribution (%)") +
         theme_minimal()
       
-      img_workforce <- tempfile(fileext = ".png")
-      ggsave(img_workforce, plot = workforce_graph, width = 8, height = 6)
-      doc <- doc %>% body_add_img(src = img_workforce, width = 6, height = 4)
+      doc <- add_plot_to_doc(doc, workforce_graph, "Public Workforce Distribution")
       
-      # **5️⃣ Gender Wage Premium**
-      doc <- doc %>% body_add_par("Gender Wage Premium in the Public Sector", style = "heading 1")
+      # --- 4️⃣ Education in Public vs. Private Sectors ---
+      doc <- doc %>% body_add_par("Education in Public vs. Private Sectors", style = "heading 1")
+      
+      filtered_education <- tertiary_education %>% filter(country_name %in% input$selected_countries)
+      
+      education_graph <- ggplot(filtered_education, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
+        geom_bar(stat = "identity", position = "dodge") +
+        labs(title = "Tertiary Education by Sector and Country", x = "Country", y = "Tertiary Education (%)") +
+        theme_minimal()
+      
+      doc <- add_plot_to_doc(doc, education_graph, "Tertiary Education by Sector")
+      
+      # --- 5️⃣ Wage Premium Analysis ---
+      doc <- doc %>% body_add_par("Wage Premium Trends", style = "heading 1")
+      
+      filtered_wage_premium <- public_wage_premium %>% filter(country_name %in% input$countries_wage_premium)
+      
+      wage_premium_graph <- ggplot(filtered_wage_premium, aes(x = country_name, y = value_percentage, color = country_name)) +
+        geom_point(size = 4) +
+        labs(title = "Public Sector Wage Premium by Country", x = "Country", y = "Wage Premium (%)") +
+        theme_minimal()
+      
+      doc <- add_plot_to_doc(doc, wage_premium_graph, "Public Sector Wage Premium by Country")
+      
+      # --- 6️⃣ Gender Wage Premium ---
+      doc <- doc %>% body_add_par("Gender Wage Premium Analysis", style = "heading 1")
       
       filtered_gender_wage <- gender_wage_premium_last %>% filter(country_name %in% input$countries_first)
       
@@ -2554,47 +2590,28 @@ server <- function(input, output, session) {
         labs(title = "Public Sector Wage Premium by Gender (Last Year Available)", x = "Country", y = "Wage Premium (%)") +
         theme_minimal()
       
-      img_gender_wage <- tempfile(fileext = ".png")
-      ggsave(img_gender_wage, plot = gender_wage_graph, width = 8, height = 6)
-      doc <- doc %>% body_add_img(src = img_gender_wage, width = 6, height = 4)
+      doc <- add_plot_to_doc(doc, gender_wage_graph, "Public Sector Wage Premium by Gender")
       
-      # **6️⃣ Gender Workforce**
-      doc <- doc %>% body_add_par("Female Workforce Representation", style = "heading 1")
-      
-      filtered_gender_workforce <- gender_workforce %>% filter(country_name %in% input$countries_gender)
-      
-      gender_workforce_graph <- ggplot(filtered_gender_workforce, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
-        geom_bar(stat = "identity", position = "dodge") +
-        scale_fill_manual(values = c("Females, as a share of private paid employees" = "#B3242B", 
-                                     "Females, as a share of public paid employees" = "#003366")) +
-        labs(title = "Female Employment by Sector (Last Year Available)", x = "Country", y = "Employment (%)", fill = "Sector") +
-        theme_minimal()
-      
-      img_gender_workforce <- tempfile(fileext = ".png")
-      ggsave(img_gender_workforce, plot = gender_workforce_graph, width = 8, height = 6)
-      doc <- doc %>% body_add_img(src = img_gender_workforce, width = 6, height = 4)
-      
-      # **7️⃣ Women in Leadership**
+      # --- 7️⃣ Women in Leadership ---
       doc <- doc %>% body_add_par("Women in Leadership Positions", style = "heading 1")
       
       filtered_leadership <- gender_leadership %>% filter(country_name %in% input$selected_countries)
       
       leadership_graph <- ggplot(filtered_leadership, aes(x = country_name, y = value_percentage, fill = indicator_label)) +
         geom_bar(stat = "identity", position = "dodge") +
-        scale_fill_manual(values = c("Clerks-Public" = "#003366", "Managers-Public" = "#ADD8E6",
-                                     "Clerks-Private" = "#006400", "Managers-Private" = "#90EE90")) +
         labs(title = "Females by Occupational Group and Sector", x = "Country", y = "Female Share (%)") +
         theme_minimal()
       
-      img_leadership <- tempfile(fileext = ".png")
-      ggsave(img_leadership, plot = leadership_graph, width = 8, height = 6)
-      doc <- doc %>% body_add_img(src = img_leadership, width = 6, height = 4)
+      doc <- add_plot_to_doc(doc, leadership_graph, "Females in Leadership by Sector")
       
-      # **8️⃣ Final Remarks**
+      # --- Conclusion ---
       doc <- doc %>% body_add_par("Conclusion", style = "heading 1")
-      doc <- doc %>% body_add_par("This report provides a comprehensive analysis of wage bill, gender representation, and workforce participation in the public sector. The findings highlight key trends and disparities across different sectors and countries.", style = "Normal")
+      doc <- doc %>% body_add_par(
+        "This report provides a comprehensive analysis of wage bill trends, gender employment representation, and workforce participation in the public sector. The findings highlight key trends and disparities across different sectors and countries.",
+        style = "Normal"
+      )
       
-      # **📌 Save the Document**
+      # Save Document
       print(doc, target = file)
     }
   )
