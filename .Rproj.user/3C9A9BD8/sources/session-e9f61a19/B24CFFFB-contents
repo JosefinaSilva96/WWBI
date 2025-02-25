@@ -307,7 +307,7 @@ public_sector_workforce <- public_sector_workforce %>%
 # Step 1: Calculate the 'Other' value for each country and year
 
 public_sector_workforce <- public_sector_workforce %>%
-  group_by(country_name, year, region) %>%
+  group_by(country_name, year, wb_region) %>%
   mutate(
     # Calculate the value for 'Other' as 100 minus the sum of specific indicators
     other_value = 100 - sum(value_percentage[indicator_name %in% c(
@@ -329,7 +329,7 @@ public_sector_workforce <- public_sector_workforce %>%
         "Health workers, as a share of public total employees",
         "Public Administration workers, as a share of public total employees"
       )) %>%
-      group_by(country_name, year, region) %>%
+      group_by(country_name, year, wb_region) %>%
       summarize(
         indicator_name = "Other",  # Set the indicator name to "Other"
         value_percentage = first(other_value),  # Replace the value with the calculated 'other_value'
@@ -359,7 +359,7 @@ public_sector_workforce <- public_sector_workforce %>%
 
 public_sector_workforce_first_last <- public_sector_workforce %>%
   filter(!is.na(value_percentage)) %>%               # Keep rows where `value_percentage` is not NA
-  group_by(country_name, indicator_name, region) %>%         # Group by country and indicator
+  group_by(country_name, indicator_name, wb_region) %>%         # Group by country and indicator
   filter(year == max(year, na.rm = TRUE) |           # Keep rows for the last year
            year == min(year, na.rm = TRUE)) %>%      # Keep rows for the first year
   ungroup()
@@ -403,7 +403,7 @@ gdp_2015 <- data_gdp %>%
 
 wage_bill_publicexp <- wage_bill_publicexp %>%
   filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
-  group_by(country_name, region) %>%                      # Group by country_name (or any other variable)
+  group_by(country_name, wb_region) %>%                      # Group by country_name (or any other variable)
   filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
   ungroup()                                      # Ungroup the data
 
@@ -425,7 +425,7 @@ gdp_2015 <- gdp_2015 %>%
 
 merged_data <- data_indicator_wb %>%
   left_join(gdp_2015, by = "country_name") %>%
-  select(country_name, indicator_name, country_code, indicator_value, gdp_value, region)
+  select(country_name, indicator_name, country_code, indicator_value, gdp_value, wb_region)
 
 
 # Add the log of GDP as a new column
@@ -445,7 +445,7 @@ tertiary_education <- tertiary_education %>%
 
 tertiary_education <- tertiary_education %>%
   filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
-  group_by(country_name,indicator_name, region) %>%                      # Group by country_name (or any other variable)
+  group_by(country_name,indicator_name, wb_region) %>%                      # Group by country_name (or any other variable)
   filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
   ungroup()                                      # Ungroup the data
 
@@ -463,7 +463,7 @@ public_wage_premium <- public_wage_premium %>%
 
 public_wage_premium <- public_wage_premium %>%
   filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
-  group_by(country_name,indicator_name, region) %>%                      # Group by country_name (or any other variable)
+  group_by(country_name,indicator_name, wb_region) %>%                      # Group by country_name (or any other variable)
   filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
   ungroup()                                      # Ungroup the data
 
@@ -483,7 +483,7 @@ public_wage_premium_educ <- public_wage_premium_educ %>%
 
 public_wage_premium_educ <- public_wage_premium_educ %>%
   filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
-  group_by(country_name,indicator_name, region) %>%                      # Group by country_name (or any other variable)
+  group_by(country_name,indicator_name, wb_region) %>%                      # Group by country_name (or any other variable)
   filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
   ungroup()                                      # Ungroup the data
 
@@ -514,7 +514,7 @@ gender_wage_premium <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Publ
                                                                "Public sector wage premium, by gender: Male (compared to all private employees)"), ]
 
 gender_wage_premium <- gender_wage_premium %>%
-  select(year, indicator_name, value, country_name,region) %>%
+  select(year, indicator_name, value, country_name,wb_region) %>%
   mutate(indicator_name = factor(indicator_name)) %>%
   # Modify indicator labels for shorter text
   mutate(indicator_label = recode(indicator_name, 
@@ -526,7 +526,7 @@ gender_wage_premium <- gender_wage_premium %>%
 
 gender_wage_premium_last <- gender_wage_premium %>%
   filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
-  group_by(country_name, indicator_label, region) %>%                      # Group by country_name (or any other variable)
+  group_by(country_name, indicator_label, wb_region) %>%                      # Group by country_name (or any other variable)
   filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
   ungroup()                                      # Ungroup the data
 
@@ -534,7 +534,7 @@ gender_wage_premium_last <- gender_wage_premium %>%
 
 
 public_sector_emp_temp <- public_sector_emp_temp %>%
-  select(country_name, indicator_name, year, value, region) %>%
+  select(country_name, indicator_name, year, value, wb_region) %>%
   mutate(indicator_name = factor(indicator_name)) %>%
   mutate(indicator_label = recode(
     indicator_name, 
@@ -545,7 +545,7 @@ public_sector_emp_temp <- public_sector_emp_temp %>%
 
 
 public_sector_emp_temp_last <- public_sector_emp_temp_last %>%
-  select(country_name, indicator_name, year, value, region) %>%
+  select(country_name, indicator_name, year, value, wb_region) %>%
   mutate(indicator_name = factor(indicator_name)) %>%
   mutate(indicator_label = recode(
     indicator_name, 
@@ -562,7 +562,7 @@ gender_leadership <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Female
                                                                "Females, as a share of private paid employees by occupational group: Clerks" ), ]
 
 gender_leadership <- gender_leadership %>%
-  select(year, indicator_name, value, country_name,region) %>%
+  select(year, indicator_name, value, country_name,wb_region) %>%
   mutate(indicator_name = factor(indicator_name)) %>%
   # Modify indicator labels for shorter text
   mutate(indicator_label = recode(indicator_name, 
@@ -576,7 +576,7 @@ gender_leadership <- gender_leadership %>%
 
 gender_leadership <- gender_leadership %>%
   filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
-  group_by(country_name, indicator_label, region) %>%                      # Group by country_name (or any other variable)
+  group_by(country_name, indicator_label, wb_region) %>%                      # Group by country_name (or any other variable)
   filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
   ungroup()                                      # Ungroup the data
 
@@ -598,7 +598,7 @@ gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
   mutate(value_percentage = value * 100)
 
 gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
-  group_by(country_name, year, region) %>%
+  group_by(country_name, year, wb_region) %>%
   mutate(
     # Calculate the value for 'Other' as 100 minus the sum of specific indicators
     other_value = 100 - sum(value_percentage[indicator_name %in% c(
@@ -619,7 +619,7 @@ gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
         "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)",
         "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)"
       )) %>%
-      group_by(country_name, year, region) %>%
+      group_by(country_name, year, wb_region) %>%
       summarize(
         indicator_name = "Other",  # Set the indicator name to "Other"
         value_percentage = first(other_value),  # Replace the value with the calculated 'other_value'
@@ -630,7 +630,7 @@ gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
 
 
 gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
-  select(year, indicator_name, value, country_name,region,value_percentage) %>%
+  select(year, indicator_name, value, country_name,wb_region,value_percentage) %>%
   mutate(indicator_name = factor(indicator_name)) %>%
   # Modify indicator labels for shorter text
   mutate(indicator_label = recode(indicator_name, 
@@ -643,7 +643,7 @@ gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
 
 gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
   filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
-  group_by(country_name, indicator_label, region) %>%                      # Group by country_name (or any other variable)
+  group_by(country_name, indicator_label, wb_region) %>%                      # Group by country_name (or any other variable)
   filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
   ungroup()                                      # Ungroup the data
 
