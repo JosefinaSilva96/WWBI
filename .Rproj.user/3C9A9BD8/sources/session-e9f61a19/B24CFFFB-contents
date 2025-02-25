@@ -271,6 +271,9 @@ public_sector_emp_temp <- public_sector_emp_temp %>%
                                   "Public sector employment, as a share of total employment"= "as a share of total employment"))
 
 
+public_sector_emp_temp <- public_sector_emp_temp %>%
+  mutate(value_percentage = value * 100)
+
 public_sector_emp <- public_sector_emp %>%
   select(year, indicator_name, value, country_name, wb_region) %>%
   mutate(indicator_name = factor(indicator_name)) %>%
@@ -281,6 +284,9 @@ public_sector_emp <- public_sector_emp %>%
                                   "Public sector employment, as a share of total employment"= "as a share of total employment"))
 
 
+
+public_sector_emp <- public_sector_emp %>%
+  mutate(value_percentage = value * 100)
 
 
 # Keep the last year available for each country
@@ -2072,7 +2078,7 @@ server <- function(input, output, session) {
       filter(country_name == input$country_second)
     
     ggplotly(
-      ggplot(filtered_data, aes(x = year, y = value, color = indicator_name)) +
+      ggplot(filtered_data, aes(x = year, y = value_percentage, color = indicator_name)) +
         geom_line(size = 1.2) +
         geom_point(size = 3) +
         labs(title = "Public Sector Employment Over Time", 
@@ -2117,7 +2123,7 @@ server <- function(input, output, session) {
       
       # Second Graph - Save as Image
       second_graph <- ggplot(public_sector_emp_temp %>% filter(country_name == input$country_second), 
-                             aes(x = year, y = value, color = indicator_name)) +
+                             aes(x = year, y = value_percentage, color = indicator_name)) +
         geom_line(size = 1.2) +
         geom_point(size = 3) +
         labs(title = "Public Sector Employment Over Time", x = "Year", y = "Value") +
