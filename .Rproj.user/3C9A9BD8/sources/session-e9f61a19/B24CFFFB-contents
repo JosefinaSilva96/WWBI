@@ -58,25 +58,16 @@ data_wwbi <- read_dta(file.path(data_path, "data_wwbi.dta"))
 
 setDT(data_wwbi)  
 
-# Assign continents using countrycode()
+# Assign World Bank regions using countrycode()
 
-data_wwbi[, continent := countrycode(country_name, origin = "country.name", destination = "continent")]
+data_wwbi[, wb_region := countrycode(country_name, origin = "country.name", destination = "region")]
+
+unique(data_wwbi[, .(country_name, wb_region)])
 
 # Manually assign continent for unmatched countries
 
-data_wwbi[country_name == "Kosovo", continent := "Europe"]
-data_wwbi[country_name == "Micronesia", continent := "Oceania"]
 
-# Define MENA countries
-
-mena_countries <- c("Algeria", "Bahrain", "Egypt", "Iran", "Iraq", "Israel", "Jordan", 
-                    "Kuwait", "Lebanon", "Libya", "Morocco", "Oman", "Palestine", "Qatar", 
-                    "Saudi Arabia", "Syria", "Tunisia", "United Arab Emirates", "Yemen")
-
-# Create a region column that classifies Africa into MENA and Sub-Saharan Africa
-
-data_wwbi[, region := fifelse(country_name %in% mena_countries, "MENA",
-                              fifelse(continent == "Africa", "Sub-Saharan Africa", continent))]
+data_wwbi[is.na(wb_region) & country_name == "Micronesia", wb_region := "East Asia & Pacific"]
 
 
 # Get the latest World Bank country metadata, including income groups
@@ -86,6 +77,11 @@ wb_metadata <- wb_cachelist$countries[, c("iso3c", "income_level")]
 # Ensure your dataset has ISO3 country codes
 
 data_wwbi[, iso3c := countrycode(country_name, origin = "country.name", destination = "iso3c")]
+
+# Manually assign missing ISO3C codes
+
+data_wwbi[country_name == "Kosovo", iso3c := "XKX"]
+data_wwbi[country_name == "Micronesia", iso3c := "FSM"]
 
 wb_metadata <- wb_metadata %>% rename(income_group = income_level)
 
@@ -175,7 +171,7 @@ data_wwbi <- as.data.frame(data_wwbi)
 
 selected_data_long <- data_wwbi %>%
   filter(indicator_name == indicator & country_name %in% countries) %>%
-  select(country_name, indicator_name,region,income_level,  starts_with("year_"))  # Select relevant columns
+  select(country_name, indicator_name,wb_region,income_level,  starts_with("year_"))  # Select relevant columns
 
 
 # Reshape the data using pivot_longer
@@ -212,12 +208,12 @@ data_wwbi_long <- data_wwbi %>%
 
 
 regional_mean<- data_wwbi_long %>%
-  group_by(region, year, indicator_name) %>%
+  group_by(wb_region, year, indicator_name) %>%
   summarise(mean_value = mean(value, na.rm = TRUE), .groups = 'drop')
 
 
 regional_mean <- regional_mean %>%
-  rename(country_name = region)
+  rename(country_name = wb_region)
 
 regional_mean <- regional_mean %>%
   rename(value = mean_value)
@@ -238,6 +234,9 @@ income_mean <- income_mean %>%
 
 data_wwbi_long <- bind_rows(data_wwbi_long, income_mean)
 
+#Drop Na observations in the column country_name
+
+data_wwbi_long <- data_wwbi_long %>% filter(!is.na(country_name))
 
 
 
@@ -263,7 +262,7 @@ public_sector_emp_temp <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("P
 
 
 public_sector_emp_temp <- public_sector_emp_temp %>%
-  select(year, indicator_name, value,region, country_name) %>%
+  select(year, indicator_name, value,wb_region, country_name) %>%
   mutate(indicator_name = factor(indicator_name)) %>%
   # Modify indicator labels for shorter text
   mutate(indicator_label = recode(indicator_name, 
@@ -273,7 +272,7 @@ public_sector_emp_temp <- public_sector_emp_temp %>%
 
 
 public_sector_emp <- public_sector_emp %>%
-  select(year, indicator_name, value, country_name, region) %>%
+  select(year, indicator_name, value, country_name, wb_region) %>%
   mutate(indicator_name = factor(indicator_name)) %>%
   # Modify indicator labels for shorter text
   mutate(indicator_label = recode(indicator_name, 
@@ -288,7 +287,7 @@ public_sector_emp <- public_sector_emp %>%
 
 public_sector_emp_temp_last <- public_sector_emp %>%
   filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
-  group_by(country_name, indicator_name, region) %>%                      # Group by country_name (or any other variable)
+  group_by(country_name, indicator_name, wb_region) %>%                      # Group by country_name (or any other variable)
   filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
   ungroup()                                      # Ungroup the data
 
