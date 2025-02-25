@@ -1801,6 +1801,73 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
+  generate_public_sector_workforce_section <- function(doc) {
+    doc <- doc %>% body_add_par("Public Sector Workforce Analysis", style = "heading 1")
+    
+    # Add introduction
+    doc <- doc %>% body_add_par(
+      "This section presents an analysis of public workforce distribution across different sectors and countries.", 
+      style = "Normal"
+    )
+    
+    # First Graph: Public Workforce Distribution by Country
+    first_graph_data <- filtered_workforce_data() %>% filter(country_name %in% input$countries_workforce)
+    
+    if (nrow(first_graph_data) == 0) {
+      doc <- doc %>% body_add_par("No data available for Public Workforce Distribution by Country.", style = "Normal")
+    } else {
+      first_graph_ggplot <- ggplot(first_graph_data, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
+        geom_bar(stat = "identity", position = "stack") +
+        scale_fill_manual(values = c("Public Administration" = "#568340", "Education" = "#B3242B", 
+                                     "Health" = "#003366", "Other" = "#A9A9A9")) +
+        labs(title = "Public Workforce Distribution by Country", x = "Country", y = "Workforce Distribution (%)") +
+        theme_minimal()
+      
+      img_path1 <- tempfile(fileext = ".png")
+      ggsave(img_path1, plot = first_graph_ggplot, width = 6, height = 4)
+      
+      doc <- doc %>% 
+        body_add_par("Public Workforce Distribution by Country", style = "heading 2") %>% 
+        body_add_img(src = img_path1, width = 6, height = 4) %>% 
+        body_add_par("This graph shows the public workforce distribution across multiple countries.", style = "Normal")
+    }
+    
+    # Second Graph: Sectoral Distribution of Public Sector Workforce
+    filtered_data <- public_sector_workforce %>% filter(country_name == input$selected_country)
+    
+    if (nrow(filtered_data) < 2) {
+      doc <- doc %>% body_add_par("Not enough data available for the selected country to create the graph.", style = "Normal")
+    } else {
+      first_year <- min(filtered_data$year, na.rm = TRUE)
+      last_year <- max(filtered_data$year, na.rm = TRUE)
+      
+      if (!is.finite(first_year) || !is.finite(last_year)) {
+        doc <- doc %>% body_add_par("Invalid year data for the selected country.", style = "Normal")
+      } else {
+        second_graph_data <- filtered_data %>% 
+          filter(year %in% c(first_year, last_year)) %>% 
+          group_by(year, indicator_name) %>% 
+          summarise(value_percentage = mean(value_percentage, na.rm = TRUE), .groups = "drop")
+        
+        second_graph_ggplot <- ggplot(second_graph_data, aes(x = value_percentage, y = factor(year, levels = c(last_year, first_year)), fill = indicator_name)) +
+          geom_bar(stat = "identity", position = "stack", orientation = "horizontal") +
+          scale_fill_manual(values = c("Public Administration" = "#568340", "Education" = "#B3242B", 
+                                       "Health" = "#003366", "Other" = "#A9A9A9")) +
+          labs(title = paste("Sectoral Distribution of Public Sector Workforce in", input$selected_country), x = "Percentage (%)", y = "Year") +
+          theme_minimal()
+        
+        img_path2 <- tempfile(fileext = ".png")
+        ggsave(img_path2, plot = second_graph_ggplot, width = 6, height = 4)
+        
+        doc <- doc %>% 
+          body_add_par("Sectoral Distribution of Public Sector Workforce", style = "heading 2") %>% 
+          body_add_img(src = img_path2, width = 6, height = 4) %>% 
+          body_add_par("This graph shows the sectoral distribution of public sector workforce for the selected country.", style = "Normal")
+      }
+    }
+    
+    return(doc)
+  }
   
   #Tertiary Education 
   
@@ -1867,6 +1934,46 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
+  generate_tertiary_education_section <- function(doc) {
+    # Add Section Title
+    doc <- doc %>% body_add_par("Tertiary Education Analysis", style = "heading 1")
+    
+    # Add introduction
+    doc <- doc %>% body_add_par(
+      "This section presents an analysis of tertiary education among public and private sector employees across selected countries.", 
+      style = "Normal"
+    )
+    
+    # Filter data for selected countries
+    filtered_data <- tertiary_education %>% 
+      filter(country_name %in% input$selected_countries)
+    
+    # Handle empty dataset case
+    if (nrow(filtered_data) == 0) {
+      doc <- doc %>% body_add_par("No data available for the selected countries.", style = "Normal")
+      return(doc)
+    }
+    
+    # Generate Tertiary Education ggplot
+    ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
+      geom_bar(stat = "identity", position = "dodge") +
+      scale_fill_manual(values = c("Individuals with tertiary education as a share of private paid employees" = "#B3242B", 
+                                   "Individuals with tertiary education as a share of public paid employees" = "#003366")) +
+      labs(title = "Tertiary Education by Sector and Country", x = "Country", y = "Tertiary Education (%)") +
+      theme_minimal()
+    
+    # Save the plot as an image
+    img_path <- tempfile(fileext = ".png")
+    ggsave(img_path, plot = ggplot_obj, width = 8, height = 6)
+    
+    # Add image to the document
+    doc <- doc %>% 
+      body_add_img(src = img_path, width = 6, height = 4) %>% 
+      body_add_par("This graph shows the proportion of individuals with tertiary education working in public and private sector employment.", style = "Normal")
+    
+    return(doc)
+  }
+  
   #Public Sector Wage Premium 
   
   # Render the Dot Plot for Public Sector Wage Premium
@@ -1993,6 +2100,64 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
+  generate_wage_premium_report_section <- function(doc) {
+    # Add Section Title
+    doc <- doc %>% body_add_par("Public Sector Wage Premium Analysis", style = "heading 1")
+    
+    # Add introduction
+    doc <- doc %>% body_add_par(
+      "This section presents an analysis of public sector wage premiums compared to private sector employees across selected countries.", 
+      style = "Normal"
+    )
+    
+    # Filter data for selected countries
+    filtered_data <- public_wage_premium %>% 
+      filter(country_name %in% input$countries_wage_premium) %>%
+      drop_na(value_percentage)  # Remove NA values
+    
+    # Handle empty dataset case
+    if (nrow(filtered_data) == 0) {
+      doc <- doc %>% body_add_par("No data available for the selected countries.", style = "Normal")
+      return(doc)
+    }
+    
+    # Convert to numeric safely
+    filtered_data$value_percentage <- as.numeric(filtered_data$value_percentage)
+    
+    # Calculate key statistics safely
+    avg_wage_premium <- round(mean(filtered_data$value_percentage, na.rm = TRUE), 1)
+    
+    highest_country <- filtered_data %>%
+      filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>%
+      pull(country_name)
+    
+    lowest_country <- filtered_data %>%
+      filter(value_percentage == min(value_percentage, na.rm = TRUE)) %>%
+      pull(country_name)
+    
+    # Assign Colors: First Selected Country = Red, Others = Dark Blue
+    filtered_data <- filtered_data %>%
+      mutate(color = ifelse(country_name == input$countries_wage_premium[1], "#B3242B", "#003366"))
+    
+    # Create the Dot Plot with Different Colors
+    ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, color = color)) +
+      geom_point(size = 5) +
+      scale_color_identity() +  # Use assigned colors directly
+      labs(title = "Public Sector Wage Premium by Country", x = "Country", y = "Wage Premium (%)") +
+      theme_minimal()
+    
+    # Save the plot as an image
+    img_path <- tempfile(fileext = ".png")
+    ggsave(img_path, plot = ggplot_obj, width = 8, height = 6)
+    
+    # Add image to the document
+    doc <- doc %>% 
+      body_add_img(src = img_path, width = 6, height = 4) %>% 
+      body_add_par("This graph shows the wage premium in the public sector relative to private sector employees across selected countries.", style = "Normal")
+    
+    return(doc)
+  }
+  
   
   output$employment_plot <- renderPlotly({
     filtered_data <- gender_workforce %>% filter(country_name %in% input$countries_workforce)
@@ -2106,6 +2271,68 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
+  generate_wage_premium_gender_section <- function(doc) {
+    # Add Section Title
+    doc <- doc %>% body_add_par("Wage Premium Gender Analysis", style = "heading 1")
+    
+    # Add Introduction
+    doc <- doc %>% body_add_par(
+      "This section presents evidence on public sector employment and compensation practices for selected countries.", 
+      style = "Normal"
+    )
+    
+    # First Graph - Wage Premium by Gender (Multi-Country)
+    if ("firstGraphgender" %in% input$graphs_to_download & length(input$countries_first) > 0) {
+      data_to_plot <- gender_wage_premium_last %>% filter(country_name %in% input$countries_first)
+      data_to_plot_long <- data_to_plot %>% 
+        select(country_name, indicator_label, year, value) %>% 
+        mutate(indicator_label = factor(indicator_label))
+      
+      first_graph_wage_premium_gender <- ggplot(data_to_plot_long, aes(x = country_name, y = value, color = indicator_label)) +
+        geom_point(size = 3) +
+        labs(title = "Wage Premium Gender (Multi-Country)", x = "Country", y = "Value") +
+        theme_minimal()
+      
+      # Save the plot as an image
+      img_path1 <- tempfile(fileext = ".png")
+      ggsave(img_path1, plot = first_graph_wage_premium_gender, width = 6, height = 4)
+      
+      # Add Image and Description
+      doc <- doc %>% 
+        body_add_par("First Graph: Wage Premium Gender (Multi-Country)", style = "heading 2") %>% 
+        body_add_img(src = img_path1, width = 6, height = 4) %>% 
+        body_add_par("This graph shows the wage premium by gender across multiple countries.", style = "Normal")
+    }
+    
+    # Second Graph - Wage Premium by Gender (Single Country Over Time)
+    if ("secondGraphgender" %in% input$graphs_to_download & !is.null(input$country_second)) {
+      data_to_plot <- gender_wage_premium %>% filter(country_name == input$country_second)
+      data_to_plot_long <- data_to_plot %>% 
+        select(year, indicator_name, value) %>% 
+        mutate(indicator_name = factor(indicator_name))
+      
+      second_graph_wage_premium_gender <- ggplot(data_to_plot_long, aes(x = year, y = value, color = indicator_name)) +
+        geom_line(size = 1) +
+        geom_point(size = 3) +
+        labs(title = paste("Public Sector Wage Premium by Gender in", input$country_second, "Over Time"), 
+             x = "Year", y = "Employment Value") +
+        theme_minimal()
+      
+      # Save the plot as an image
+      img_path2 <- tempfile(fileext = ".png")
+      ggsave(img_path2, plot = second_graph_wage_premium_gender, width = 6, height = 4)
+      
+      # Add Image and Description
+      doc <- doc %>% 
+        body_add_par("Second Graph: Public Sector Employment (Single Country)", style = "heading 2") %>% 
+        body_add_img(src = img_path2, width = 6, height = 4) %>% 
+        body_add_par("This graph shows the wage premium by gender trends over time for the selected country.", style = "Normal")
+    }
+    
+    return(doc)
+  }
+  
+  
   # Wage premium by Education Level 
   
   # Render the Public Sector Wage Premium by Education Level Graph
@@ -2212,6 +2439,57 @@ server <- function(input, output, session) {
     }
   )
   
+  generate_wage_premium_education_section <- function(doc) {
+    # Add Section Title
+    doc <- doc %>% body_add_par("Public Sector Wage Premium by Education Level", style = "heading 1")
+    
+    # Add Introduction
+    doc <- doc %>% body_add_par(
+      paste0("This section presents an analysis of public sector wage premiums based on different education levels for ", 
+             input$selected_country, ". The comparison is made against private sector formal workers."), 
+      style = "Normal"
+    )
+    
+    # Filter data for the selected country
+    filtered_data <- public_wage_premium_educ %>%
+      filter(country_name == input$selected_country) %>%
+      drop_na(value_percentage)
+    
+    # Handle empty dataset case
+    if (nrow(filtered_data) == 0) {
+      doc <- doc %>% body_add_par("No data available for the selected country.", style = "Normal")
+      return(doc)
+    }
+    
+    # Generate Wage Premium by Education Level ggplot
+    ggplot_obj <- ggplot(filtered_data, aes(x = indicator_name, y = value_percentage, fill = indicator_name)) +
+      geom_bar(stat = "identity") +
+      scale_fill_manual(values = c(
+        "No Education" = "#003366",
+        "Primary Education" = "#B3242B",
+        "Secondary Education" = "#3B3B3B",
+        "Tertiary Education" = "#006400"
+      )) +
+      labs(
+        title = "Public Sector Wage Premium by Education Level (Compared to Private Formal Workers)",
+        x = "Education Level",
+        y = "Wage Premium (%)"
+      ) +
+      theme_minimal()
+    
+    # Save the plot as an image
+    img_path <- tempfile(fileext = ".png")
+    ggsave(img_path, plot = ggplot_obj, width = 8, height = 6)
+    
+    # Add image to the document
+    doc <- doc %>% 
+      body_add_img(src = img_path, width = 6, height = 4) %>% 
+      body_add_par("This graph shows the public sector wage premium by education level, comparing earnings with private sector formal workers.", style = "Normal")
+    
+    return(doc)
+  }
+  
+
   #Public Sector Graphs 
   
   # First Graph - Multi-Country Dot Plot
@@ -2300,6 +2578,52 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
+  
+  
+  generate_public_sector_employment_section <- function(doc) {
+    # Add Section Title
+    doc <- doc %>% body_add_par("Public Sector Employment Analysis", style = "heading 1")
+    
+    # Add Introduction
+    doc <- doc %>% body_add_par(
+      "This section presents the analysis of public sector employment across selected countries and its trend over time.", 
+      style = "Normal"
+    )
+    
+    # First Graph - Public Sector Employment (Last Year Available)
+    first_graph <- ggplot(public_sector_emp_temp_last %>% filter(country_name %in% input$countries_first), 
+                          aes(x = country_name, y = value, color = indicator_name)) +
+      geom_point(size = 4) +
+      labs(title = "Public Sector Employment (Last Year Available)", x = "Country", y = "Value") +
+      theme_minimal()
+    
+    img_path1 <- tempfile(fileext = ".png")
+    ggsave(img_path1, plot = first_graph, width = 8, height = 6)
+    
+    # Add First Graph to the Document
+    doc <- doc %>% 
+      body_add_par("Public Sector Employment - Last Year Available", style = "heading 2") %>% 
+      body_add_img(src = img_path1, width = 6, height = 4)
+    
+    # Second Graph - Public Sector Employment Over Time
+    second_graph <- ggplot(public_sector_emp_temp %>% filter(country_name == input$country_second), 
+                           aes(x = year, y = value_percentage, color = indicator_name)) +
+      geom_line(size = 1.2) +
+      geom_point(size = 3) +
+      labs(title = "Public Sector Employment Over Time", x = "Year", y = "Value") +
+      theme_minimal()
+    
+    img_path2 <- tempfile(fileext = ".png")
+    ggsave(img_path2, plot = second_graph, width = 8, height = 6)
+    
+    # Add Second Graph to the Document
+    doc <- doc %>% 
+      body_add_par("Public Sector Employment Over Time", style = "heading 2") %>% 
+      body_add_img(src = img_path2, width = 6, height = 4)
+    
+    return(doc)
+  }
+  
 
 #Gender Wage premium 
   
@@ -2401,6 +2725,58 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
+  
+  generate_wage_premium_gender_report_section <- function(doc) {
+    # Add Section Title
+    doc <- doc %>% body_add_par("Public Sector Wage Premium by Gender", style = "heading 1")
+    
+    # Add Introduction
+    doc <- doc %>% body_add_par(
+      "This section presents an analysis of public sector wage premium by gender across selected countries and its trend over time.", 
+      style = "Normal"
+    )
+    
+    # First Graph - Public Sector Wage Premium by Gender (Last Year Available)
+    first_graph <- ggplot(gender_wage_premium_last %>% filter(country_name %in% input$countries_first), 
+                          aes(x = country_name, y = value, color = indicator_label)) +
+      geom_point(size = 4) +
+      labs(title = "Public Sector Wage Premium by Gender (Last Year Available)", 
+           x = "Country", 
+           y = "Wage Premium (%)") +
+      theme_minimal()
+    
+    img_path1 <- tempfile(fileext = ".png")
+    ggsave(img_path1, plot = first_graph, width = 8, height = 6)
+    
+    # Add First Graph to the Document
+    doc <- doc %>% 
+      body_add_par("Public Sector Wage Premium by Gender - Last Year Available", style = "heading 2") %>% 
+      body_add_img(src = img_path1, width = 6, height = 4)
+    
+    # Second Graph - Public Sector Wage Premium by Gender Over Time
+    second_graph <- ggplot(gender_wage_premium %>% filter(country_name == input$country_second), 
+                           aes(x = year, y = value, color = indicator_label)) +
+      geom_line(size = 1.2) +
+      geom_point(size = 3) +
+      labs(title = "Public Sector Wage Premium by Gender Over Time", 
+           x = "Year", 
+           y = "Wage Premium (%)") +
+      theme_minimal()
+    
+    img_path2 <- tempfile(fileext = ".png")
+    ggsave(img_path2, plot = second_graph, width = 8, height = 6)
+    
+    # Add Second Graph to the Document
+    doc <- doc %>% 
+      body_add_par("Public Sector Wage Premium by Gender Over Time", style = "heading 2") %>% 
+      body_add_img(src = img_path2, width = 6, height = 4) %>% 
+      body_add_par("Note: This indicator represents the gender wage premium across industries in the public sector.", 
+                   style = "Normal")
+    
+    return(doc)
+  }
+  
+  
   # Gender Workforce Graphs
   
   # First Graph - Multi-Country Bar Plot
@@ -2504,6 +2880,58 @@ server <- function(input, output, session) {
     }
   )
   
+  generate_gender_workforce_section <- function(doc) {
+    # Add Section Title
+    doc <- doc %>% body_add_par("Gender Workforce Analysis", style = "heading 1")
+    
+    # Add Introduction
+    doc <- doc %>% body_add_par(
+      "This section presents an analysis of female employment in the public and private sectors across selected countries.", 
+      style = "Normal"
+    )
+    
+    # First Graph - Female Employment by Sector (Last Year Available)
+    first_graph <- ggplot(gender_workforce %>% filter(country_name %in% input$countries_gender), 
+                          aes(x = country_name, y = value_percentage, fill = indicator_name)) +
+      geom_bar(stat = "identity", position = "dodge") +
+      scale_fill_manual(values = c("Females, as a share of private paid employees" = "#B3242B", 
+                                   "Females, as a share of public paid employees" = "#003366")) +
+      labs(title = "Female Employment by Sector (Last Year Available)", 
+           x = "Country", y = "Employment (%)", fill = "Sector") +
+      theme_minimal()
+    
+    img_path1 <- tempfile(fileext = ".png")
+    ggsave(img_path1, plot = first_graph, width = 8, height = 6)
+    
+    # Add First Graph to the Document
+    doc <- doc %>% 
+      body_add_par("Female Employment by Sector (Last Year Available)", style = "heading 2") %>% 
+      body_add_img(src = img_path1, width = 6, height = 4)
+    
+    # Second Graph - Female Employment by Sector Over Time
+    second_graph <- ggplot(gender_workforce %>% filter(country_name == input$country_gender), 
+                           aes(x = year, y = value_percentage, color = indicator_name)) +
+      geom_line(size = 1.2) +
+      geom_point(size = 3) +
+      scale_color_manual(values = c("Females, as a share of private paid employees" = "#B3242B", 
+                                    "Females, as a share of public paid employees" = "#003366")) +
+      labs(title = paste("Female Employment by Sector Over Time in", input$country_gender), 
+           x = "Year", y = "Female Employment (%)", color = "Sector") +
+      theme_minimal()
+    
+    img_path2 <- tempfile(fileext = ".png")
+    ggsave(img_path2, plot = second_graph, width = 8, height = 6)
+    
+    # Add Second Graph to the Document
+    doc <- doc %>% 
+      body_add_par("Female Employment by Sector Over Time", style = "heading 2") %>% 
+      body_add_img(src = img_path2, width = 6, height = 4)
+    
+    return(doc)
+  }
+  
+  
+  
   # Women Leadership 
   
   output$barPlotwomen <- renderPlotly({
@@ -2570,6 +2998,46 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
+  
+  generate_females_occupation_groups_section <- function(doc) {
+    # Add Section Title
+    doc <- doc %>% body_add_par("Females by Occupational Group and Sector", style = "heading 1")
+    
+    # Add Introduction
+    doc <- doc %>% body_add_par(
+      "This section presents an analysis of female representation in different occupational groups across selected countries.", 
+      style = "Normal"
+    )
+    
+    # Filter Data for Selected Countries
+    filtered_data <- gender_leadership %>% filter(country_name %in% input$selected_countries)
+    
+    # Handle empty dataset case
+    if (nrow(filtered_data) == 0) {
+      doc <- doc %>% body_add_par("No data available for the selected countries.", style = "Normal")
+      return(doc)
+    }
+    
+    # Generate ggplot for Female Occupational Groups
+    ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_label)) +
+      geom_bar(stat = "identity", position = "dodge") +
+      scale_fill_manual(values = c("Clerks-Public" = "#003366", "Managers-Public" = "#ADD8E6",
+                                   "Clerks-Private" = "#006400", "Managers-Private" = "#90EE90")) +
+      labs(title = "Females by Occupational Group and Sector", x = "Country", y = "Female Share (%)") +
+      theme_minimal()
+    
+    # Save the plot as an image
+    img_path <- tempfile(fileext = ".png")
+    ggsave(img_path, plot = ggplot_obj, width = 8, height = 6)
+    
+    # Add Image to the Document
+    doc <- doc %>% 
+      body_add_img(src = img_path, width = 6, height = 4) %>% 
+      body_add_par("This graph shows the share of females in various occupational groups (Managers/Clerks) in the public and private sectors for the selected countries.", style = "Normal")
+    
+    return(doc)
+  }
+  
   
   #Gender Wage premium in the public sector, by industry 
   output$gender_wage_barplot <- renderPlot({
@@ -2718,9 +3186,18 @@ server <- function(input, output, session) {
       doc <- doc %>% body_add_fpar(fpar(ftext("Wage bill and public employment analysis", prop = title_style)))
       
       # Add Sections from Each Tab
-      doc <- generate_wage_bill_analysis_section(doc) # Adds Wage Bill Analysis
-      doc <- generate_gdp_analysis_section(doc) 
-      doc <- generate_gender_wage_premium_section(doc)    # Adds Wage Premium Analysis
+      doc <- generate_wage_bill_analysis_section(doc) #  Wage Bill Analysis
+      doc <- generate_gdp_analysis_section(doc)       #GDP 
+      doc <- generate_public_sector_workforce_section(doc) #Public Sector Workforce Analysis
+      doc <- generate_tertiary_education_section(doc) # Tertiary Education Analysis
+      doc <- generate_wage_premium_report_section(doc) #Public Sector Wage Premium Report
+      doc <- generate_wage_premium_gender_section(doc) #Wage Premium Gender Analysis
+      doc <- generate_wage_premium_education_section(doc) #Wage Premium by Education
+      doc <- generate_public_sector_employment_section(doc)  #Public Sector Employment
+      doc <- generate_wage_premium_gender_report_section(doc) #Wage Premium Gender Report
+      doc <- generate_gender_workforce_section(doc) #Gender Workforce Analysis
+      doc <- generate_females_occupation_groups_section(doc) #Females by Occupational Groups
+      doc <- generate_gender_wage_premium_section(doc)    # Wage Premium by industry Analysis
       
       # Save the Final Report
       print(doc, target = file)
