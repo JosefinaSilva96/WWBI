@@ -405,16 +405,6 @@ gdp_2015 <- data_gdp %>%
   select(country_name, value)
 
 
-# Keep the last year available for each country
-
-wage_bill_publicexp <- wage_bill_publicexp %>%
-  filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
-  group_by(country_name, wb_region) %>%                      # Group by country_name (or any other variable)
-  filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
-  ungroup()                                      # Ungroup the data
-
-
-
 # Rename 'value' column to 'indicator_value' in data_indicators
 
 data_indicator_wb <- wage_bill_publicexp %>%
@@ -1414,13 +1404,12 @@ server <- function(input, output, session) {
       top_countries_text <- paste(top_countries, collapse = ", ")
       
       # Determine the wage bill comparison text
+      # Ensure we correctly compare first_country's wage bill to the selected countries
       wage_difference_text <- if (!is.na(value_2022) && !is.na(avg_peer_wage)) {
-        if (value_2022 < avg_peer_wage * 0.8) {
-          "much higher"
-        } else if (value_2022 < avg_peer_wage * 0.95) {
-          "higher"
-        } else if (value_2022 > avg_peer_wage * 1.05) {
+        if (value_2022 > avg_peer_wage) {
           "lower"
+        } else if (value_2022 < avg_peer_wage) {
+          "higher"
         } else {
           "similar"
         }
@@ -1442,15 +1431,16 @@ server <- function(input, output, session) {
         ifelse(is.na(value_2010), "N/A", round(value_2010, 1)), 
         " percent of public expenditures, but this gradually changed, reaching ", 
         ifelse(is.na(value_2022), "N/A", round(value_2022, 1)), 
-        " percent in ", last_year, ". ",  # ← Dynamic year
+        " percent in ", last_year, ". ",
         "Compared to other countries in the region and global comparators, ", first_country, 
         " allocates ", comparison_text, " proportion of its budget to public sector wages. ",
-        "For instance, in ", last_year, ", ", first_country, "’s wage bill stands at ",  # ← Dynamic year
+        "For instance, in ", last_year, ", ", first_country, "’s wage bill stands at ",  
         ifelse(is.na(value_2022), "N/A", round(value_2022, 1)), 
         " percent, whereas countries like ", top_countries_text, 
         " had ", wage_difference_text, " wage bills during the same period. ",
         "This trend reflects ", first_country, "’s approach to public sector wage spending, but it also raises questions about whether this level of spending affects the government's ability to effectively deliver public services."
       )
+      
       
       doc <- doc %>% body_add_par(analysis_text, style = "Normal")
       
@@ -2499,7 +2489,7 @@ server <- function(input, output, session) {
   
   output$downloadAllGraphsDoc <- downloadHandler(
     filename = function() { 
-      paste0("Comprehensive_Wage_Bill_Report_", Sys.Date(), ".docx") 
+      paste0("Wage_Bill_and_public_employment_analysis_", Sys.Date(), ".docx") 
     },
     content = function(file) {
       
