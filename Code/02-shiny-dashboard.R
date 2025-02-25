@@ -2521,13 +2521,33 @@ server <- function(input, output, session) {
         body_add_fpar(fpar(ftext(first_country, prop = title_style))) %>% 
         body_add_fpar(fpar(ftext("Wage Bill and Public Employment Analysis", prop = subtitle_style)))
       
-      # ✅ Introduction Text
-      intro_text <- paste(
-        "This note presents evidence on public sector employment and compensation practices in", first_country,
-        "using the Worldwide Bureaucracy Indicators (WWBI).",
-        "For international comparisons, peer countries from", first_region, "are included."
+      # ✅ Extract the World Bank Region for the Selected Country
+      first_region <- countrycode(first_country, origin = "country.name", destination = "region")
+      
+      # Handle missing values in case countrycode() fails
+      if (is.na(first_region)) {
+        first_region <- "its respective region"  # Default fallback if region is not found
+      }
+      
+      # ✅ Construct Introduction Text Dynamically
+      intro_text <- paste0(
+        "This note presents evidence on public sector employment and compensation practices in ", first_country,
+        " using the Worldwide Bureaucracy Indicators (WWBI). ",
+        "For international comparisons, peer countries from ", first_region, " are included.",
+        "\n\n",  # Add line break for a new paragraph
+        "The public sector is typically a major source of employment in most countries. ",
+        "The provision of basic services such as education, health, citizen security, and justice, among others, ",
+        "makes it a central actor in labor markets, with significant impacts on the aggregate results of employment, ",
+        "wages, informality, and other economic variables. Moreover, public employment is an indicator of the state’s ",
+        "participation in the entire economy, which has implications for macroeconomic balances, allocation efficiency, ",
+        "and income distribution. Thus, this analysis comprehensively documents the size of public employment, ",
+        "its changes over time, and the characteristics of its workforce.",
+        "\n\n",
+        "This work documents and analyzes the size, composition, and changes in the levels of employment and wages of Peru’s public employees compared to the private sector and how these metrics compare to regional peers."
       )
       
+      
+
       # Add intro text
       doc <- doc %>% body_add_par(intro_text, style = "Normal")
       
@@ -2548,10 +2568,154 @@ server <- function(input, output, session) {
         return(doc)
       }
       
+      #The macro fundamentals of the public sector
       # ✅ Wage Bill Trends
-      doc <- doc %>% body_add_par("Wage Bill Trends", style = "heading 1")
+     
+      
+      # Define text formatting: Blue color, bold, and size 16
+      blue_text <- fp_text(color = "#003366", font.size = 16, bold = TRUE)
+      
+      # Add the formatted text to the Word document
+      doc <- doc %>%
+        body_add_fpar(fpar(ftext("The macro fundamentals of the public sector", prop = blue_text)))
+      
+      
+      doc <- doc %>% body_add_par("The macro fundamentals of the public sector", style = "heading 1")
       
       selected_data_df <- selected_data()
+      
+      # Extract country-specific wage bill trends
+      wage_bill_trend <- wage_bill_publicexp %>%
+        filter(country_name == first_country)
+      
+      # Get the last available year
+      last_year <- max(wage_bill_trend$year, na.rm = TRUE)
+      
+      # Compute wage bill as % of GDP for the most recent year
+      wage_bill_gdp_latest <- wage_bill_gdp %>%
+        filter(year == last_year) %>%
+        pull(value_gdp)
+      
+      # Compute wage bill as % of Public Expenditures for 2010 and latest year
+      wage_bill_exp_2010 <- wage_bill_trend %>%
+        filter(year == 2010) %>%
+        pull(value)
+      
+      wage_bill_exp_latest <- wage_bill_trend %>%
+        filter(year == last_year) %>%
+        pull(value)
+      
+      # Compute trend over the past decade (if data is available)
+      trend_decade <- wage_bill_trend %>%
+        filter(year >= last_year - 10) %>%
+        summarise(trend = ifelse(sd(value, na.rm = TRUE) < 2, "stable", "fluctuated")) %>%
+        pull(trend)
+      
+      # Identify the COVID-19 effect (if there was a significant spike in 2020)
+      covid_spike <- wage_bill_trend %>%
+        filter(year == 2020) %>%
+        pull(value_gdp)
+      
+      covid_spike_text <- if (!is.na(covid_spike) && covid_spike > (wage_bill_gdp_latest * 1.1)) {
+        "temporarily spiked in 2020 as the COVID-19 crisis depressed GDP growth"
+      } else {
+        "remained relatively stable even during the COVID-19 crisis"
+      }
+      
+      # Compare against regional peers
+      avg_peer_wage <- wage_bill_publicexp %>%
+        filter(region == first_region, year == last_year) %>%
+        summarise(mean_wage = mean(value, na.rm = TRUE)) %>%
+        pull(mean_wage)
+      
+      comparison_text <- if (!is.na(wage_bill_exp_latest) && !is.na(avg_peer_wage)) {
+        if (wage_bill_exp_latest < avg_peer_wage * 0.8) {
+          "lower than its regional peers"
+        } else if (wage_bill_exp_latest > avg_peer_wage * 1.2) {
+          "higher than its regional peers"
+        } else {
+          "similar to its regional peers"
+        }
+      } else {
+        "uncertain compared to regional peers"
+      }
+      
+      # Identify the change direction
+      change_text <- if (!is.na(wage_bill_exp_2010) && !is.na(wage_bill_exp_latest)) {
+        if (wage_bill_exp_latest > wage_bill_exp_2010) {
+          "has increased from"
+        } else if (wage_bill_exp_latest < wage_bill_exp_2010) {
+          "has decreased from"
+        } else {
+          "has remained stable since"
+        }
+      } else {
+        "has changed over time from"
+      }
+      
+      # Calculate correlation between GDP per capita and wage bill spending in the selected region
+      regional_trend <- wage_bill_gdp %>%
+        filter(wb_region == first_region) %>%
+        summarise(correlation = cor(gdp_per_capita, value, use = "complete.obs")) %>%
+        pull(correlation)
+      
+      # Determine relationship direction
+      relationship_text <- if (!is.na(regional_trend)) {
+        if (regional_trend < -0.2) {
+          "a negative relationship"  # Strong inverse relationship
+        } else if (regional_trend > 0.2) {
+          "a positive relationship"  # Wage bill increases with GDP
+        } else {
+          "no strong relationship"  # Weak correlation
+        }
+      } else {
+        "an uncertain relationship"
+      }
+      
+      # Determine spending trend dynamically
+      spending_trend <- if (regional_trend < -0.2) {
+        "tends to decrease"
+      } else if (regional_trend > 0.2) {
+        "tends to increase"
+      } else {
+        "remains relatively stable"
+      }
+      
+      # Determine if spending aligns with expectations
+      spending_alignment <- if (!is.na(wage_bill_gap)) {
+        if (abs(wage_bill_gap) <= 1) {
+          "is in line with expectations"
+        } else if (wage_bill_gap > 1) {
+          "is higher than expected"
+        } else {
+          "is lower than expected"
+        }
+      } else {
+        "is uncertain compared to expectations"
+      }
+      
+      
+      # ✅ Fully Automated Dynamic Text
+      automated_text <- paste0(
+        first_country, "’s public wage bill has ", trend_decade, " over the past ten years. ",
+        "The wage bill has remained at ", ifelse(is.na(wage_bill_gdp_latest), "N/A", round(wage_bill_gdp_latest, 1)), 
+        " percent of GDP since 2014. ",
+        "The wage bill-to-GDP ratio ", covid_spike_text, " but has since returned to pre-pandemic levels. ",
+        "Although the wage bill as a share of public expenditures ", change_text, " ", 
+        ifelse(is.na(wage_bill_exp_2010), "N/A", round(wage_bill_exp_2010, 1)), 
+        " percent in 2010 to ", ifelse(is.na(wage_bill_exp_latest), "N/A", round(wage_bill_exp_latest, 1)), 
+        " percent in ", last_year, ", as shown in Figure 1. ",
+        "The public sector wage bill in ", first_country, " is ", comparison_text, ". ",
+        "This could be attributed to various factors, including prudent fiscal management and consistent government policies ",
+        "aimed at maintaining budgetary discipline; however, this requires a deeper analysis.", 
+        "\n\n",
+        first_country, "’s wage bill spending ", spending_alignment, 
+        " given its level of economic development. Figure 2 illustrates ", relationship_text,
+        " between a country’s level of economic development (as measured by GDP per capita) and the size of its public sector ",
+        "in the ", first_region, " region. This means that as GDP per capita increases, the public sector wage bill ", spending_trend, 
+        ". Given ", first_country, "’s proximity to the line of best fit, it indicates that ",
+        first_country, " spends ", spending_alignment, " on its public sector wage bill than would be expected given its level of economic development."
+      )
       
       # Wage Bill as % of GDP
       graph_gdp <- ggplot(selected_data_df, aes(x = year, y = value, color = country_name)) +
