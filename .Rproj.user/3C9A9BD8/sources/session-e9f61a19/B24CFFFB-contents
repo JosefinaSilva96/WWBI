@@ -594,7 +594,7 @@ gender_leadership <- gender_leadership %>%
 
 #Gender Wage premium in the public sector, by industry 
 
-gender_wage_premiumpublic <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Gender wage premium in the public sector, by industry: Core Public Administration (compared to male paid employees)", 
+gender_wage_premiumpublic <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Gender wage premium in the public sector, by industry: Public Administration (compared to male paid employees)", 
                                                                          "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)", 
                                                                          "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)"), ]
 
@@ -640,7 +640,7 @@ gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
   mutate(indicator_name = factor(indicator_name)) %>%
   # Modify indicator labels for shorter text
   mutate(indicator_label = recode(indicator_name, 
-                                  "Gender wage premium in the public sector, by industry: Core Public Administration (compared to male paid employees)" = "Core Public Administration", 
+                                  "Gender wage premium in the public sector, by industry: Public Administration (compared to male paid employees)" = "Public Administration", 
                                   "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)" = "Education", 
                                   "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)" = "Health"))
 
