@@ -1332,7 +1332,7 @@ server <- function(input, output, session) {
     },
     content = function(file) {
       # Use the first selected country from the input "countries"
-      first_country <- if (!is.null(input$countries) && length(input$countries) > 0) {
+      first_country <- if (!is.null(input$countries) & length(input$countries) > 0) {
         input$countries[1]
       } else {
         "Bangladesh"  # Default fallback
@@ -1382,7 +1382,7 @@ server <- function(input, output, session) {
         summarise(mean_wage = mean(value, na.rm = TRUE)) %>%
         pull(mean_wage)
       
-      comparison_text <- if (!is.na(value_2022) && !is.na(avg_peer_wage)) {
+      comparison_text <- if (!is.na(value_2022) & !is.na(avg_peer_wage)) {
         if (value_2022 < avg_peer_wage * 0.8) {
           "a relatively low"
         } else if (value_2022 > avg_peer_wage * 1.2) {
@@ -1405,7 +1405,7 @@ server <- function(input, output, session) {
       
       # Determine the wage bill comparison text
       # Ensure we correctly compare first_country's wage bill to the selected countries
-      wage_difference_text <- if (!is.na(value_2022) && !is.na(avg_peer_wage)) {
+      wage_difference_text <- if (!is.na(value_2022) & !is.na(avg_peer_wage)) {
         if (value_2022 > avg_peer_wage) {
           "lower"
         } else if (value_2022 < avg_peer_wage) {
@@ -1531,7 +1531,7 @@ server <- function(input, output, session) {
     content = function(file) {
       filtered_data_df <- merged_data %>% filter(country_name %in% input$countries_first)
       req(nrow(filtered_data_df) > 0)
-      countries <- if (!is.null(input$countries) && length(input$countries) > 0) input$countries[1] else "Unknown Country"
+      countries <- if (!is.null(input$countries) & length(input$countries) > 0) input$countries[1] else "Unknown Country"
       report_title <- paste("Wage Bill vs. GDP Analysis Report -", countries)
       doc <- read_docx()
       title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
@@ -1797,11 +1797,36 @@ server <- function(input, output, session) {
         filter(country_name %in% input$countries_wage_premium) %>%
         drop_na(value_percentage)  # Remove NA values
       
+      
       # Ensure the data exists
       if (nrow(filtered_data) == 0) {
         doc <- doc %>% body_add_par("No data available for the selected countries.", style = "Normal")
         print(doc, target = file)
         return()
+      }
+      
+      # Check if the dataset is empty BEFORE proceeding
+      if (nrow(filtered_data) == 0) {
+        warning("No data available for selected countries in public wage premium.")
+        
+        # Assign default values to avoid errors
+        avg_wage_premium <- NA
+        highest_country <- "N/A"
+        lowest_country <- "N/A"
+      } else {
+        # Convert to numeric safely
+        filtered_data$value_percentage <- as.numeric(filtered_data$value_percentage)
+        
+        # Calculate key statistics safely
+        avg_wage_premium <- round(mean(filtered_data$value_percentage, na.rm = TRUE), 1)
+        
+        highest_country <- filtered_data %>%
+          filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>%
+          pull(country_name)
+        
+        lowest_country <- filtered_data %>%
+          filter(value_percentage == min(value_percentage, na.rm = TRUE)) %>%
+          pull(country_name)
       }
       
       # Convert value_percentage to numeric (just in case)
@@ -1903,14 +1928,14 @@ server <- function(input, output, session) {
     content = function(file) {
       print(input$countries_first)
       print(input$country_second)
-      countries <- ifelse(!is.null(input$countries_first) && length(input$countries_first) > 0, input$countries_first[1], "Unknown Country")
+      countries <- ifelse(!is.null(input$countries_first) & length(input$countries_first) > 0, input$countries_first[1], "Unknown Country")
       report_title <- paste("Wage Premium Gender Analysis Report -", countries)
       doc <- read_docx()
       title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
       doc <- doc %>% body_add_fpar(fpar(ftext(report_title, prop = title_style)))
       doc <- doc %>% body_add_par("Introduction", style = "heading 2") %>% 
         body_add_par("This report presents evidence on public sector employment and compensation practices for the selected countries.", style = "Normal")
-      if("firstGraphgender" %in% input$graphs_to_download && length(input$countries_first) > 0) {
+      if("firstGraphgender" %in% input$graphs_to_download & length(input$countries_first) > 0) {
         data_to_plot <- gender_wage_premium_last %>% filter(country_name %in% input$countries_first)
         data_to_plot_long <- data_to_plot %>% select(country_name, indicator_label, year, value) %>% 
           mutate(indicator_label = factor(indicator_label))
@@ -1924,7 +1949,7 @@ server <- function(input, output, session) {
           body_add_img(src = graph_path1, width = 6, height = 4) %>% 
           body_add_par("This graph shows the wage premium by gender across multiple countries.", style = "Normal")
       }
-      if("secondGraphgender" %in% input$graphs_to_download && !is.null(input$country_second)) {
+      if("secondGraphgender" %in% input$graphs_to_download & !is.null(input$country_second)) {
         data_to_plot <- gender_wage_premium %>% filter(country_name == input$country_second)
         data_to_plot_long <- data_to_plot %>% select(year, indicator_name, value) %>% 
           mutate(indicator_name = factor(indicator_name))
@@ -2497,14 +2522,14 @@ server <- function(input, output, session) {
       doc <- read_docx() 
       
       # Get the first selected country
-      first_country <- if (!is.null(input$countries) && length(input$countries) > 0) {
+      first_country <- if (!is.null(input$countries) & length(input$countries) > 0) {
         input$countries[1]
       } else {
         "Unknown Country"
       }
       
       # Ensure first_region is defined properly
-      first_region <- if (!is.null(input$region) && input$region != "") {
+      first_region <- if (!is.null(input$region) & input$region != "") {
         input$region
       } else {
         "the selected region"
@@ -2547,7 +2572,7 @@ server <- function(input, output, session) {
       )
       
       
-
+      
       # Add intro text
       doc <- doc %>% body_add_par(intro_text, style = "Normal")
       
@@ -2570,7 +2595,7 @@ server <- function(input, output, session) {
       
       #The macro fundamentals of the public sector
       # ✅ Wage Bill Trends
-     
+      
       
       # Define text formatting: Blue color, bold, and size 16
       blue_text <- fp_text(color = "#003366", font.size = 16, bold = TRUE)
@@ -2594,7 +2619,7 @@ server <- function(input, output, session) {
       # Compute wage bill as % of GDP for the most recent year
       wage_bill_gdp_latest <- wage_bill_gdp %>%
         filter(year == last_year) %>%
-        pull(value_gdp)
+        pull(value)
       
       # Compute wage bill as % of Public Expenditures for 2010 and latest year
       wage_bill_exp_2010 <- wage_bill_trend %>%
@@ -2614,9 +2639,9 @@ server <- function(input, output, session) {
       # Identify the COVID-19 effect (if there was a significant spike in 2020)
       covid_spike <- wage_bill_trend %>%
         filter(year == 2020) %>%
-        pull(value_gdp)
+        pull(value)
       
-      covid_spike_text <- if (!is.na(covid_spike) && covid_spike > (wage_bill_gdp_latest * 1.1)) {
+      covid_spike_text <- if (!is.na(covid_spike) & covid_spike > (wage_bill_gdp_latest * 1.1)) {
         "temporarily spiked in 2020 as the COVID-19 crisis depressed GDP growth"
       } else {
         "remained relatively stable even during the COVID-19 crisis"
@@ -2628,7 +2653,7 @@ server <- function(input, output, session) {
         summarise(mean_wage = mean(value, na.rm = TRUE)) %>%
         pull(mean_wage)
       
-      comparison_text <- if (!is.na(wage_bill_exp_latest) && !is.na(avg_peer_wage)) {
+      comparison_text <- if (!is.na(wage_bill_exp_latest) & !is.na(avg_peer_wage)) {
         if (wage_bill_exp_latest < avg_peer_wage * 0.8) {
           "lower than its regional peers"
         } else if (wage_bill_exp_latest > avg_peer_wage * 1.2) {
@@ -2641,7 +2666,7 @@ server <- function(input, output, session) {
       }
       
       # Identify the change direction
-      change_text <- if (!is.na(wage_bill_exp_2010) && !is.na(wage_bill_exp_latest)) {
+      change_text <- if (!is.na(wage_bill_exp_2010) & !is.na(wage_bill_exp_latest)) {
         if (wage_bill_exp_latest > wage_bill_exp_2010) {
           "has increased from"
         } else if (wage_bill_exp_latest < wage_bill_exp_2010) {
@@ -2716,6 +2741,8 @@ server <- function(input, output, session) {
         ". Given ", first_country, "’s proximity to the line of best fit, it indicates that ",
         first_country, " spends ", spending_alignment, " on its public sector wage bill than would be expected given its level of economic development."
       )
+      # ✅ Add Dynamic Text to Document
+      doc <- doc %>% body_add_par(automated_text, style = "Normal")
       
       # Wage Bill as % of GDP
       graph_gdp <- ggplot(selected_data_df, aes(x = year, y = value, color = country_name)) +
@@ -2946,15 +2973,35 @@ server <- function(input, output, session) {
         theme_minimal()
       
       # Generate dynamic interpretation
-      avg_wage_premium <- round(mean(filtered_data$value_percentage, na.rm = TRUE), 1)
+  
+      # Filter public sector wage premium data
+      filtered_data <- public_wage_premium %>% 
+        filter(country_name %in% input$countries_wage_premium) %>% 
+        drop_na(value_percentage)
       
-      highest_wage_gap <- filtered_data %>% 
-        filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>% 
-        select(country_name, indicator_label, value_percentage)
-      
-      lowest_wage_gap <- filtered_data %>% 
-        filter(value_percentage == min(value_percentage, na.rm = TRUE)) %>% 
-        select(country_name, indicator_label, value_percentage)
+      # Check if the dataset is empty
+      if (nrow(filtered_data) == 0) {
+        warning("No data available for selected countries in public wage premium.")
+        
+        # Assign default values to avoid errors
+        avg_wage_premium <- NA
+        highest_country <- "N/A"
+        lowest_country <- "N/A"
+      } else {
+        # Convert to numeric safely
+        filtered_data$value_percentage <- as.numeric(filtered_data$value_percentage)
+        
+        # Calculate key statistics safely
+        avg_wage_premium <- round(mean(filtered_data$value_percentage, na.rm = TRUE), 1)
+        
+        highest_country <- filtered_data %>%
+          filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>%
+          pull(country_name)
+        
+        lowest_country <- filtered_data %>%
+          filter(value_percentage == min(value_percentage, na.rm = TRUE)) %>%
+          pull(country_name)
+      }
       
       interpretation_gender_wage_premium <- paste0(
         "This graph displays the gender wage premium across different public sector industries, comparing wage differences between men and women. ",
@@ -3077,7 +3124,10 @@ server <- function(input, output, session) {
       doc <- doc %>% body_add_par("Wage Premium Trends", style = "heading 1")
       
       # Filter Data
-      filtered_wage_premium <- public_wage_premium %>% filter(country_name %in% input$countries_wage_premium)
+      
+      filtered_data <- public_wage_premium %>%
+        filter(country_name %in% input$countries_wage_premium & !is.na(value_percentage))
+      
       
       # Create the Scatter Plot
       wage_premium_graph <- ggplot(filtered_wage_premium, aes(x = country_name, y = value_percentage, color = country_name)) +
