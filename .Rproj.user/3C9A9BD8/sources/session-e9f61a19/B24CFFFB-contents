@@ -1428,23 +1428,30 @@ server <- function(input, output, session) {
         "uncertain"
       }
       
+      # Get the last available year for the selected country
+      last_year <- wage_bill_publicexp %>%
+        filter(country_name == first_country) %>%
+        summarise(last_year = max(year, na.rm = TRUE)) %>%
+        pull(last_year)
+      
       # Construct the final analysis text dynamically
       analysis_text <- paste0(
-        first_country, " has ", comparison_text, " public sector wage compared to its peers. ",
-        "The country’s wage bill as a percentage of public expenditures has followed a relatively stable trend over the past decade. ",
+        first_country, " has ", comparison_text, " public sector wage bill compared to its peers. ",
+        "The country’s wage bill as a percentage of public expenditures has ",
         "In 2010, the wage bill accounted for around ", 
         ifelse(is.na(value_2010), "N/A", round(value_2010, 1)), 
         " percent of public expenditures, but this gradually changed, reaching ", 
         ifelse(is.na(value_2022), "N/A", round(value_2022, 1)), 
-        " percent in 2022. ",
+        " percent in ", last_year, ". ",  # ← Dynamic year
         "Compared to other countries in the region and global comparators, ", first_country, 
         " allocates ", comparison_text, " proportion of its budget to public sector wages. ",
-        "For instance, in 2022, ", first_country, "’s wage bill stands at ", 
+        "For instance, in ", last_year, ", ", first_country, "’s wage bill stands at ",  # ← Dynamic year
         ifelse(is.na(value_2022), "N/A", round(value_2022, 1)), 
         " percent, whereas countries like ", top_countries_text, 
         " had ", wage_difference_text, " wage bills during the same period. ",
         "This trend reflects ", first_country, "’s approach to public sector wage spending, but it also raises questions about whether this level of spending affects the government's ability to effectively deliver public services."
       )
+      
       doc <- doc %>% body_add_par(analysis_text, style = "Normal")
       
       # --- Add the Graph Based on User Selection ---
@@ -2527,8 +2534,7 @@ server <- function(input, output, session) {
       # ✅ Introduction Text
       intro_text <- paste(
         "This note presents evidence on public sector employment and compensation practices in", first_country,
-        "using the Worldwide Bureaucracy Indicators (WWBI). The primary data source is the Labor Force Survey (LFS),",
-        "which provides nationally representative data up to 2022.",
+        "using the Worldwide Bureaucracy Indicators (WWBI).",
         "For international comparisons, peer countries from", first_region, "are included."
       )
       
