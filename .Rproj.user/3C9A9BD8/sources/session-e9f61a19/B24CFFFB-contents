@@ -2416,7 +2416,7 @@ server <- function(input, output, session) {
     # Filter data based on user selection
     filtered_data <- gender_wage_premiumpublic %>%
       filter(country_name %in% input$selected_countries, 
-             indicator_label %in% c("Core Public Administration", 
+             indicator_label %in% c("Public Administration", 
                                     "Education", 
                                     "Health", 
                                     "Other")) 
@@ -2456,13 +2456,13 @@ server <- function(input, output, session) {
       # Generate ggplot Object
       filtered_data <- gender_wage_premiumpublic %>%
         filter(country_name %in% input$selected_countries, 
-               indicator_name %in% c("Gender wage premium in the public sector, by industry: Core Public Administration (compared to male paid employees)", 
+               indicator_name %in% c("Gender wage premium in the public sector, by industry: Public Administration (compared to male paid employees)", 
                                      "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)", 
                                      "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)", 
                                      "Other"))
       
       filtered_data$indicator_label <- recode(filtered_data$indicator_name,
-                                              "Gender wage premium in the public sector, by industry: Core Public Administration (compared to male paid employees)" = "Core Public Administration",
+                                              "Gender wage premium in the public sector, by industry: Public Administration (compared to male paid employees)" = "Core Public Administration",
                                               "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)" = "Education",
                                               "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)" = "Health")
       
@@ -2760,14 +2760,14 @@ server <- function(input, output, session) {
       # Filter data for selected countries and relevant industries
       filtered_data <- gender_wage_premiumpublic %>%
         filter(country_name %in% input$selected_countries, 
-               indicator_name %in% c("Gender wage premium in the public sector, by industry: Core Public Administration (compared to male paid employees)", 
+               indicator_name %in% c("Gender wage premium in the public sector, by industry: Public Administration (compared to male paid employees)", 
                                      "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)", 
                                      "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)", 
                                      "Other"))
       
       # Rename industry labels for clarity
       filtered_data$indicator_label <- recode(filtered_data$indicator_name,
-                                              "Gender wage premium in the public sector, by industry: Core Public Administration (compared to male paid employees)" = "Core Public Administration",
+                                              "Gender wage premium in the public sector, by industry: Public Administration (compared to male paid employees)" = "Core Public Administration",
                                               "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)" = "Education",
                                               "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)" = "Health",
                                               "Other" = "Other Public Sector Jobs"
