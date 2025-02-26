@@ -1508,16 +1508,6 @@ server <- function(input, output, session) {
     # Add a subtitle
     doc <- doc %>% body_add_par("The macro fundamentals of the public sector", style = "heading 3")
     
-    # Create a dynamic introduction text
-    intro_text <- paste0(
-      "This note presents evidence on public sector employment and compensation practices in ", first_country,
-      " using the Worldwide Bureaucracy Indicators (WWBI). The primary data source is the Labor Force Survey (LFS), conducted by the Bureau of Statistics, ",
-      "which offers extensive, nationally representative data over multiple years up to 2022. ",
-      "For international comparisons, the analysis includes a set of peer countries for benchmarking, with a particular focus on countries from the ",
-      first_region, " region and other aspirational peers."
-    )
-    
-    doc <- doc %>% body_add_par(intro_text, style = "Normal")
     
     # --- Dynamic Analysis Paragraph ---
     selected_countries <- input$countries  # User-selected comparison countries
@@ -1551,31 +1541,163 @@ server <- function(input, output, session) {
     
     doc <- doc %>% body_add_par(analysis_text, style = "Normal")
     
-    # --- Add the Graph Based on User Selection ---
-    graph_data <- if (input$graph_choice == "GDP") {
-      wage_bill_gdp %>% filter(country_name %in% input$countries)
-    } else {
-      wage_bill_publicexp %>% filter(country_name %in% input$countries)
-    }
+    # --- Add Both Graphs Based on User Selection ---
     
-    graph <- ggplot(graph_data, aes(x = year, y = value, color = country_name)) +
+    # GDP Graph Data
+    graph_data_gdp <- wage_bill_gdp %>% filter(country_name %in% input$countries)
+    
+    # Public Expenditure Graph Data
+    graph_data_exp <- wage_bill_publicexp %>% filter(country_name %in% input$countries)
+    
+    # Create GDP Graph
+    graph_gdp <- ggplot(graph_data_gdp, aes(x = year, y = value, color = country_name)) +
       geom_line(size = 1.2) + 
       geom_point(size = 3) +
       labs(
-        title = ifelse(input$graph_choice == "GDP", 
-                       "Wage Bill as % of GDP Over Time", 
-                       "Wage Bill as % of Public Expenditure Over Time"),
+        title = "Wage Bill as % of GDP Over Time",
         x = "Year",
-        y = ifelse(input$graph_choice == "GDP", "Wage Bill (% of GDP)", "Wage Bill (% of Public Expenditure)")
+        y = "Wage Bill (% of GDP)"
       ) +
       theme_minimal()
     
-    img_path <- tempfile(fileext = ".png")
-    ggsave(img_path, plot = graph, width = 8, height = 6, dpi = 300)
+    # Create Public Expenditure Graph
+    graph_exp <- ggplot(graph_data_exp, aes(x = year, y = value, color = country_name)) +
+      geom_line(size = 1.2) + 
+      geom_point(size = 3) +
+      labs(
+        title = "Wage Bill as % of Public Expenditure Over Time",
+        x = "Year",
+        y = "Wage Bill (% of Public Expenditure)"
+      ) +
+      theme_minimal()
+    
+    # Save GDP Graph
+    img_path_gdp <- tempfile(fileext = ".png")
+    ggsave(img_path_gdp, plot = graph_gdp, width = 8, height = 6, dpi = 300)
+    
+    # Save Public Expenditure Graph
+    img_path_exp <- tempfile(fileext = ".png")
+    ggsave(img_path_exp, plot = graph_exp, width = 8, height = 6, dpi = 300)
+    
+    # Add GDP Graph to the Document
+    # Compute correlation between GDP per capita and wage bill spending in the selected region
+    regional_trend <- wage_bill_gdp %>%
+      filter(wb_region == first_region) %>%
+      summarise(avg_value = mean(value, na.rm = TRUE)) %>%
+      pull(avg_value)
+    
+    # Determine relationship type
+    relationship_text <- if (!is.na(regional_trend_value)) {
+      if (regional_trend < -0.2) {
+        "a negative relationship"  # Public wage bill decreases as GDP per capita increases
+      } else if (regional_trend > 0.2) {
+        "a positive relationship"  # Public wage bill increases as GDP per capita increases
+      } else {
+        "no strong relationship"  # Weak correlation
+      }
+    } else {
+      "an uncertain relationship"
+    }
+    
+    # Get actual wage bill for the selected country
+    first_country_wage_bill <- wage_bill_gdp %>%
+      filter(country_name == first_country) %>%
+      summarise(latest_wage_bill = max(value, na.rm = TRUE)) %>%
+      pull(latest_wage_bill)
+    
+    # Compute regional average for comparison
+    regional_avg_wage_bill <- wage_bill_gdp %>%
+      filter(wb_region == first_region) %>%
+      summarise(mean_wage = mean(value, na.rm = TRUE)) %>%
+      pull(mean_wage)
+    
+    # Compare country to regional peers
+    spending_pattern <- if (!is.na(first_country_wage_bill) && !is.na(regional_avg_wage_bill)) {
+      if (first_country_wage_bill > regional_avg_wage_bill * 1.2) {
+        "more than expected"
+      } else if (first_country_wage_bill < regional_avg_wage_bill * 0.8) {
+        "less than expected"
+      } else {
+        "roughly as expected"
+      }
+    } else {
+      "uncertain compared to regional peers"
+    }
+    
+    # Construct dynamic interpretation text
+    gdp_interpretation_text <- paste0(
+      "Figure 2 illustrates ", relationship_text, " between a country’s level of economic development ",
+      "(as measured by GDP per capita) and the size of its public sector in the ", first_region, " region. ",
+      "This means that as GDP per capita increases, the public sector wage bill tends to ",
+      ifelse(regional_trend < -0.2, "decrease.", ifelse(regional_trend > 0.2, "increase.", "remain relatively stable.")), 
+      " Given ", first_country, "’s position in this trend, it indicates that ", first_country, 
+      " spends ", spending_pattern, " on its public sector wage bill compared to other countries in ", first_region, "."
+    )
     
     doc <- doc %>% 
-      body_add_img(src = img_path, width = 6, height = 4) %>% 
-      body_add_par("This graph shows wage bill trends over time.", style = "Normal")
+      body_add_par("Wage Bill as % of GDP Over Time", style = "heading 2") %>% 
+      body_add_img(src = img_path_gdp, width = 6, height = 4) %>% 
+      body_add_par(gdp_interpretation_text, style = "Normal")
+    
+    # Add Public Expenditure Graph to the Document
+    # Extract wage bill as % of public expenditure for the selected country
+    wage_bill_exp_trend <- wage_bill_publicexp %>%
+      filter(country_name == first_country)
+    
+    # Get the wage bill values for 2010 and latest available year
+    wage_bill_exp_2010 <- wage_bill_exp_trend %>%
+      filter(year == 2010) %>%
+      summarise(value_2010 = max(value, na.rm = TRUE)) %>%
+      pull(value_2010)
+    
+    latest_year <- max(wage_bill_exp_trend$year, na.rm = TRUE)
+    wage_bill_exp_latest <- wage_bill_exp_trend %>%
+      filter(year == latest_year) %>%
+      summarise(value_latest = max(value, na.rm = TRUE)) %>%
+      pull(value_latest)
+    
+    # Compute volatility (standard deviation) of the selected country
+    country_volatility <- wage_bill_exp_trend %>%
+      summarise(volatility = sd(value, na.rm = TRUE)) %>%
+      pull(volatility)
+    
+    # Compute average volatility for the region
+    regional_volatility <- wage_bill_publicexp %>%
+      filter(wb_region == first_region) %>%
+      group_by(country_name) %>%
+      summarise(volatility = sd(value, na.rm = TRUE)) %>%
+      ungroup() %>%
+      summarise(mean_volatility = mean(volatility, na.rm = TRUE)) %>%
+      pull(mean_volatility)
+    
+    # Compare country to regional volatility
+    stability_text <- if (!is.na(country_volatility) && !is.na(regional_volatility)) {
+      if (country_volatility < regional_volatility * 0.8) {
+        "more stable"
+      } else if (country_volatility > regional_volatility * 1.2) {
+        "more volatile"
+      } else {
+        "similar in stability"
+      }
+    } else {
+      "uncertain compared to regional peers"
+    }
+    
+    # Construct dynamic interpretation text
+    public_exp_interpretation_text <- paste0(
+      "The wage bill as a share of public expenditures has ",
+      ifelse(!is.na(wage_bill_exp_2010) & !is.na(wage_bill_exp_latest),
+             paste0("changed from ", round(wage_bill_exp_2010, 1), " percent in 2010 to ",
+                    round(wage_bill_exp_latest, 1), " percent in ", latest_year, ", as shown in Figure 1."),
+             "varied over time, as shown in Figure 1."),
+      " The public sector wage bill in ", first_country, " has exhibited ", stability_text, 
+      " compared to the volatility observed in regional peers."
+    )
+    
+    doc <- doc %>% 
+      body_add_par("Wage Bill as % of Public Expenditure Over Time", style = "heading 2") %>% 
+      body_add_img(src = img_path_exp, width = 6, height = 4) %>% 
+      body_add_par(public_exp_interpretation_text, style = "Normal")
     
     return(doc)
   }
@@ -3168,6 +3290,73 @@ server <- function(input, output, session) {
     
     return(doc)
   }
+  generate_intro_section <- function(doc) {
+    # Initialize Word document
+    doc <- read_docx() 
+    
+    # Get the first selected country
+    first_country <- if (!is.null(input$countries) && length(input$countries) > 0) {
+      input$countries[1]
+    } else {
+      "Unknown Country"
+    }
+    
+    # Ensure first_region is defined properly
+    first_region <- if (!is.null(input$region) && input$region != "") {
+      input$region
+    } else {
+      "the selected region"
+    }
+    
+    # Add Title to Document
+    title_text <- paste0(first_country, "\nWage Bill and Public Employment Analysis")
+    
+    # Format title
+    title_style <- fp_text(color = "#722F37", font.size = 20, bold = TRUE)
+    subtitle_style <- fp_text(color = "black", font.size = 16, bold = TRUE)
+    
+    doc <- doc %>% 
+      body_add_fpar(fpar(ftext(first_country, prop = title_style))) %>% 
+      body_add_fpar(fpar(ftext("Wage Bill and Public Employment Analysis", prop = subtitle_style)))
+    
+    # Extract the World Bank Region for the Selected Country
+    first_region <- countrycode(first_country, origin = "country.name", destination = "region")
+    
+    # Handle missing values in case countrycode() fails
+    if (is.na(first_region)) {
+      first_region <- "its respective region"  # Default fallback if region is not found
+    }
+    
+    # Construct Introduction Text Dynamically
+    intro_text <- paste0(
+      "This note presents evidence on public sector employment and compensation practices in ", first_country,
+      " using the Worldwide Bureaucracy Indicators (WWBI). ",
+      "For international comparisons, peer countries from ", first_region, " are included.",
+      "\n\n",  # Add line break for a new paragraph
+      "The public sector is typically a major source of employment in most countries. ",
+      "The provision of basic services such as education, health, citizen security, and justice, among others, ",
+      "makes it a central actor in labor markets, with significant impacts on the aggregate results of employment, ",
+      "wages, informality, and other economic variables. Moreover, public employment is an indicator of the state’s ",
+      "participation in the entire economy, which has implications for macroeconomic balances, allocation efficiency, ",
+      "and income distribution. Thus, this analysis comprehensively documents the size of public employment, ",
+      "its changes over time, and the characteristics of its workforce.",
+      "\n\n",
+      "This work documents and analyzes the size, composition, and changes in the levels of employment and wages of ", 
+      first_country, "’s public employees compared to the private sector and how these metrics compare to regional peers."
+    )
+    
+    # Add intro text
+    doc <- doc %>% body_add_par(intro_text, style = "Normal")
+    
+    # The macro fundamentals of the public sector
+    
+    
+    # Add the formatted text to the Word document
+    doc <- doc %>%
+      body_add_par("The macro fundamentals of the public sector", style = "heading 1")
+    
+    return(doc)
+  }
   
   
   #Download one single report
@@ -3184,6 +3373,7 @@ server <- function(input, output, session) {
       # Add Report Title
       title_style <- fp_text(color = "#722F37", font.size = 20, bold = TRUE)
       doc <- doc %>% body_add_fpar(fpar(ftext("Wage bill and public employment analysis", prop = title_style)))
+      doc <- generate_intro_section(doc)  # Add the Intro First
       
       # Add Sections from Each Tab
       doc <- generate_wage_bill_analysis_section(doc) #  Wage Bill Analysis
@@ -3278,708 +3468,5 @@ shinyApp(ui = ui, server = server)
 
 
     
-output$downloadAllGraphsDoc <- downloadHandler(
-  filename = function() { 
-    paste0("Wage_Bill_and_public_employment_analysis_", Sys.Date(), ".docx") 
-  },
-  content = function(file) {
-    
-    # Initialize Word document
-    doc <- read_docx() 
-    
-    # Get the first selected country
-    first_country <- if (!is.null(input$countries) & length(input$countries) > 0) {
-      input$countries[1]
-    } else {
-      "Unknown Country"
-    }
-    
-    # Ensure first_region is defined properly
-    first_region <- if (!is.null(input$region) & input$region != "") {
-      input$region
-    } else {
-      "the selected region"
-    }
-    
-    # Add Title to Document
-    title_text <- paste0(first_country, "\nWage Bill and Public Employment Analysis")
-    
-    # Format title
-    title_style <- fp_text(color = "#722F37", font.size = 20, bold = TRUE)
-    subtitle_style <- fp_text(color = "black", font.size = 16, bold = TRUE)
-    
-    doc <- doc %>% 
-      body_add_fpar(fpar(ftext(first_country, prop = title_style))) %>% 
-      body_add_fpar(fpar(ftext("Wage Bill and Public Employment Analysis", prop = subtitle_style)))
-    
-    # Extract the World Bank Region for the Selected Country
-    first_region <- countrycode(first_country, origin = "country.name", destination = "region")
-    
-    # Handle missing values in case countrycode() fails
-    if (is.na(first_region)) {
-      first_region <- "its respective region"  # Default fallback if region is not found
-    }
-    
-    # Construct Introduction Text Dynamically
-    intro_text <- paste0(
-      "This note presents evidence on public sector employment and compensation practices in ", first_country,
-      " using the Worldwide Bureaucracy Indicators (WWBI). ",
-      "For international comparisons, peer countries from ", first_region, " are included.",
-      "\n\n",  # Add line break for a new paragraph
-      "The public sector is typically a major source of employment in most countries. ",
-      "The provision of basic services such as education, health, citizen security, and justice, among others, ",
-      "makes it a central actor in labor markets, with significant impacts on the aggregate results of employment, ",
-      "wages, informality, and other economic variables. Moreover, public employment is an indicator of the state’s ",
-      "participation in the entire economy, which has implications for macroeconomic balances, allocation efficiency, ",
-      "and income distribution. Thus, this analysis comprehensively documents the size of public employment, ",
-      "its changes over time, and the characteristics of its workforce.",
-      "\n\n",
-      "This work documents and analyzes the size, composition, and changes in the levels of employment and wages of Peru’s public employees compared to the private sector and how these metrics compare to regional peers."
-    )
-    
-    # Add intro text
-    doc <- doc %>% body_add_par(intro_text, style = "Normal")
-    
-    # Helper Function to Add Graphs
-    add_plot_to_doc <- function(doc, plot_obj, title, interpretation = NULL) {
-      img_path <- tempfile(fileext = ".png")
-      ggsave(img_path, plot = plot_obj, width = 8, height = 6)
-      
-      doc <- doc %>% 
-        body_add_par(title, style = "heading 2") %>% 
-        body_add_img(src = img_path, width = 6, height = 4)
-      
-      if (!is.null(interpretation)) {
-        interpretation_fixed <- paste(interpretation, collapse = " ")
-        doc <- doc %>% body_add_par(interpretation_fixed, style = "Normal")
-      }
-      
-      return(doc)
-    }
-    
-    # The macro fundamentals of the public sector
-    # Wage Bill Trends
-    
-    # Define text formatting: Blue color, bold, and size 16
-    blue_text <- fp_text(color = "#003366", font.size = 16, bold = TRUE)
-    
-    # Add the formatted text to the Word document
-    doc <- doc %>%
-      body_add_fpar(fpar(ftext("The macro fundamentals of the public sector", prop = blue_text)))
-    
-    doc <- doc %>% body_add_par("The macro fundamentals of the public sector", style = "heading 1")
-    
-    selected_data_df <- selected_data()
-    
-    # Extract country-specific wage bill trends
-    wage_bill_trend <- wage_bill_publicexp %>%
-      filter(country_name == first_country)
-    
-    # Get the last available year
-    last_year <- max(wage_bill_trend$year, na.rm = TRUE)
-    
-    # Compute wage bill as % of GDP for the most recent year
-    wage_bill_gdp_latest <- wage_bill_gdp %>%
-      filter(year == last_year) %>%
-      pull(value)
-    
-    # Compute wage bill as % of Public Expenditures for 2010 and latest year
-    wage_bill_exp_2010 <- wage_bill_trend %>%
-      filter(year == 2010) %>%
-      pull(value)
-    
-    wage_bill_exp_latest <- wage_bill_trend %>%
-      filter(year == last_year) %>%
-      pull(value)
-    
-    # Compute trend over the past decade (if data is available)
-    trend_decade <- wage_bill_trend %>%
-      filter(year >= last_year - 10) %>%
-      summarise(trend = ifelse(sd(value, na.rm = TRUE) < 2, "stable", "fluctuated")) %>%
-      pull(trend)
-    
-    # Identify the COVID-19 effect (if there was a significant spike in 2020)
-    covid_spike <- wage_bill_trend %>%
-      filter(year == 2020) %>%
-      pull(value)
-    
-    covid_spike_text <- if (!is.na(covid_spike) & covid_spike > (wage_bill_gdp_latest * 1.1)) {
-      "temporarily spiked in 2020 as the COVID-19 crisis depressed GDP growth"
-    } else {
-      "remained relatively stable even during the COVID-19 crisis"
-    }
-    
-    # Compare against regional peers
-    avg_peer_wage <- wage_bill_publicexp %>%
-      filter(region == first_region, year == last_year) %>%
-      summarise(mean_wage = mean(value, na.rm = TRUE)) %>%
-      pull(mean_wage)
-    
-    comparison_text <- if (!is.na(wage_bill_exp_latest) & !is.na(avg_peer_wage)) {
-      if (wage_bill_exp_latest < avg_peer_wage * 0.8) {
-        "lower than its regional peers"
-      } else if (wage_bill_exp_latest > avg_peer_wage * 1.2) {
-        "higher than its regional peers"
-      } else {
-        "similar to its regional peers"
-      }
-    } else {
-      "uncertain compared to regional peers"
-    }
-    
-    # Identify the change direction
-    change_text <- if (!is.na(wage_bill_exp_2010) & !is.na(wage_bill_exp_latest)) {
-      if (wage_bill_exp_latest > wage_bill_exp_2010) {
-        "has increased from"
-      } else if (wage_bill_exp_latest < wage_bill_exp_2010) {
-        "has decreased from"
-      } else {
-        "has remained stable since"
-      }
-    } else {
-      "has changed over time from"
-    }
-    
-    # Calculate correlation between GDP per capita and wage bill spending in the selected region
-    regional_trend <- wage_bill_gdp %>%
-      filter(wb_region == first_region) %>%
-      summarise(correlation = cor(gdp_per_capita, value, use = "complete.obs")) %>%
-      pull(correlation)
-    
-    # Determine relationship direction
-    relationship_text <- if (!is.na(regional_trend)) {
-      if (regional_trend < -0.2) {
-        "a negative relationship"  # Strong inverse relationship
-      } else if (regional_trend > 0.2) {
-        "a positive relationship"  # Wage bill increases with GDP
-      } else {
-        "no strong relationship"  # Weak correlation
-      }
-    } else {
-      "an uncertain relationship"
-    }
-    
-    # Determine spending trend dynamically
-    spending_trend <- if (regional_trend < -0.2) {
-      "tends to decrease"
-    } else if (regional_trend > 0.2) {
-      "tends to increase"
-    } else {
-      "remains relatively stable"
-    }
-    
-    # Determine if spending aligns with expectations
-    spending_alignment <- if (!is.na(wage_bill_gap)) {
-      if (abs(wage_bill_gap) <= 1) {
-        "is in line with expectations"
-      } else if (wage_bill_gap > 1) {
-        "is higher than expected"
-      } else {
-        "is lower than expected"
-      }
-    } else {
-      "is uncertain compared to expectations"
-    }
-    
-    # Fully Automated Dynamic Text
-    automated_text <- paste0(
-      first_country, "’s public wage bill has ", trend_decade, " over the past ten years. ",
-      "The wage bill has remained at ", ifelse(is.na(wage_bill_gdp_latest), "N/A", round(wage_bill_gdp_latest, 1)), 
-      " percent of GDP since 2014. ",
-      "The wage bill-to-GDP ratio ", covid_spike_text, " but has since returned to pre-pandemic levels. ",
-      "Although the wage bill as a share of public expenditures ", change_text, " ", 
-      ifelse(is.na(wage_bill_exp_2010), "N/A", round(wage_bill_exp_2010, 1)), 
-      " percent in 2010 to ", ifelse(is.na(wage_bill_exp_latest), "N/A", round(wage_bill_exp_latest, 1)), 
-      " percent in ", last_year, ", as shown in Figure 1. ",
-      "The public sector wage bill in ", first_country, " is ", comparison_text, ". ",
-      "This could be attributed to various factors, including prudent fiscal management and consistent government policies ",
-      "aimed at maintaining budgetary discipline; however, this requires a deeper analysis.", 
-      "\n\n",
-      first_country, "’s wage bill spending ", spending_alignment, 
-      " given its level of economic development. Figure 2 illustrates ", relationship_text,
-      " between a country’s level of economic development (as measured by GDP per capita) and the size of its public sector ",
-      "in the ", first_region, " region. This means that as GDP per capita increases, the public sector wage bill ", spending_trend, 
-      ". Given ", first_country, "’s proximity to the line of best fit, it indicates that ",
-      first_country, " spends ", spending_alignment, " on its public sector wage bill than would be expected given its level of economic development."
-    )
-    
-    # Add Dynamic Text to Document
-    doc <- doc %>% body_add_par(automated_text, style = "Normal")
-    
-    # Wage Bill as % of GDP
-    graph_gdp <- ggplot(selected_data_df, aes(x = year, y = value, color = country_name)) +
-      geom_line(size = 1.2) + geom_point(size = 3) +
-      labs(title = "Wage Bill as % of GDP Over Time", x = "Year", y = "Wage Bill (% of GDP)") +
-      theme_minimal()
-    
-    doc <- add_plot_to_doc(doc, graph_gdp, "Wage Bill as % of GDP Over Time")
-    
-    # Wage Bill as % of Public Expenditure
-    graph_publicexp <- ggplot(selected_data_df, aes(x = year, y = value, color = country_name)) +
-      geom_line(size = 1.2) + geom_point(size = 3) +
-      labs(title = "Wage Bill as % of Public Expenditure Over Time", x = "Year", y = "Wage Bill (% of Public Expenditure)") +
-      theme_minimal()
-    
-    doc <- add_plot_to_doc(doc, graph_publicexp, "Wage Bill as % of Public Expenditure Over Time")
-    
-    # Public Sector Wage Premium
-    doc <- doc %>% body_add_par("Public Sector Wage Premium Distribution", style = "heading 1")
-    filtered_data <- public_wage_premium %>% filter(country_name %in% input$countries_wage_premium) %>% drop_na(value_percentage)
-    
-    # Handle case when filtered_data is empty or has only NAs
-    if (nrow(filtered_data) == 0 || all(is.na(filtered_data$value_percentage))) {
-      warning("No data available for selected countries in public wage premium.")
-      avg_wage_premium <- NA
-      highest_country <- "N/A"
-      lowest_country <- "N/A"
-    } else {
-      filtered_data$value_percentage <- as.numeric(filtered_data$value_percentage)
-      avg_wage_premium <- round(mean(filtered_data$value_percentage, na.rm = TRUE), 1)
-      highest_country <- filtered_data %>% filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>% pull(country_name)
-      lowest_country <- filtered_data %>% filter(value_percentage == min(value_percentage, na.rm = TRUE)) %>% pull(country_name)
-    }
-    
-    ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, color = country_name)) +
-      geom_point(size = 5) +
-      labs(title = "Public Sector Wage Premium by Country", x = "Country", y = "Wage Premium (%)", color = "Country") +
-      theme_minimal()
-    
-    interpretation_wage_premium <- paste0(
-      "This graph displays the wage premium in the public sector relative to the private sector across selected countries. ",
-      "In ", first_country, ", the public sector wage premium is approximately ", ifelse(is.na(avg_wage_premium), "N/A", avg_wage_premium), "%. ",
-      highest_country, " has the highest wage premium among the selected countries, while ", lowest_country, 
-      " has the lowest."
-    )
-    
-    doc <- add_plot_to_doc(doc, ggplot_obj, "Public Sector Wage Premium Distribution", interpretation_wage_premium)
-    
-    # Public Sector Employment
-    doc <- doc %>% body_add_par("Public Sector Employment", style = "heading 1")
-    
-    # First Graph - Public Sector Employment (Last Year Available)
-    first_graph <- ggplot(public_sector_emp_temp_last %>% filter(country_name %in% input$countries_first), 
-                          aes(x = country_name, y = value, color = indicator_name)) +
-      geom_point(size = 4) +
-      labs(
-        title = "Public Sector Employment (Last Year Available)", 
-        x = "Country", 
-        y = "Public Sector Employment (% of Total Employment)",  # Clearer label
-        color = "Indicator"  # Legend for employment category
-      ) +
-      theme_minimal()
-    
-    # Generate dynamic interpretation for the first graph
-    avg_employment <- round(mean(public_sector_emp_temp_last$value, na.rm = TRUE), 1)
-    highest_country <- public_sector_emp_temp_last %>% 
-      filter(value == max(value, na.rm = TRUE)) %>% pull(country_name)
-    lowest_country <- public_sector_emp_temp_last %>% 
-      filter(value == min(value, na.rm = TRUE)) %>% pull(country_name)
-    
-    interpretation_employment_last <- paste0(
-      "This graph shows the share of total employment in the public sector across selected countries. ",
-      "In ", first_country, ", public sector employment accounts for approximately ", avg_employment, 
-      "% of total employment. ", highest_country, " has the highest share, while ", lowest_country, 
-      " has the lowest. Differences in public sector employment levels may reflect varying government employment policies and labor market structures."
-    )
-    
-    doc <- add_plot_to_doc(doc, first_graph, "Public Sector Employment (Last Year Available)", interpretation_employment_last)
-    
-    # Second Graph - Public Sector Employment Over Time
-    second_graph <- ggplot(public_sector_emp_temp %>% filter(country_name == input$country_second), 
-                           aes(x = year, y = value, color = indicator_name)) +
-      geom_line(size = 1.2) +
-      geom_point(size = 3) +
-      labs(
-        title = paste("Public Sector Employment Over Time in", input$country_second), 
-        x = "Year", 
-        y = "Public Sector Employment (% of Total Employment)",  # Clearer label
-        color = "Indicator"  # Legend for employment category
-      ) +
-      theme_minimal()
-    
-    # Generate dynamic interpretation for the second graph
-    latest_value <- public_sector_emp_temp %>% 
-      filter(country_name == input$country_second) %>% 
-      filter(year == max(year, na.rm = TRUE)) %>% pull(value)
-    
-    interpretation_employment_trend <- paste0(
-      "This graph presents the trend in public sector employment over time in ", input$country_second, 
-      ". As of the latest available data, the public sector employment rate stands at approximately ", 
-      ifelse(is.na(latest_value), "N/A", round(latest_value, 1)), "%. The trend over time helps to assess the evolution of government employment relative to overall labor force dynamics."
-    )
-    
-    doc <- add_plot_to_doc(doc, second_graph, paste("Public Sector Employment Over Time in", input$country_second), interpretation_employment_trend)
-    
-    # Gender Workforce Graphs
-    
-    doc <- doc %>% body_add_par("Gender Workforce", style = "heading 1")
-    
-    # First Graph - Female Employment by Sector (Last Year Available)
-    first_graph <- ggplot(gender_workforce %>% filter(country_name %in% input$countries_gender), 
-                          aes(x = country_name, y = value_percentage, fill = indicator_name)) +
-      geom_bar(stat = "identity", position = "dodge") +
-      scale_fill_manual(values = c(
-        "Females, as a share of private paid employees" = "#B3242B",  # Dark Red
-        "Females, as a share of public paid employees" = "#003366"    # Dark Blue
-      )) +
-      labs(
-        title = "Female Employment by Sector (Last Year Available)", 
-        x = "Country", 
-        y = "Female Employment (% of Total Employment)",  # Clearer label
-        fill = "Sector"  # Legend title updated
-      ) +
-      theme_minimal()
-    
-    # Generate dynamic interpretation for the first graph
-    avg_public_female <- round(mean(gender_workforce %>% 
-                                      filter(indicator_name == "Females, as a share of public paid employees") %>% 
-                                      pull(value_percentage), na.rm = TRUE), 1)
-    
-    avg_private_female <- round(mean(gender_workforce %>% 
-                                       filter(indicator_name == "Females, as a share of private paid employees") %>% 
-                                       pull(value_percentage), na.rm = TRUE), 1)
-    
-    highest_public_country <- gender_workforce %>%
-      filter(indicator_name == "Females, as a share of public paid employees") %>%
-      filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>%
-      pull(country_name)
-    
-    interpretation_gender_workforce <- paste0(
-      "This graph compares female employment in the public and private sectors across selected countries. ",
-      "On average, female representation in public sector employment is around ", avg_public_female, "%, while in the private sector it is ",
-      avg_private_female, "%. ", highest_public_country, " has the highest female participation in the public sector, ",
-      "indicating potential differences in gender hiring practices or workforce policies."
-    )
-    
-    # Save and add first graph to document
-    img_path1 <- tempfile(fileext = ".png")
-    ggsave(img_path1, plot = first_graph, width = 8, height = 6)
-    doc <- add_plot_to_doc(doc, first_graph, "Female Employment by Sector (Last Year Available)", interpretation_gender_workforce)
-    
-    # Second Graph - Female Employment Over Time
-    second_graph <- ggplot(gender_workforce %>% filter(country_name == input$country_gender), 
-                           aes(x = year, y = value_percentage, color = indicator_name)) +
-      geom_line(size = 1.2) +
-      geom_point(size = 3) +
-      scale_color_manual(values = c(
-        "Females, as a share of private paid employees" = "#B3242B",  # Dark Red
-        "Females, as a share of public paid employees" = "#003366"    # Dark Blue
-      )) +
-      labs(
-        title = paste("Female Employment by Sector Over Time in", input$country_gender), 
-        x = "Year", 
-        y = "Female Employment (% of Total Employment)",  # Clearer label
-        color = "Sector"  # Updated legend title
-      ) +
-      theme_minimal()
-    
-    # Generate dynamic interpretation for the second graph
-    latest_public_female <- gender_workforce %>%
-      filter(country_name == input$country_gender, 
-             indicator_name == "Females, as a share of public paid employees") %>%
-      filter(year == max(year, na.rm = TRUE)) %>%
-      pull(value_percentage)
-    
-    latest_private_female <- gender_workforce %>%
-      filter(country_name == input$country_gender, 
-             indicator_name == "Females, as a share of private paid employees") %>%
-      filter(year == max(year, na.rm = TRUE)) %>%
-      pull(value_percentage)
-    
-    interpretation_gender_trend <- paste0(
-      "This graph shows the trend in female employment in the public and private sectors over time in ", input$country_gender, 
-      ". As of the most recent year, the share of women in public sector employment is ", 
-      ifelse(is.na(latest_public_female), "N/A", paste0(latest_public_female, "%")), 
-      ", compared to ", 
-      ifelse(is.na(latest_private_female), "N/A", paste0(latest_private_female, "%")), 
-      " in the private sector. This trend can indicate gender differences in hiring, job stability, and sectoral preferences."
-    )
-    
-    # Save and add second graph to document
-    img_path2 <- tempfile(fileext = ".png")
-    ggsave(img_path2, plot = second_graph, width = 8, height = 6)
-    doc <- add_plot_to_doc(doc, second_graph, paste("Female Employment by Sector Over Time in", input$country_gender), interpretation_gender_trend)
-    
-    # ---Wage Premium Graphs ️--
-    
-    doc <- doc %>% body_add_par("Gender Wage Premium Across Industries", style = "heading 1")
-    
-    # Filter data for selected countries and relevant industries
-    filtered_data <- gender_wage_premiumpublic %>%
-      filter(country_name %in% input$selected_countries, 
-             indicator_name %in% c("Gender wage premium in the public sector, by industry: Public Administration (compared to male paid employees)", 
-                                   "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)", 
-                                   "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)", 
-                                   "Other"))
-    
-    # Rename industry labels for clarity
-    filtered_data$indicator_label <- recode(filtered_data$indicator_name,
-                                            "Gender wage premium in the public sector, by industry: Public Administration (compared to male paid employees)" = "Core Public Administration",
-                                            "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)" = "Education",
-                                            "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)" = "Health",
-                                            "Other" = "Other Public Sector Jobs"
-    )
-    
-    # Create the bar chart
-    gender_wage_plot <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_label)) +
-      geom_bar(stat = "identity", position = "dodge") +
-      scale_fill_brewer(palette = "Blues") +  # Using a blue color palette for readability
-      labs(
-        title = "Gender Wage Premium in Public Sector by Industry",
-        x = "Country", 
-        y = "Wage Premium (%)",  # Clearer Y-axis label
-        fill = "Industry"  # Updated legend title
-      ) +
-      theme_minimal()
-    
-    # Generate dynamic interpretation
-    
-    # Filter public sector wage premium data
-    filtered_data <- public_wage_premium %>% 
-      filter(country_name %in% input$countries_wage_premium) %>% 
-      drop_na(value_percentage)
-    
-    # Check if the dataset is empty
-    if (nrow(filtered_data) == 0) {
-      warning("No data available for selected countries in public wage premium.")
-      
-      # Assign default values to avoid errors
-      avg_wage_premium <- NA
-      highest_country <- "N/A"
-      lowest_country <- "N/A"
-    } else {
-      # Convert to numeric safely
-      filtered_data$value_percentage <- as.numeric(filtered_data$value_percentage)
-      
-      # Calculate key statistics safely
-      avg_wage_premium <- round(mean(filtered_data$value_percentage, na.rm = TRUE), 1)
-      
-      highest_country <- filtered_data %>%
-        filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>%
-        pull(country_name)
-      
-      lowest_country <- filtered_data %>%
-        filter(value_percentage == min(value_percentage, na.rm = TRUE)) %>%
-        pull(country_name)
-    }
-    
-    interpretation_gender_wage_premium <- paste0(
-      "This graph displays the gender wage premium across different public sector industries, comparing wage differences between men and women. ",
-      "On average, the gender wage premium is approximately ", avg_wage_premium, "% across industries in selected countries. ",
-      highest_wage_gap$country_name, " has the highest wage premium in the ", highest_wage_gap$indicator_label, 
-      " sector at ", round(highest_wage_gap$value_percentage, 1), "%, whereas ", lowest_wage_gap$country_name, 
-      " has the lowest premium in ", lowest_wage_gap$indicator_label, " at ", round(lowest_wage_gap$value_percentage, 1), "%.",
-      " This suggests that wage disparities between men and women vary significantly across industries."
-    )
-    
-    # Save and add the plot to the document
-    img_path <- tempfile(fileext = ".png")
-    ggsave(filename = img_path, plot = gender_wage_plot, width = 8, height = 6, dpi = 300)
-    doc <- add_plot_to_doc(doc, gender_wage_plot, "Gender Wage Premium Across Industries", interpretation_gender_wage_premium)
-    
-    # ---Public Sector Education Graphs ️--
-    
-    doc <- doc %>% body_add_par("Public Sector by Education Levels", style = "heading 1")
-    
-    # Filter Data
-    filtered_data <- public_wage_premium_educ %>%
-      filter(country_name == input$selected_country) %>%
-      drop_na(value_percentage)
-    
-    # Handle missing data case
-    if (nrow(filtered_data) == 0) {
-      doc <- doc %>% body_add_par("No data available for the selected country.", style = "Normal")
-      print(doc, target = file)
-      return()
-    }
-    
-    # Create the Bar Chart
-    ggplot_obj <- ggplot(filtered_data, aes(x = indicator_name, y = value_percentage, fill = indicator_name)) +
-      geom_bar(stat = "identity") +
-      scale_fill_manual(values = c(
-        "No Education" = "#003366",       # Dark Blue
-        "Primary Education" = "#B3242B",  # Dark Red
-        "Secondary Education" = "#3B3B3B",# Dark Gray/Black
-        "Tertiary Education" = "#006400"  # Dark Green
-      )) +
-      labs(
-        title = "Public Sector Wage Premium by Education Level",
-        x = "Education Level",  # Clearer label
-        y = "Wage Premium (%)",  # Clearer label
-        fill = "Education Level"  # Updated legend title
-      ) +
-      theme_minimal()
-    
-    # Generate dynamic interpretation
-    avg_wage_premium <- round(mean(filtered_data$value_percentage, na.rm = TRUE), 1)
-    
-    highest_premium <- filtered_data %>% 
-      filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>%
-      select(indicator_name, value_percentage)
-    
-    lowest_premium <- filtered_data %>% 
-      filter(value_percentage == min(value_percentage, na.rm = TRUE)) %>%
-      select(indicator_name, value_percentage)
-    
-    interpretation_education_wage_premium <- paste0(
-      "This graph illustrates the public sector wage premium by education level in ", input$selected_country, 
-      ". On average, public employees earn a wage premium of approximately ", avg_wage_premium, "% over their private sector counterparts. ",
-      highest_premium$indicator_name, " has the highest wage premium at ", round(highest_premium$value_percentage, 1), 
-      "%, while ", lowest_premium$indicator_name, " has the lowest premium at ", round(lowest_premium$value_percentage, 1), "%.",
-      " The wage premium tends to increase with higher education levels, suggesting that better-educated public sector workers may receive stronger compensation benefits."
-    )
-    
-    # Save and add the plot to the document
-    img_path_educ <- tempfile(fileext = ".png")
-    ggsave(img_path_educ, plot = ggplot_obj, width = 8, height = 6)
-    
-    doc <- add_plot_to_doc(doc, ggplot_obj, "Public Sector by Education Level", interpretation_education_wage_premium)
-    
-    
-    # --- 4️⃣ Education in Public vs. Private Sectors ---
-    doc <- doc %>% body_add_par("Education in Public vs. Private Sectors", style = "heading 1")
-    
-    # Filter Data
-    filtered_education <- tertiary_education %>% filter(country_name %in% input$selected_countries)
-    
-    # Create the Bar Chart
-    education_graph <- ggplot(filtered_education, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
-      geom_bar(stat = "identity", position = "dodge") +
-      labs(
-        title = "Tertiary Education by Sector and Country",
-        x = "Country", 
-        y = "Share of Workforce with Tertiary Education (%)",  # Clearer label
-        fill = "Sector"  # Updated legend title
-      ) +
-      theme_minimal()
-    
-    # Generate dynamic interpretation
-    avg_tertiary_public <- round(mean(filtered_education %>% 
-                                        filter(indicator_name == "Public Sector") %>% 
-                                        pull(value_percentage), na.rm = TRUE), 1)
-    
-    avg_tertiary_private <- round(mean(filtered_education %>% 
-                                         filter(indicator_name == "Private Sector") %>% 
-                                         pull(value_percentage), na.rm = TRUE), 1)
-    
-    highest_tertiary_public <- filtered_education %>%
-      filter(indicator_name == "Public Sector") %>%
-      filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>%
-      pull(country_name)
-    
-    interpretation_education_sector <- paste0(
-      "This graph compares the share of workers with tertiary education across the public and private sectors in different countries. ",
-      "On average, ", avg_tertiary_public, "% of public sector employees hold a tertiary degree, compared to ", 
-      avg_tertiary_private, "% in the private sector. ", highest_tertiary_public, 
-      " has the highest share of tertiary-educated employees in the public sector. These trends suggest that education requirements and hiring preferences may differ between sectors."
-    )
-    
-    # Save and add the plot to the document
-    img_path_educ <- tempfile(fileext = ".png")
-    ggsave(img_path_educ, plot = education_graph, width = 8, height = 6)
-    
-    doc <- add_plot_to_doc(doc, education_graph, "Tertiary Education by Sector", interpretation_education_sector)
-    
-    # --- 5️⃣ Wage Premium Analysis ---
-    doc <- doc %>% body_add_par("Wage Premium Trends", style = "heading 1")
-    
-    # Filter Data
-    
-    filtered_data <- public_wage_premium %>%
-      filter(country_name %in% input$countries_wage_premium & !is.na(value_percentage))
-    
-    
-    # Create the Scatter Plot
-    wage_premium_graph <- ggplot(filtered_wage_premium, aes(x = country_name, y = value_percentage, color = country_name)) +
-      geom_point(size = 4) +
-      labs(
-        title = "Public Sector Wage Premium by Country",
-        x = "Country", 
-        y = "Wage Premium (%)",  # Clearer label
-        color = "Country"  # Legend title for clarity
-      ) +
-      theme_minimal()
-    
-    # Generate dynamic interpretation
-    avg_wage_premium <- round(mean(filtered_wage_premium$value_percentage, na.rm = TRUE), 1)
-    
-    highest_wage_premium <- filtered_wage_premium %>% 
-      filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>% 
-      select(country_name, value_percentage)
-    
-    lowest_wage_premium <- filtered_wage_premium %>% 
-      filter(value_percentage == min(value_percentage, na.rm = TRUE)) %>% 
-      select(country_name, value_percentage)
-    
-    interpretation_wage_premium_trends <- paste0(
-      "This graph presents the public sector wage premium by country, indicating how much more (or less) public employees earn relative to private sector workers. ",
-      "On average, the wage premium is ", avg_wage_premium, "% in the selected countries. ", highest_wage_premium$country_name, 
-      " has the highest public sector wage premium at ", round(highest_wage_premium$value_percentage, 1), "%, while ", 
-      lowest_wage_premium$country_name, " has the lowest at ", round(lowest_wage_premium$value_percentage, 1), "%.",
-      " This variation may reflect different government compensation structures, labor market conditions, or collective bargaining agreements."
-    )
-    
-    # Save and add the plot to the document
-    img_path_wage <- tempfile(fileext = ".png")
-    ggsave(img_path_wage, plot = wage_premium_graph, width = 8, height = 6)
-    
-    doc <- add_plot_to_doc(doc, wage_premium_graph, "Public Sector Wage Premium by Country", interpretation_wage_premium_trends)
-    
-    # --- 6️⃣ Gender Wage Premium ---
-    doc <- doc %>% body_add_par("Gender Wage Premium Analysis", style = "heading 1")
-    
-    # Filter data for selected countries
-    filtered_gender_wage <- gender_wage_premium_last %>% filter(country_name %in% input$countries_first)
-    
-    # Create the scatter plot
-    gender_wage_graph <- ggplot(filtered_gender_wage, aes(x = country_name, y = value, color = indicator_label)) +
-      geom_point(size = 4) +
-      labs(
-        title = "Public Sector Wage Premium by Gender (Last Year Available)", 
-        x = "Country", 
-        y = "Wage Premium (%)",  # Clearer label
-        color = "Gender"  # Updated legend title
-      ) +
-      theme_minimal()
-    
-    # Generate dynamic interpretation
-    avg_gender_wage_premium <- round(mean(filtered_gender_wage$value, na.rm = TRUE), 1)
-    
-    highest_gender_gap <- filtered_gender_wage %>% 
-      filter(value == max(value, na.rm = TRUE)) %>%
-      select(country_name, indicator_label, value)
-    
-    lowest_gender_gap <- filtered_gender_wage %>% 
-      filter(value == min(value, na.rm = TRUE)) %>%
-      select(country_name, indicator_label, value)
-    
-    interpretation_gender_wage <- paste0(
-      "This graph displays the gender wage premium in the public sector, highlighting wage differences between male and female employees. ",
-      "On average, the gender wage premium is approximately ", avg_gender_wage_premium, "% in the selected countries. ",
-      highest_gender_gap$country_name, " has the highest gender wage gap in favor of ", highest_gender_gap$indicator_label,
-      " at ", round(highest_gender_gap$value, 1), "%, whereas ", lowest_gender_gap$country_name, 
-      " shows the lowest wage premium in ", lowest_gender_gap$indicator_label, " at ", round(lowest_gender_gap$value, 1), "%.",
-      " These disparities may be influenced by differences in seniority, sector-specific pay scales, or gender representation in high-paying roles."
-    )
-    
-    # Save and add the plot to the document
-    img_path_gender_wage <- tempfile(fileext = ".png")
-    ggsave(img_path_gender_wage, plot = gender_wage_graph, width = 8, height = 6)
-    
-    doc <- add_plot_to_doc(doc, gender_wage_graph, "Public Sector Wage Premium by Gender", interpretation_gender_wage)
-    
-    
-    # ✅ Conclusion
-    doc <- doc %>% body_add_par("Conclusion", style = "heading 1")
-    doc <- doc %>% body_add_par(
-      "This report provides a comprehensive analysis of wage bill trends, gender employment representation, and workforce participation in the public sector. The findings highlight key trends and disparities across different sectors and countries.",
-      style = "Normal"
-    )
-    
-    # ✅ Save the Word Document
-    print(doc, target = file)
-  }
-)
 
-   
    
