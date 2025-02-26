@@ -3635,31 +3635,132 @@ server <- function(input, output, session) {
       style = "Normal"
     )
     
-    # Filter Data for Selected Countries
+    # ✅ Ensure at least one country is selected
+    if (is.null(input$selected_countries) || length(input$selected_countries) == 0) {
+      doc <- doc %>% body_add_par("No countries selected for analysis.", style = "Normal")
+      return(doc)
+    }
+    
+    # ✅ Extract the first selected country
+    first_country <- input$selected_countries[1]
+    
+    # ✅ Filter data for selected countries
     filtered_data <- gender_leadership %>% filter(country_name %in% input$selected_countries)
     
-    # Handle empty dataset case
+    # ✅ Handle empty dataset case
     if (nrow(filtered_data) == 0) {
       doc <- doc %>% body_add_par("No data available for the selected countries.", style = "Normal")
       return(doc)
     }
     
-    # Generate ggplot for Female Occupational Groups
+    # ✅ Generate ggplot for Female Occupational Groups
     ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_label)) +
       geom_bar(stat = "identity", position = "dodge") +
       scale_fill_manual(values = c("Clerks-Public" = "#003366", "Managers-Public" = "#ADD8E6",
                                    "Clerks-Private" = "#006400", "Managers-Private" = "#90EE90")) +
-      labs(title = "Females by Occupational Group and Sector", x = "Country", y = "Female Share (%)") +
+      labs(title = "Females by Occupational Group and Sector", x = "Country", y = "Female Share (%)", fill = "Occupation") +
       theme_minimal()
     
-    # Save the plot as an image
+    # ✅ Save the plot as an image
     img_path <- tempfile(fileext = ".png")
     ggsave(img_path, plot = ggplot_obj, width = 8, height = 6)
     
-    # Add Image to the Document
+    # ✅ Extract summary statistics
+    highest_public_managers <- filtered_data %>%
+      filter(indicator_label == "Managers-Public") %>%
+      filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>%
+      pull(country_name) %>%
+      first()
+    
+    lowest_public_managers <- filtered_data %>%
+      filter(indicator_label == "Managers-Public") %>%
+      filter(value_percentage == min(value_percentage, na.rm = TRUE)) %>%
+      pull(country_name) %>%
+      first()
+    
+    highest_private_managers <- filtered_data %>%
+      filter(indicator_label == "Managers-Private") %>%
+      filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>%
+      pull(country_name) %>%
+      first()
+    
+    lowest_private_managers <- filtered_data %>%
+      filter(indicator_label == "Managers-Private") %>%
+      filter(value_percentage == min(value_percentage, na.rm = TRUE)) %>%
+      pull(country_name) %>%
+      first()
+    
+    highest_public_clerks <- filtered_data %>%
+      filter(indicator_label == "Clerks-Public") %>%
+      filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>%
+      pull(country_name) %>%
+      first()
+    
+    lowest_public_clerks <- filtered_data %>%
+      filter(indicator_label == "Clerks-Public") %>%
+      filter(value_percentage == min(value_percentage, na.rm = TRUE)) %>%
+      pull(country_name) %>%
+      first()
+    
+    highest_private_clerks <- filtered_data %>%
+      filter(indicator_label == "Clerks-Private") %>%
+      filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>%
+      pull(country_name) %>%
+      first()
+    
+    lowest_private_clerks <- filtered_data %>%
+      filter(indicator_label == "Clerks-Private") %>%
+      filter(value_percentage == min(value_percentage, na.rm = TRUE)) %>%
+      pull(country_name) %>%
+      first()
+    
+    avg_public_managers <- round(mean(filtered_data$value_percentage[filtered_data$indicator_label == "Managers-Public"], na.rm = TRUE), 1)
+    avg_private_managers <- round(mean(filtered_data$value_percentage[filtered_data$indicator_label == "Managers-Private"], na.rm = TRUE), 1)
+    avg_public_clerks <- round(mean(filtered_data$value_percentage[filtered_data$indicator_label == "Clerks-Public"], na.rm = TRUE), 1)
+    avg_private_clerks <- round(mean(filtered_data$value_percentage[filtered_data$indicator_label == "Clerks-Private"], na.rm = TRUE), 1)
+    
+    # ✅ Extract employment levels for the first country and comparison
+    first_country_public_managers <- filtered_data %>%
+      filter(country_name == first_country, indicator_label == "Managers-Public") %>%
+      pull(value_percentage) %>%
+      first() %>%
+      coalesce(0)
+    
+    first_country_private_managers <- filtered_data %>%
+      filter(country_name == first_country, indicator_label == "Managers-Private") %>%
+      pull(value_percentage) %>%
+      first() %>%
+      coalesce(0)
+    
+    # ✅ Compare first country with others
+    comparison_public_managers <- if (first_country_public_managers > avg_public_managers) {
+      paste0("This is **higher** than the average of **", avg_public_managers, "%** across the other selected countries.")
+    } else {
+      paste0("This is **lower** than the average of **", avg_public_managers, "%** across the other selected countries.")
+    }
+    
+    comparison_private_managers <- if (first_country_private_managers > avg_private_managers) {
+      paste0("This is **higher** than the average of **", avg_private_managers, "%** across the other selected countries.")
+    } else {
+      paste0("This is **lower** than the average of **", avg_private_managers, "%** across the other selected countries.")
+    }
+    
+    interpretation_text <- paste0(
+      "This graph compares female representation in different occupational groups across selected countries. ",
+      "On average, **", avg_public_managers, "%** of public sector managers are female, while in the private sector, female managers account for **", avg_private_managers, "%**. ",
+      "The highest female representation among public sector managers is in **", highest_public_managers, "**, whereas the lowest is in **", lowest_public_managers, "**. ",
+      "In the private sector, the highest female manager share is in **", highest_private_managers, "**, while the lowest is in **", lowest_private_managers, "**.\n\n",
+      "In **", first_country, "**, female managers account for **", first_country_public_managers, "%** in the public sector. ", 
+      comparison_public_managers, "\n",
+      "In the private sector, female managers in **", first_country, "** represent **", first_country_private_managers, "%**. ",
+      comparison_private_managers
+    )
+    
+    # ✅ Add Image and Interpretation to the Document
     doc <- doc %>% 
       body_add_img(src = img_path, width = 6, height = 4) %>% 
-      body_add_par("This graph shows the share of females in various occupational groups (Managers/Clerks) in the public and private sectors for the selected countries.", style = "Normal")
+      body_add_par("This graph shows the share of females in various occupational groups (Managers/Clerks) in the public and private sectors for the selected countries.", style = "Normal") %>%
+      body_add_par(interpretation_text, style = "Normal")
     
     return(doc)
   }
@@ -3744,16 +3845,26 @@ server <- function(input, output, session) {
     }
   )
   generate_gender_wage_premium_section <- function(doc) {
+    # Add Section Title
     doc <- doc %>% body_add_par("Gender Wage Premium in Public Sector by Industry", style = "heading 1")
     
-    # Add introduction
+    # Add Introduction
     doc <- doc %>% body_add_par(
       "This section presents an analysis of gender wage premiums in the public sector by industry 
-    (Core Public Administration, Education, and Health) across selected countries.", 
+      (Public Administration, Education, and Health) across selected countries.", 
       style = "Normal"
     )
     
-    # Filter data for Gender Wage Premium
+    # ✅ Ensure at least one country is selected
+    if (is.null(input$selected_countries) || length(input$selected_countries) == 0) {
+      doc <- doc %>% body_add_par("No countries selected for analysis.", style = "Normal")
+      return(doc)
+    }
+    
+    # ✅ Extract the first selected country
+    first_country <- input$selected_countries[1]
+    
+    # ✅ Filter data for selected countries
     filtered_data <- gender_wage_premiumpublic %>%
       filter(country_name %in% input$selected_countries, 
              indicator_name %in% c("Gender wage premium in the public sector, by industry: Public Administration (compared to male paid employees)", 
@@ -3761,39 +3872,119 @@ server <- function(input, output, session) {
                                    "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)", 
                                    "Other"))
     
-    # Handle empty dataset case
+    # ✅ Handle empty dataset case
     if (nrow(filtered_data) == 0) {
       doc <- doc %>% body_add_par("No data available for the selected countries.", style = "Normal")
       return(doc)
     }
     
-    # Rename indicators for readability
+    # ✅ Rename indicators for readability
     filtered_data$indicator_label <- recode(filtered_data$indicator_name,
-                                            "Gender wage premium in the public sector, by industry: Public Administration (compared to male paid employees)" = "Core Public Administration",
+                                            "Gender wage premium in the public sector, by industry: Public Administration (compared to male paid employees)" = "Public Administration",
                                             "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)" = "Education",
                                             "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)" = "Health")
     
-    # Generate Gender Wage Premium ggplot
+    # ✅ Generate Gender Wage Premium ggplot
     gender_wage_plot <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_label)) +
       geom_bar(stat = "identity", position = "dodge") +
       scale_fill_brewer(palette = "Blues") +  # Using Blues color palette
       labs(title = "Gender Wage Premium in Public Sector by Industry",
-           x = "Country", y = "Wage Premium (%)") +
+           x = "Country", y = "Wage Premium (%)", fill = "Industry") +
       theme_minimal()
     
-    # Save the plot as an image
+    # ✅ Save the plot as an image
     img_path <- tempfile(fileext = ".png")
     ggsave(filename = img_path, plot = gender_wage_plot, width = 8, height = 6, dpi = 300)
     
-    # Add image and text to document
+    # ✅ Extract summary statistics
+    highest_admin <- filtered_data %>%
+      filter(indicator_label == "Public Administration") %>%
+      filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>%
+      pull(country_name) %>%
+      first()
+    
+    lowest_admin <- filtered_data %>%
+      filter(indicator_label == "Public Administration") %>%
+      filter(value_percentage == min(value_percentage, na.rm = TRUE)) %>%
+      pull(country_name) %>%
+      first()
+    
+    highest_education <- filtered_data %>%
+      filter(indicator_label == "Education") %>%
+      filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>%
+      pull(country_name) %>%
+      first()
+    
+    lowest_education <- filtered_data %>%
+      filter(indicator_label == "Education") %>%
+      filter(value_percentage == min(value_percentage, na.rm = TRUE)) %>%
+      pull(country_name) %>%
+      first()
+    
+    highest_health <- filtered_data %>%
+      filter(indicator_label == "Health") %>%
+      filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>%
+      pull(country_name) %>%
+      first()
+    
+    lowest_health <- filtered_data %>%
+      filter(indicator_label == "Health") %>%
+      filter(value_percentage == min(value_percentage, na.rm = TRUE)) %>%
+      pull(country_name) %>%
+      first()
+    
+    avg_admin <- round(mean(filtered_data$value_percentage[filtered_data$indicator_label == "Public Administration"], na.rm = TRUE), 1)
+    avg_education <- round(mean(filtered_data$value_percentage[filtered_data$indicator_label == "Education"], na.rm = TRUE), 1)
+    avg_health <- round(mean(filtered_data$value_percentage[filtered_data$indicator_label == "Health"], na.rm = TRUE), 1)
+    
+    # ✅ Extract wage premium for the first country and comparison
+    first_country_admin <- filtered_data %>%
+      filter(country_name == first_country, indicator_label == "Public Administration") %>%
+      pull(value_percentage) %>%
+      first() %>%
+      coalesce(0)
+    
+    first_country_education <- filtered_data %>%
+      filter(country_name == first_country, indicator_label == "Education") %>%
+      pull(value_percentage) %>%
+      first() %>%
+      coalesce(0)
+    
+    # ✅ Compare first country with others
+    comparison_admin <- if (first_country_admin > avg_admin) {
+      paste0("This is **higher** than the average of **", avg_admin, "%** across the other selected countries.")
+    } else {
+      paste0("This is **lower** than the average of **", avg_admin, "%** across the other selected countries.")
+    }
+    
+    comparison_education <- if (first_country_education > avg_education) {
+      paste0("This is **higher** than the average of **", avg_education, "%** across the other selected countries.")
+    } else {
+      paste0("This is **lower** than the average of **", avg_education, "%** across the other selected countries.")
+    }
+    
+    interpretation_text <- paste0(
+      "This graph compares the gender wage premium in the public sector across different industries. ",
+      "On average, the wage premium in **Public Administration** is **", avg_admin, "%**, in **Education** it is **", avg_education, "%**, ",
+      "and in **Health** it is **", avg_health, "%**.\n\n",
+      "The highest wage premium in **Public Administration** is in **", highest_admin, "**, while the lowest is in **", lowest_admin, "**. ",
+      "In **Education**, the highest wage premium is observed in **", highest_education, "**, whereas the lowest is in **", lowest_education, "**. ",
+      "For **Health**, the highest gender wage premium is in **", highest_health, "**, while the lowest is in **", lowest_health, "**.\n\n",
+      "In **", first_country, "**, the wage premium in Public Administration is **", first_country_admin, "%**. ", 
+      comparison_admin, "\n",
+      "In Education, the wage premium in **", first_country, "** is **", first_country_education, "%**. ",
+      comparison_education
+    )
+    
+    # ✅ Add Image and Interpretation to the Document
     doc <- doc %>% 
       body_add_img(src = img_path, width = 6, height = 4) %>% 
       body_add_par("This graph shows the gender wage premium in the public sector across different industries.", style = "Normal") %>% 
-      body_add_par("Note: This indicator represents the gender wage premium across industries in the public sector.", 
-                   style = "Normal")
+      body_add_par(interpretation_text, style = "Normal")
     
     return(doc)
   }
+  
   generate_intro_section <- function(doc) {
     # Initialize Word document
     doc <- read_docx() 
@@ -3861,6 +4052,20 @@ server <- function(input, output, session) {
     return(doc)
   }
   
+  generate_conclusion_section <- function(doc) {
+    # Add Section Title
+    doc <- doc %>% body_add_par("Conclusion", style = "heading 1")
+    
+    # Add Conclusion Text
+    doc <- doc %>% body_add_par(
+      "This report provides a comprehensive analysis of wage bill trends, gender employment representation, and workforce participation in the public sector. 
+      The findings highlight key trends and disparities across different sectors and countries.",
+      style = "Normal"
+    )
+    
+    return(doc)
+  }
+  
   
   #Download one single report
  
@@ -3891,6 +4096,9 @@ server <- function(input, output, session) {
       doc <- generate_gender_workforce_section(doc) #Gender Workforce Analysis
       doc <- generate_females_occupation_groups_section(doc) #Females by Occupational Groups
       doc <- generate_gender_wage_premium_section(doc)    # Wage Premium by industry Analysis
+      
+      # ✅ Add Conclusion Section at the End
+      doc <- generate_conclusion_section(doc)  
       
       # Save the Final Report
       print(doc, target = file)
