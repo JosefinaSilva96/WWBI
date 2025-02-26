@@ -2338,23 +2338,31 @@ server <- function(input, output, session) {
       pull(country_name) %>%
       first()
     
-    # ✅ Extract wage premium for the first country
+    # ✅ Extract wage premium for the first country and comparison
     first_country_premium <- filtered_data %>%
       filter(country_name == first_country) %>%
       pull(value_percentage) %>%
-      first()
+      coalesce(0)  # ✅ Defaults to 0 if missing
     
-    # ✅ Extract average wage premium for other selected countries (excluding first country)
     comparison_premium <- filtered_data %>%
       filter(country_name != first_country) %>%
       summarise(avg_other_countries = mean(value_percentage, na.rm = TRUE)) %>%
-      pull(avg_other_countries) %||% 0
+      pull(avg_other_countries) %>%
+      coalesce(0)  # ✅ Defaults to 0 if missing
     
-    # ✅ Assign Colors: First Selected Country = Red, Others = Dark Blue
+    # ✅ Prevent errors when comparing values
+    if (!is.na(first_country_premium) && !is.na(comparison_premium) && first_country_premium > comparison_premium) {
+      comparison_statement <- paste0("This is **higher** than the average of **", round(comparison_premium, 1), "%** across the other selected countries.")
+    } else if (!is.na(first_country_premium) && !is.na(comparison_premium)) {
+      comparison_statement <- paste0("This is **lower** than the average of **", round(comparison_premium, 1), "%** across the other selected countries.")
+    } else {
+      comparison_statement <- "Comparison data is not available."
+    }
+    
+    # ✅ Create the Dot Plot with Different Colors
     filtered_data <- filtered_data %>%
       mutate(color = ifelse(country_name == first_country, "#B3242B", "#003366"))
     
-    # ✅ Create the Dot Plot with Different Colors
     ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, color = color)) +
       geom_point(size = 5) +
       scale_color_identity() +  # Use assigned colors directly
@@ -2366,12 +2374,6 @@ server <- function(input, output, session) {
     ggsave(img_path, plot = ggplot_obj, width = 8, height = 6)
     
     # ✅ Construct comparative interpretation text
-    comparison_statement <- if (first_country_premium > comparison_premium) {
-      paste0("This is **higher** than the average of **", round(comparison_premium, 1), "%** across the other selected countries.")
-    } else {
-      paste0("This is **lower** than the average of **", round(comparison_premium, 1), "%** across the other selected countries.")
-    }
-    
     interpretation_text <- paste0(
       "This graph compares public sector wage premiums across selected countries. ",
       "On average, public sector employees earn **", avg_wage_premium, "%** more than private sector employees. ",
@@ -2513,56 +2515,138 @@ server <- function(input, output, session) {
       style = "Normal"
     )
     
-    # First Graph - Wage Premium by Gender (Multi-Country)
-    if ("firstGraphgender" %in% input$graphs_to_download & length(input$countries_first) > 0) {
+    # ✅ First Graph - Wage Premium by Gender (Multi-Country)
+    if ("firstGraphgender" %in% input$graphs_to_download && length(input$countries_first) > 0) {
       data_to_plot <- gender_wage_premium_last %>% filter(country_name %in% input$countries_first)
-      data_to_plot_long <- data_to_plot %>% 
-        select(country_name, indicator_label, year, value) %>% 
-        mutate(indicator_label = factor(indicator_label))
       
-      first_graph_wage_premium_gender <- ggplot(data_to_plot_long, aes(x = country_name, y = value, color = indicator_label)) +
-        geom_point(size = 3) +
-        labs(title = "Wage Premium Gender (Multi-Country)", x = "Country", y = "Value") +
-        theme_minimal()
-      
-      # Save the plot as an image
-      img_path1 <- tempfile(fileext = ".png")
-      ggsave(img_path1, plot = first_graph_wage_premium_gender, width = 6, height = 4)
-      
-      # Add Image and Description
-      doc <- doc %>% 
-        body_add_par("First Graph: Wage Premium Gender (Multi-Country)", style = "heading 2") %>% 
-        body_add_img(src = img_path1, width = 6, height = 4) %>% 
-        body_add_par("This graph shows the wage premium by gender across multiple countries.", style = "Normal")
+      if (nrow(data_to_plot) > 0) {
+        data_to_plot_long <- data_to_plot %>% 
+          select(country_name, indicator_label, year, value) %>% 
+          mutate(indicator_label = factor(indicator_label))
+        
+        first_graph_wage_premium_gender <- ggplot(data_to_plot_long, aes(x = country_name, y = value, color = indicator_label)) +
+          geom_point(size = 3) +
+          labs(title = "Wage Premium Gender (Multi-Country)", x = "Country", y = "Value") +
+          theme_minimal()
+        
+        # Save the plot as an image
+        img_path1 <- tempfile(fileext = ".png")
+        ggsave(img_path1, plot = first_graph_wage_premium_gender, width = 8, height = 6)
+        
+        # ✅ Extract summary statistics
+        first_country <- input$countries_first[1]
+        
+        avg_wage_premium <- round(mean(data_to_plot$value, na.rm = TRUE), 1)
+        
+        highest_country <- data_to_plot %>%
+          filter(value == max(value, na.rm = TRUE)) %>%
+          pull(country_name) %>%
+          first()
+        
+        lowest_country <- data_to_plot %>%
+          filter(value == min(value, na.rm = TRUE)) %>%
+          pull(country_name) %>%
+          first()
+        
+        first_country_premium <- data_to_plot %>%
+          filter(country_name == first_country) %>%
+          pull(value) %>%
+          coalesce(0)
+        
+        comparison_premium <- data_to_plot %>%
+          filter(country_name != first_country) %>%
+          summarise(avg_other_countries = mean(value, na.rm = TRUE)) %>%
+          pull(avg_other_countries) %>%
+          coalesce(0)
+        
+        # ✅ Compare first country with others
+        comparison_statement <- if (first_country_premium > comparison_premium) {
+          paste0("This is **higher** than the average of **", round(comparison_premium, 1), "%** across the other selected countries.")
+        } else {
+          paste0("This is **lower** than the average of **", round(comparison_premium, 1), "%** across the other selected countries.")
+        }
+        
+        interpretation_text1 <- paste0(
+          "This graph compares public sector wage premiums by gender across selected countries. ",
+          "On average, the gender wage premium in the public sector is **", avg_wage_premium, "%**. ",
+          "The highest wage premium is observed in **", highest_country, "**, while the lowest is in **", lowest_country, "**.\n\n",
+          "In **", first_country, "**, the gender wage premium is **", round(first_country_premium, 1), "%**. ", 
+          comparison_statement
+        )
+        
+        # ✅ Add Image and Description
+        doc <- doc %>% 
+          body_add_par("First Graph: Wage Premium Gender (Multi-Country)", style = "heading 2") %>% 
+          body_add_img(src = img_path1, width = 6, height = 4) %>% 
+          body_add_par("This graph shows the wage premium by gender across multiple countries.", style = "Normal") %>%
+          body_add_par(interpretation_text1, style = "Normal")
+      } else {
+        doc <- doc %>% body_add_par("No data available for Wage Premium by Gender (Multi-Country).", style = "Normal")
+      }
     }
     
-    # Second Graph - Wage Premium by Gender (Single Country Over Time)
-    if ("secondGraphgender" %in% input$graphs_to_download & !is.null(input$country_second)) {
+    # ✅ Second Graph - Wage Premium by Gender (Single Country Over Time)
+    if ("secondGraphgender" %in% input$graphs_to_download && !is.null(input$country_second)) {
       data_to_plot <- gender_wage_premium %>% filter(country_name == input$country_second)
-      data_to_plot_long <- data_to_plot %>% 
-        select(year, indicator_name, value) %>% 
-        mutate(indicator_name = factor(indicator_name))
       
-      second_graph_wage_premium_gender <- ggplot(data_to_plot_long, aes(x = year, y = value, color = indicator_name)) +
-        geom_line(size = 1) +
-        geom_point(size = 3) +
-        labs(title = paste("Public Sector Wage Premium by Gender in", input$country_second, "Over Time"), 
-             x = "Year", y = "Employment Value") +
-        theme_minimal()
-      
-      # Save the plot as an image
-      img_path2 <- tempfile(fileext = ".png")
-      ggsave(img_path2, plot = second_graph_wage_premium_gender, width = 6, height = 4)
-      
-      # Add Image and Description
-      doc <- doc %>% 
-        body_add_par("Second Graph: Public Sector Employment (Single Country)", style = "heading 2") %>% 
-        body_add_img(src = img_path2, width = 6, height = 4) %>% 
-        body_add_par("This graph shows the wage premium by gender trends over time for the selected country.", style = "Normal")
+      if (nrow(data_to_plot) > 0) {
+        data_to_plot_long <- data_to_plot %>% 
+          select(year, indicator_name, value) %>% 
+          mutate(indicator_name = factor(indicator_name))
+        
+        second_graph_wage_premium_gender <- ggplot(data_to_plot_long, aes(x = year, y = value, color = indicator_name)) +
+          geom_line(size = 1) +
+          geom_point(size = 3) +
+          labs(title = paste("Public Sector Wage Premium by Gender in", input$country_second, "Over Time"), 
+               x = "Year", y = "Employment Value") +
+          theme_minimal()
+        
+        # Save the plot as an image
+        img_path2 <- tempfile(fileext = ".png")
+        ggsave(img_path2, plot = second_graph_wage_premium_gender, width = 8, height = 6)
+        
+        # ✅ Extract wage premium trend for selected country
+        first_year <- min(data_to_plot$year, na.rm = TRUE)
+        last_year <- max(data_to_plot$year, na.rm = TRUE)
+        
+        wage_premium_first_year <- data_to_plot %>%
+          filter(year == first_year) %>%
+          pull(value) %>%
+          coalesce(NA)
+        
+        wage_premium_last_year <- data_to_plot %>%
+          filter(year == last_year) %>%
+          pull(value) %>%
+          coalesce(NA)
+        
+        trend_direction <- if (wage_premium_last_year > wage_premium_first_year) {
+          "increased"
+        } else if (wage_premium_last_year < wage_premium_first_year) {
+          "decreased"
+        } else {
+          "remained stable"
+        }
+        
+        interpretation_text2 <- paste0(
+          "In **", input$country_second, "**, the gender wage premium in the public sector has **", trend_direction, "** from **", 
+          round(wage_premium_first_year, 1), "%** in **", first_year, "** to **", 
+          round(wage_premium_last_year, 1), "%** in **", last_year, "**."
+        )
+        
+        # ✅ Add Image and Description
+        doc <- doc %>% 
+          body_add_par("Second Graph: Public Sector Employment (Single Country)", style = "heading 2") %>% 
+          body_add_img(src = img_path2, width = 6, height = 4) %>% 
+          body_add_par("This graph shows the wage premium by gender trends over time for the selected country.", style = "Normal") %>%
+          body_add_par(interpretation_text2, style = "Normal")
+      } else {
+        doc <- doc %>% body_add_par("No data available for Wage Premium by Gender (Over Time).", style = "Normal")
+      }
     }
     
     return(doc)
   }
+  
   
   
   # Wage premium by Education Level 
@@ -2675,27 +2759,36 @@ server <- function(input, output, session) {
     # Add Section Title
     doc <- doc %>% body_add_par("Public Sector Wage Premium by Education Level", style = "heading 1")
     
-    # Add Introduction
-    doc <- doc %>% body_add_par(
-      paste0("This section presents an analysis of public sector wage premiums based on different education levels for ", 
-             input$selected_country, ". The comparison is made against private sector formal workers."), 
-      style = "Normal"
-    )
-    
-    # Filter data for the selected country
-    filtered_data <- public_wage_premium_educ %>%
-      filter(country_name == input$selected_country) %>%
-      drop_na(value_percentage)
-    
-    # Handle empty dataset case
-    if (nrow(filtered_data) == 0) {
-      doc <- doc %>% body_add_par("No data available for the selected country.", style = "Normal")
+    # ✅ Ensure at least one country is selected
+    if (is.null(input$selected_countries) || length(input$selected_countries) == 0) {
+      doc <- doc %>% body_add_par("No countries selected for analysis.", style = "Normal")
       return(doc)
     }
     
-    # Generate Wage Premium by Education Level ggplot
+    # ✅ Extract the first selected country
+    first_country <- input$selected_countries[1]
+    
+    # Add Introduction
+    doc <- doc %>% body_add_par(
+      paste0("This section presents an analysis of public sector wage premiums based on different education levels for ", 
+             first_country, ". The comparison is made against private sector formal workers."), 
+      style = "Normal"
+    )
+    
+    # ✅ Filter data for selected countries
+    filtered_data <- public_wage_premium_educ %>%
+      filter(country_name %in% input$selected_countries) %>%
+      drop_na(value_percentage)
+    
+    # ✅ Handle empty dataset case
+    if (nrow(filtered_data) == 0) {
+      doc <- doc %>% body_add_par("No data available for the selected countries.", style = "Normal")
+      return(doc)
+    }
+    
+    # ✅ Generate Wage Premium by Education Level ggplot
     ggplot_obj <- ggplot(filtered_data, aes(x = indicator_name, y = value_percentage, fill = indicator_name)) +
-      geom_bar(stat = "identity") +
+      geom_bar(stat = "identity", position = "dodge") +
       scale_fill_manual(values = c(
         "No Education" = "#003366",
         "Primary Education" = "#B3242B",
@@ -2705,21 +2798,65 @@ server <- function(input, output, session) {
       labs(
         title = "Public Sector Wage Premium by Education Level (Compared to Private Formal Workers)",
         x = "Education Level",
-        y = "Wage Premium (%)"
+        y = "Wage Premium (%)",
+        fill = "Education Level"
       ) +
       theme_minimal()
     
-    # Save the plot as an image
+    # ✅ Save the plot as an image
     img_path <- tempfile(fileext = ".png")
     ggsave(img_path, plot = ggplot_obj, width = 8, height = 6)
     
-    # Add image to the document
+    # ✅ Extract summary statistics
+    highest_education <- filtered_data %>%
+      filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>%
+      pull(indicator_name) %>%
+      first()
+    
+    lowest_education <- filtered_data %>%
+      filter(value_percentage == min(value_percentage, na.rm = TRUE)) %>%
+      pull(indicator_name) %>%
+      first()
+    
+    avg_wage_premium <- round(mean(filtered_data$value_percentage, na.rm = TRUE), 1)
+    
+    # ✅ Extract wage premium for the first country and comparison
+    first_country_premium <- filtered_data %>%
+      filter(country_name == first_country) %>%
+      summarise(avg_premium = mean(value_percentage, na.rm = TRUE)) %>%
+      pull(avg_premium) %>%
+      coalesce(0)
+    
+    comparison_premium <- filtered_data %>%
+      filter(country_name != first_country) %>%
+      summarise(avg_other_countries = mean(value_percentage, na.rm = TRUE)) %>%
+      pull(avg_other_countries) %>%
+      coalesce(0)
+    
+    # ✅ Compare first country with others
+    comparison_statement <- if (first_country_premium > comparison_premium) {
+      paste0("This is **higher** than the average of **", round(comparison_premium, 1), "%** across the other selected countries.")
+    } else {
+      paste0("This is **lower** than the average of **", round(comparison_premium, 1), "%** across the other selected countries.")
+    }
+    
+    interpretation_text <- paste0(
+      "This graph compares public sector wage premiums by education level across selected countries. ",
+      "On average, the public sector wage premium is **", avg_wage_premium, "%**. ",
+      "The highest wage premium is observed for **", highest_education, "**, while the lowest wage premium is seen in **", lowest_education, "**.\n\n",
+      "In **", first_country, "**, the average public sector wage premium is **", round(first_country_premium, 1), "%**. ", 
+      comparison_statement
+    )
+    
+    # ✅ Add image and interpretation text to the document
     doc <- doc %>% 
       body_add_img(src = img_path, width = 6, height = 4) %>% 
-      body_add_par("This graph shows the public sector wage premium by education level, comparing earnings with private sector formal workers.", style = "Normal")
+      body_add_par("This graph shows the public sector wage premium by education level, comparing earnings with private sector formal workers.", style = "Normal") %>%
+      body_add_par(interpretation_text, style = "Normal")
     
     return(doc)
   }
+  
   
 
   #Public Sector Graphs 
@@ -2822,36 +2959,123 @@ server <- function(input, output, session) {
       style = "Normal"
     )
     
-    # First Graph - Public Sector Employment (Last Year Available)
-    first_graph <- ggplot(public_sector_emp_temp_last %>% filter(country_name %in% input$countries_first), 
+    # ✅ Ensure at least one country is selected
+    if (is.null(input$countries_first) || length(input$countries_first) == 0) {
+      doc <- doc %>% body_add_par("No countries selected for analysis.", style = "Normal")
+      return(doc)
+    }
+    
+    # ✅ Extract the first selected country
+    first_country <- input$countries_first[1]
+    
+    # ✅ Filter data for selected countries (last available year)
+    filtered_data <- public_sector_emp_temp_last %>% 
+      filter(country_name %in% input$countries_first)
+    
+    # ✅ Handle empty dataset case
+    if (nrow(filtered_data) == 0) {
+      doc <- doc %>% body_add_par("No data available for the selected countries.", style = "Normal")
+      return(doc)
+    }
+    
+    # ✅ Generate First Graph - Public Sector Employment (Last Year Available)
+    first_graph <- ggplot(filtered_data, 
                           aes(x = country_name, y = value, color = indicator_name)) +
       geom_point(size = 4) +
-      labs(title = "Public Sector Employment (Last Year Available)", x = "Country", y = "Value") +
+      labs(title = "Public Sector Employment (Last Year Available)", x = "Country", y = "Employment (%)", color = "Sector") +
       theme_minimal()
     
     img_path1 <- tempfile(fileext = ".png")
     ggsave(img_path1, plot = first_graph, width = 8, height = 6)
     
-    # Add First Graph to the Document
+    # ✅ Extract summary statistics
+    highest_country <- filtered_data %>%
+      filter(value == max(value, na.rm = TRUE)) %>%
+      pull(country_name) %>%
+      first()
+    
+    lowest_country <- filtered_data %>%
+      filter(value == min(value, na.rm = TRUE)) %>%
+      pull(country_name) %>%
+      first()
+    
+    avg_employment <- round(mean(filtered_data$value, na.rm = TRUE), 1)
+    
+    # ✅ Extract employment level for the first country and comparison
+    first_country_employment <- filtered_data %>%
+      filter(country_name == first_country) %>%
+      pull(value) %>%
+      first() %>%
+      coalesce(0)
+    
+    comparison_employment <- filtered_data %>%
+      filter(country_name != first_country) %>%
+      summarise(avg_other_countries = mean(value, na.rm = TRUE)) %>%
+      pull(avg_other_countries) %>%
+      coalesce(0)
+    
+    # ✅ Compare first country with others
+    comparison_statement <- if (first_country_employment > comparison_employment) {
+      paste0("This is **higher** than the average of **", round(comparison_employment, 1), "%** across the other selected countries.")
+    } else {
+      paste0("This is **lower** than the average of **", round(comparison_employment, 1), "%** across the other selected countries.")
+    }
+    
+    interpretation_text1 <- paste0(
+      "This graph compares public sector employment across selected countries. ",
+      "On average, public sector employment accounts for **", avg_employment, "%** of total employment. ",
+      "The highest public sector employment is observed in **", highest_country, "**, while the lowest is in **", lowest_country, "**.\n\n",
+      "In **", first_country, "**, public sector employment is **", round(first_country_employment, 1), "%**. ", 
+      comparison_statement
+    )
+    
+    # ✅ Add First Graph and Interpretation
     doc <- doc %>% 
       body_add_par("Public Sector Employment - Last Year Available", style = "heading 2") %>% 
-      body_add_img(src = img_path1, width = 6, height = 4)
+      body_add_img(src = img_path1, width = 6, height = 4) %>% 
+      body_add_par(interpretation_text1, style = "Normal")
     
-    # Second Graph - Public Sector Employment Over Time
-    second_graph <- ggplot(public_sector_emp_temp %>% filter(country_name == input$country_second), 
-                           aes(x = year, y = value_percentage, color = indicator_name)) +
-      geom_line(size = 1.2) +
-      geom_point(size = 3) +
-      labs(title = "Public Sector Employment Over Time", x = "Year", y = "Value") +
-      theme_minimal()
-    
-    img_path2 <- tempfile(fileext = ".png")
-    ggsave(img_path2, plot = second_graph, width = 8, height = 6)
-    
-    # Add Second Graph to the Document
-    doc <- doc %>% 
-      body_add_par("Public Sector Employment Over Time", style = "heading 2") %>% 
-      body_add_img(src = img_path2, width = 6, height = 4)
+    # ✅ Second Graph - Public Sector Employment Over Time
+    if (!is.null(input$country_second) && input$country_second != "") {
+      time_series_data <- public_sector_emp_temp %>% filter(country_name == input$country_second)
+      
+      if (nrow(time_series_data) > 0) {
+        first_year <- min(time_series_data$year, na.rm = TRUE)
+        last_year <- max(time_series_data$year, na.rm = TRUE)
+        
+        employment_first_year <- time_series_data %>%
+          filter(year == first_year) %>%
+          pull(value_percentage) %>%
+          first() %>%
+          coalesce(NA)
+        
+        employment_last_year <- time_series_data %>%
+          filter(year == last_year) %>%
+          pull(value_percentage) %>%
+          first() %>%
+          coalesce(NA)
+        
+        trend_direction <- if (!is.na(employment_last_year) && !is.na(employment_first_year)) {
+          if (employment_last_year > employment_first_year) {
+            "increased"
+          } else if (employment_last_year < employment_first_year) {
+            "decreased"
+          } else {
+            "remained stable"
+          }
+        } else {
+          "data not available"
+        }
+        
+        interpretation_text2 <- paste0(
+          "In **", input$country_second, "**, public sector employment has **", trend_direction, "** from **", 
+          round(employment_first_year, 1), "%** in **", first_year, "** to **", 
+          round(employment_last_year, 1), "%** in **", last_year, "**."
+        )
+        
+        doc <- doc %>% body_add_par(interpretation_text2, style = "Normal")
+      }
+    }
     
     return(doc)
   }
@@ -2968,42 +3192,146 @@ server <- function(input, output, session) {
       style = "Normal"
     )
     
-    # First Graph - Public Sector Wage Premium by Gender (Last Year Available)
-    first_graph <- ggplot(gender_wage_premium_last %>% filter(country_name %in% input$countries_first), 
+    # ✅ Ensure at least one country is selected
+    if (is.null(input$countries_first) || length(input$countries_first) == 0) {
+      doc <- doc %>% body_add_par("No countries selected for analysis.", style = "Normal")
+      return(doc)
+    }
+    
+    # ✅ Extract the first selected country
+    first_country <- input$countries_first[1]
+    
+    # ✅ Filter data for selected countries (last available year)
+    filtered_data <- gender_wage_premium_last %>% 
+      filter(country_name %in% input$countries_first)
+    
+    # ✅ Handle empty dataset case
+    if (nrow(filtered_data) == 0) {
+      doc <- doc %>% body_add_par("No data available for the selected countries.", style = "Normal")
+      return(doc)
+    }
+    
+    # ✅ Generate First Graph - Public Sector Wage Premium by Gender (Last Year Available)
+    first_graph <- ggplot(filtered_data, 
                           aes(x = country_name, y = value, color = indicator_label)) +
       geom_point(size = 4) +
       labs(title = "Public Sector Wage Premium by Gender (Last Year Available)", 
            x = "Country", 
-           y = "Wage Premium (%)") +
+           y = "Wage Premium (%)",
+           color = "Gender Wage Premium") +
       theme_minimal()
     
     img_path1 <- tempfile(fileext = ".png")
     ggsave(img_path1, plot = first_graph, width = 8, height = 6)
     
-    # Add First Graph to the Document
+    # ✅ Extract summary statistics
+    highest_country <- filtered_data %>%
+      filter(value == max(value, na.rm = TRUE)) %>%
+      pull(country_name) %>%
+      first()
+    
+    lowest_country <- filtered_data %>%
+      filter(value == min(value, na.rm = TRUE)) %>%
+      pull(country_name) %>%
+      first()
+    
+    avg_wage_premium <- round(mean(filtered_data$value, na.rm = TRUE), 1)
+    
+    # ✅ Extract wage premium for the first country and comparison
+    first_country_premium <- filtered_data %>%
+      filter(country_name == first_country) %>%
+      pull(value) %>%
+      first() %>%
+      coalesce(0)
+    
+    comparison_premium <- filtered_data %>%
+      filter(country_name != first_country) %>%
+      summarise(avg_other_countries = mean(value, na.rm = TRUE)) %>%
+      pull(avg_other_countries) %>%
+      coalesce(0)
+    
+    # ✅ Compare first country with others
+    comparison_statement <- if (first_country_premium > comparison_premium) {
+      paste0("This is **higher** than the average of **", round(comparison_premium, 1), "%** across the other selected countries.")
+    } else {
+      paste0("This is **lower** than the average of **", round(comparison_premium, 1), "%** across the other selected countries.")
+    }
+    
+    interpretation_text1 <- paste0(
+      "This graph compares the public sector wage premium by gender across selected countries. ",
+      "On average, the public sector wage premium is **", avg_wage_premium, "%**. ",
+      "The highest wage premium is observed in **", highest_country, "**, while the lowest is in **", lowest_country, "**.\n\n",
+      "In **", first_country, "**, the public sector wage premium is **", round(first_country_premium, 1), "%**. ", 
+      comparison_statement
+    )
+    
+    # ✅ Add First Graph and Interpretation
     doc <- doc %>% 
       body_add_par("Public Sector Wage Premium by Gender - Last Year Available", style = "heading 2") %>% 
-      body_add_img(src = img_path1, width = 6, height = 4)
+      body_add_img(src = img_path1, width = 6, height = 4) %>% 
+      body_add_par(interpretation_text1, style = "Normal")
     
-    # Second Graph - Public Sector Wage Premium by Gender Over Time
-    second_graph <- ggplot(gender_wage_premium %>% filter(country_name == input$country_second), 
-                           aes(x = year, y = value, color = indicator_label)) +
-      geom_line(size = 1.2) +
-      geom_point(size = 3) +
-      labs(title = "Public Sector Wage Premium by Gender Over Time", 
-           x = "Year", 
-           y = "Wage Premium (%)") +
-      theme_minimal()
-    
-    img_path2 <- tempfile(fileext = ".png")
-    ggsave(img_path2, plot = second_graph, width = 8, height = 6)
-    
-    # Add Second Graph to the Document
-    doc <- doc %>% 
-      body_add_par("Public Sector Wage Premium by Gender Over Time", style = "heading 2") %>% 
-      body_add_img(src = img_path2, width = 6, height = 4) %>% 
-      body_add_par("Note: This indicator represents the gender wage premium across industries in the public sector.", 
-                   style = "Normal")
+    # ✅ Second Graph - Public Sector Wage Premium by Gender Over Time
+    if (!is.null(input$country_second) && input$country_second != "") {
+      time_series_data <- gender_wage_premium %>% filter(country_name == input$country_second)
+      
+      if (nrow(time_series_data) > 0) {
+        second_graph <- ggplot(time_series_data, 
+                               aes(x = year, y = value, color = indicator_label)) +
+          geom_line(size = 1.2) +
+          geom_point(size = 3) +
+          labs(title = paste("Public Sector Wage Premium by Gender in", input$country_second, "Over Time"), 
+               x = "Year", 
+               y = "Wage Premium (%)",
+               color = "Gender Wage Premium") +
+          theme_minimal()
+        
+        img_path2 <- tempfile(fileext = ".png")
+        ggsave(img_path2, plot = second_graph, width = 8, height = 6)
+        
+        # ✅ Extract wage premium trend for selected country
+        first_year <- min(time_series_data$year, na.rm = TRUE)
+        last_year <- max(time_series_data$year, na.rm = TRUE)
+        
+        wage_premium_first_year <- time_series_data %>%
+          filter(year == first_year) %>%
+          pull(value) %>%
+          first() %>%
+          coalesce(NA)
+        
+        wage_premium_last_year <- time_series_data %>%
+          filter(year == last_year) %>%
+          pull(value) %>%
+          first() %>%
+          coalesce(NA)
+        
+        trend_direction <- if (!is.na(wage_premium_last_year) && !is.na(wage_premium_first_year)) {
+          if (wage_premium_last_year > wage_premium_first_year) {
+            "increased"
+          } else if (wage_premium_last_year < wage_premium_first_year) {
+            "decreased"
+          } else {
+            "remained stable"
+          }
+        } else {
+          "data not available"
+        }
+        
+        interpretation_text2 <- paste0(
+          "In **", input$country_second, "**, the gender wage premium in the public sector has **", trend_direction, "** from **", 
+          round(wage_premium_first_year, 1), "%** in **", first_year, "** to **", 
+          round(wage_premium_last_year, 1), "%** in **", last_year, "**."
+        )
+        
+        # ✅ Add Second Graph and Interpretation
+        doc <- doc %>% 
+          body_add_par("Public Sector Wage Premium by Gender Over Time", style = "heading 2") %>% 
+          body_add_img(src = img_path2, width = 6, height = 4) %>% 
+          body_add_par(interpretation_text2, style = "Normal")
+      } else {
+        doc <- doc %>% body_add_par("No data available for Public Sector Wage Premium by Gender trends over time.", style = "Normal")
+      }
+    }
     
     return(doc)
   }
@@ -3122,8 +3450,27 @@ server <- function(input, output, session) {
       style = "Normal"
     )
     
-    # First Graph - Female Employment by Sector (Last Year Available)
-    first_graph <- ggplot(gender_workforce %>% filter(country_name %in% input$countries_gender), 
+    # ✅ Ensure at least one country is selected
+    if (is.null(input$countries_gender) || length(input$countries_gender) == 0) {
+      doc <- doc %>% body_add_par("No countries selected for analysis.", style = "Normal")
+      return(doc)
+    }
+    
+    # ✅ Extract the first selected country
+    first_country <- input$countries_gender[1]
+    
+    # ✅ Filter data for selected countries (last available year)
+    filtered_data <- gender_workforce %>% 
+      filter(country_name %in% input$countries_gender)
+    
+    # ✅ Handle empty dataset case
+    if (nrow(filtered_data) == 0) {
+      doc <- doc %>% body_add_par("No data available for the selected countries.", style = "Normal")
+      return(doc)
+    }
+    
+    # ✅ Generate First Graph - Female Employment by Sector (Last Year Available)
+    first_graph <- ggplot(filtered_data, 
                           aes(x = country_name, y = value_percentage, fill = indicator_name)) +
       geom_bar(stat = "identity", position = "dodge") +
       scale_fill_manual(values = c("Females, as a share of private paid employees" = "#B3242B", 
@@ -3135,29 +3482,76 @@ server <- function(input, output, session) {
     img_path1 <- tempfile(fileext = ".png")
     ggsave(img_path1, plot = first_graph, width = 8, height = 6)
     
-    # Add First Graph to the Document
+    # ✅ Extract summary statistics
+    highest_public_country <- filtered_data %>%
+      filter(indicator_name == "Females, as a share of public paid employees") %>%
+      filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>%
+      pull(country_name) %>%
+      first()
+    
+    lowest_public_country <- filtered_data %>%
+      filter(indicator_name == "Females, as a share of public paid employees") %>%
+      filter(value_percentage == min(value_percentage, na.rm = TRUE)) %>%
+      pull(country_name) %>%
+      first()
+    
+    highest_private_country <- filtered_data %>%
+      filter(indicator_name == "Females, as a share of private paid employees") %>%
+      filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>%
+      pull(country_name) %>%
+      first()
+    
+    lowest_private_country <- filtered_data %>%
+      filter(indicator_name == "Females, as a share of private paid employees") %>%
+      filter(value_percentage == min(value_percentage, na.rm = TRUE)) %>%
+      pull(country_name) %>%
+      first()
+    
+    avg_public <- round(mean(filtered_data$value_percentage[filtered_data$indicator_name == "Females, as a share of public paid employees"], na.rm = TRUE), 1)
+    avg_private <- round(mean(filtered_data$value_percentage[filtered_data$indicator_name == "Females, as a share of private paid employees"], na.rm = TRUE), 1)
+    
+    # ✅ Extract employment levels for the first country and comparison
+    first_country_public <- filtered_data %>%
+      filter(country_name == first_country, indicator_name == "Females, as a share of public paid employees") %>%
+      pull(value_percentage) %>%
+      first() %>%
+      coalesce(0)
+    
+    first_country_private <- filtered_data %>%
+      filter(country_name == first_country, indicator_name == "Females, as a share of private paid employees") %>%
+      pull(value_percentage) %>%
+      first() %>%
+      coalesce(0)
+    
+    # ✅ Compare first country with others
+    comparison_public <- if (first_country_public > avg_public) {
+      paste0("This is **higher** than the average of **", avg_public, "%** across the other selected countries.")
+    } else {
+      paste0("This is **lower** than the average of **", avg_public, "%** across the other selected countries.")
+    }
+    
+    comparison_private <- if (first_country_private > avg_private) {
+      paste0("This is **higher** than the average of **", avg_private, "%** across the other selected countries.")
+    } else {
+      paste0("This is **lower** than the average of **", avg_private, "%** across the other selected countries.")
+    }
+    
+    interpretation_text1 <- paste0(
+      "This graph compares female employment in the public and private sectors across selected countries. ",
+      "On average, **", avg_public, "%** of public sector employees are female, while in the private sector, the share is **", avg_private, "%**. ",
+      "The highest female employment in the public sector is in **", highest_public_country, "**, while the lowest is in **", lowest_public_country, "**. ",
+      "In the private sector, **", highest_private_country, "** has the highest share of female employees, whereas **", lowest_private_country, "** has the lowest.\n\n",
+      "In **", first_country, "**, female representation in the public sector is **", first_country_public, "%**. ", 
+      comparison_public, "\n",
+      "In the private sector, female representation in **", first_country, "** is **", first_country_private, "%**. ",
+      comparison_private
+    )
+    
+    # ✅ Add First Graph and Interpretation
     doc <- doc %>% 
       body_add_par("Female Employment by Sector (Last Year Available)", style = "heading 2") %>% 
-      body_add_img(src = img_path1, width = 6, height = 4)
-    
-    # Second Graph - Female Employment by Sector Over Time
-    second_graph <- ggplot(gender_workforce %>% filter(country_name == input$country_gender), 
-                           aes(x = year, y = value_percentage, color = indicator_name)) +
-      geom_line(size = 1.2) +
-      geom_point(size = 3) +
-      scale_color_manual(values = c("Females, as a share of private paid employees" = "#B3242B", 
-                                    "Females, as a share of public paid employees" = "#003366")) +
-      labs(title = paste("Female Employment by Sector Over Time in", input$country_gender), 
-           x = "Year", y = "Female Employment (%)", color = "Sector") +
-      theme_minimal()
-    
-    img_path2 <- tempfile(fileext = ".png")
-    ggsave(img_path2, plot = second_graph, width = 8, height = 6)
-    
-    # Add Second Graph to the Document
-    doc <- doc %>% 
-      body_add_par("Female Employment by Sector Over Time", style = "heading 2") %>% 
-      body_add_img(src = img_path2, width = 6, height = 4)
+      body_add_img(src = img_path1, width = 6, height = 4) %>% 
+      body_add_par(interpretation_text1, style = "Normal")
     
     return(doc)
   }
