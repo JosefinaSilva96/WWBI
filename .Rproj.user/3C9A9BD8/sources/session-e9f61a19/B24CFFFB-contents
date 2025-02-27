@@ -445,6 +445,13 @@ tertiary_education <- tertiary_education %>%
   filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
   ungroup()                                      # Ungroup the data
 
+#Rename the column indicator name 
+
+tertiary_education <- tertiary_education %>%
+  mutate(indicator_name = ifelse(indicator_name == "Individuals with tertiary education as a share of private paid employees", "as a share of private paid employees", indicator_name))
+
+tertiary_education <- tertiary_education %>%
+  mutate(indicator_name = ifelse(indicator_name == "Individuals with tertiary education as a share of public paid employees", "as a share of public paid employees", indicator_name))
 
 
 # Public sector wage premium 
@@ -1548,7 +1555,8 @@ server <- function(input, output, session) {
       labs(
         title = "Wage Bill as % of GDP Over Time",
         x = "Year",
-        y = "Wage Bill (% of GDP)"
+        y = "Wage Bill (% of GDP)", 
+        color = "Country"
       ) +
       theme_minimal()
     
@@ -1559,7 +1567,8 @@ server <- function(input, output, session) {
       labs(
         title = "Wage Bill as % of Public Expenditure Over Time",
         x = "Year",
-        y = "Wage Bill (% of Public Expenditure)"
+        y = "Wage Bill (% of Public Expenditure)", 
+        color = "Country"
       ) +
       theme_minimal()
     
@@ -1780,8 +1789,14 @@ server <- function(input, output, session) {
     plot <- ggplot(filtered_data_df, aes(x = log_gdp, y = indicator_value, color = country_name)) +
       geom_point(size = 3) +
       geom_smooth(method = "lm", color = "gray", linetype = "dashed") +
-      labs(title = "Wage Bill vs. Log(GDP per Capita)", x = "Log(GDP per Capita, 2015)", y = "Wage Bill") +
+      labs(
+        title = "Wage Bill vs. Log(GDP per Capita)", 
+        x = "Log(GDP per Capita, 2015)", 
+        y = "Wage Bill",
+        color = "Country"  
+      ) +
       theme_minimal()
+    
     
     img_path <- tempfile(fileext = ".png")
     ggsave(filename = img_path, plot = plot, width = 8, height = 6, dpi = 300)
@@ -1942,8 +1957,14 @@ server <- function(input, output, session) {
       geom_bar(stat = "identity", position = "stack") +
       scale_fill_manual(values = c("Public Administration" = "#568340", "Education" = "#B3242B", 
                                    "Health" = "#003366", "Other" = "#A9A9A9")) +
-      labs(title = "Public Workforce Distribution by Country", x = "Country", y = "Workforce Distribution (%)") +
+      labs(
+        title = "Public Workforce Distribution by Country", 
+        x = "Country", 
+        y = "Workforce Distribution (%)", 
+        fill = "Sector"  # ✅ Renames the legend title for indicator_name
+      ) +
       theme_minimal()
+    
     
     img_path1 <- tempfile(fileext = ".png")
     ggsave(img_path1, plot = first_graph_ggplot, width = 6, height = 4)
@@ -2004,10 +2025,10 @@ server <- function(input, output, session) {
     
     # ✅ Construct dynamic interpretation text
     sector_interpretation_text <- paste0(
-      "**", first_country, "** has the highest proportion of public sector employees in **", largest_sector, "**, ",
-      "with **", round(largest_sector_share, 1), "%** of paid public sector workers employed in this area. ",
-      "Following **", largest_sector, "**, the education sector also represents a substantial portion of the workforce, accounting for **",
-      round(education_share, 1), "%**. ", education_comparison, " ", health_comparison
+       first_country, " has the highest proportion of public sector employees in", largest_sector,
+      "with", round(largest_sector_share, 1), "% of paid public sector workers employed in this area. ",
+      "Following", largest_sector, ", the education sector also represents a substantial portion of the workforce, accounting for",
+      round(education_share, 1), "%. ", education_comparison, " ", health_comparison
     )
     
     doc <- doc %>% 
@@ -2029,8 +2050,8 @@ server <- function(input, output, session) {
       filter(country_name %in% input$selected_countries)
     
     # Define Colors
-    custom_colors <- c("Individuals with tertiary education as a share of private paid employees" = "#B3242B", 
-                       "Individuals with tertiary education as a share of public paid employees" = "#003366")
+    custom_colors <- c("as a share of private paid employees" = "#B3242B", 
+                       "as a share of public paid employees" = "#003366")
     
     # Generate Bar Plot
     plot <- filtered_data %>%
@@ -2561,16 +2582,16 @@ server <- function(input, output, session) {
         
         # ✅ Compare first country with others
         comparison_statement <- if (first_country_premium > comparison_premium) {
-          paste0("This is **higher** than the average of **", round(comparison_premium, 1), "%** across the other selected countries.")
+          paste0("This is higher than the average of ", round(comparison_premium, 1), "% across the other selected countries.")
         } else {
-          paste0("This is **lower** than the average of **", round(comparison_premium, 1), "%** across the other selected countries.")
+          paste0("This is lower than the average of ", round(comparison_premium, 1), "% across the other selected countries.")
         }
         
         interpretation_text1 <- paste0(
           "This graph compares public sector wage premiums by gender across selected countries. ",
-          "On average, the gender wage premium in the public sector is **", avg_wage_premium, "%**. ",
+          "On average, the gender wage premium in the public sector is ", avg_wage_premium, "%. ",
           "The highest wage premium is observed in **", highest_country, "**, while the lowest is in **", lowest_country, "**.\n\n",
-          "In **", first_country, "**, the gender wage premium is **", round(first_country_premium, 1), "%**. ", 
+          "In", first_country, ", the gender wage premium is", round(first_country_premium, 1), "%. ", 
           comparison_statement
         )
         
@@ -2628,9 +2649,9 @@ server <- function(input, output, session) {
         }
         
         interpretation_text2 <- paste0(
-          "In **", input$country_second, "**, the gender wage premium in the public sector has **", trend_direction, "** from **", 
-          round(wage_premium_first_year, 1), "%** in **", first_year, "** to **", 
-          round(wage_premium_last_year, 1), "%** in **", last_year, "**."
+          "In ", input$country_second, ", the gender wage premium in the public sector has", trend_direction, "from", 
+          round(wage_premium_first_year, 1), "% in", first_year, "to", 
+          round(wage_premium_last_year, 1), "%in", last_year, "."
         )
         
         # ✅ Add Image and Description
@@ -2835,16 +2856,16 @@ server <- function(input, output, session) {
     
     # ✅ Compare first country with others
     comparison_statement <- if (first_country_premium > comparison_premium) {
-      paste0("This is **higher** than the average of **", round(comparison_premium, 1), "%** across the other selected countries.")
+      paste0("This is higher than the average of", round(comparison_premium, 1), "% across the other selected countries.")
     } else {
-      paste0("This is **lower** than the average of **", round(comparison_premium, 1), "%** across the other selected countries.")
+      paste0("This is **lower** than the average of **", round(comparison_premium, 1), "% across the other selected countries.")
     }
     
     interpretation_text <- paste0(
       "This graph compares public sector wage premiums by education level across selected countries. ",
-      "On average, the public sector wage premium is **", avg_wage_premium, "%**. ",
-      "The highest wage premium is observed for **", highest_education, "**, while the lowest wage premium is seen in **", lowest_education, "**.\n\n",
-      "In **", first_country, "**, the average public sector wage premium is **", round(first_country_premium, 1), "%**. ", 
+      "On average, the public sector wage premium is", avg_wage_premium, "%. ",
+      "The highest wage premium is observed for", highest_education, ", while the lowest wage premium is seen in", lowest_education, ".\n\n",
+      "In", first_country, ", the average public sector wage premium is", round(first_country_premium, 1), "%. ", 
       comparison_statement
     )
     
@@ -3016,16 +3037,16 @@ server <- function(input, output, session) {
     
     # ✅ Compare first country with others
     comparison_statement <- if (first_country_employment > comparison_employment) {
-      paste0("This is **higher** than the average of **", round(comparison_employment, 1), "%** across the other selected countries.")
+      paste0("This is higher than the average of", round(comparison_employment, 1), "% across the other selected countries.")
     } else {
-      paste0("This is **lower** than the average of **", round(comparison_employment, 1), "%** across the other selected countries.")
+      paste0("This is lower than the average of", round(comparison_employment, 1), "% across the other selected countries.")
     }
     
     interpretation_text1 <- paste0(
       "This graph compares public sector employment across selected countries. ",
-      "On average, public sector employment accounts for **", avg_employment, "%** of total employment. ",
-      "The highest public sector employment is observed in **", highest_country, "**, while the lowest is in **", lowest_country, "**.\n\n",
-      "In **", first_country, "**, public sector employment is **", round(first_country_employment, 1), "%**. ", 
+      "On average, public sector employment accounts for", avg_employment, "% of total employment. ",
+      "The highest public sector employment is observed in", highest_country, ", while the lowest is in", lowest_country, ".\n\n",
+      "In", first_country, ", public sector employment is", round(first_country_employment, 1), "%. ", 
       comparison_statement
     )
     
@@ -3068,9 +3089,9 @@ server <- function(input, output, session) {
         }
         
         interpretation_text2 <- paste0(
-          "In **", input$country_second, "**, public sector employment has **", trend_direction, "** from **", 
-          round(employment_first_year, 1), "%** in **", first_year, "** to **", 
-          round(employment_last_year, 1), "%** in **", last_year, "**."
+          "In ", input$country_second, "**, public sector employment has", trend_direction, "from", 
+          round(employment_first_year, 1), "% in", first_year, "to", 
+          round(employment_last_year, 1), "% in", last_year, "."
         )
         
         doc <- doc %>% body_add_par(interpretation_text2, style = "Normal")
@@ -3252,16 +3273,16 @@ server <- function(input, output, session) {
     
     # ✅ Compare first country with others
     comparison_statement <- if (first_country_premium > comparison_premium) {
-      paste0("This is **higher** than the average of **", round(comparison_premium, 1), "%** across the other selected countries.")
+      paste0("This is higher than the average of ", round(comparison_premium, 1), "% across the other selected countries.")
     } else {
-      paste0("This is **lower** than the average of **", round(comparison_premium, 1), "%** across the other selected countries.")
+      paste0("This is lower than the average of", round(comparison_premium, 1), "% across the other selected countries.")
     }
     
     interpretation_text1 <- paste0(
       "This graph compares the public sector wage premium by gender across selected countries. ",
       "On average, the public sector wage premium is **", avg_wage_premium, "%**. ",
-      "The highest wage premium is observed in **", highest_country, "**, while the lowest is in **", lowest_country, "**.\n\n",
-      "In **", first_country, "**, the public sector wage premium is **", round(first_country_premium, 1), "%**. ", 
+      "The highest wage premium is observed in **", highest_country, ", while the lowest is in ", lowest_country, ".\n\n",
+      "In", first_country, ", the public sector wage premium is", round(first_country_premium, 1), "%. ", 
       comparison_statement
     )
     
