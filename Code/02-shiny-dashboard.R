@@ -1539,17 +1539,7 @@ server <- function(input, output, session) {
       summarise(last_year = max(year, na.rm = TRUE)) %>%
       pull(last_year)
     
-    # Construct the final analysis text dynamically
-    analysis_text <- paste0(
-      first_country, "’s public wage bill trends have changed over time. ",
-      "In 2010, the wage bill accounted for around ", 
-      ifelse(is.na(value_2010), "N/A", round(value_2010, 1)), 
-      " percent of public expenditures, but this gradually changed, reaching ", 
-      ifelse(is.na(value_2022), "N/A", round(value_2022, 1)), 
-      " percent in ", last_year, "."
-    )
-    
-    doc <- doc %>% body_add_par(analysis_text, style = "Normal")
+
     
     # --- Add Both Graphs Based on User Selection ---
     
@@ -1638,7 +1628,7 @@ server <- function(input, output, session) {
     
     # Construct dynamic interpretation text
     gdp_interpretation_text <- paste0(
-      "Figure 1.3 illustrates ", relationship_text, " between a country’s level of economic development ",
+      "Figure 1.1 illustrates ", relationship_text, " between a country’s level of economic development ",
       "(as measured by GDP per capita) and the size of its public sector in the ", first_region, " region. ",
       "This means that as GDP per capita increases, the public sector wage bill tends to ",
       ifelse(regional_trend < -0.2, "decrease.", ifelse(regional_trend > 0.2, "increase.", "remain relatively stable.")), 
@@ -1701,7 +1691,7 @@ server <- function(input, output, session) {
       ifelse(!is.na(wage_bill_exp_2010) & !is.na(wage_bill_exp_latest),
              paste0("changed from ", round(wage_bill_exp_2010, 1), " percent in 2010 to ",
                     round(wage_bill_exp_latest, 1), " percent in ", latest_year, ", as shown in Figure 1."),
-             "varied over time, as shown in Figure 1."),
+             "varied over time, as shown in Figure 1.2."),
       " The public sector wage bill in ", first_country, " has exhibited ", stability_text, 
       " compared to the volatility observed in regional peers."
     )
