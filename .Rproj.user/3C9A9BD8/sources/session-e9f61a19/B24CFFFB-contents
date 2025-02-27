@@ -1995,7 +1995,7 @@ server <- function(input, output, session) {
     
     
     img_path1 <- tempfile(fileext = ".png")
-    ggsave(img_path1, plot = first_graph_ggplot, width = 6, height = 4)
+    ggsave(img_path1, plot = first_graph_ggplot, width = 8, height = 4)
     
     # ✅ Extract workforce distribution for the first country
     sector_distribution <- public_sector_workforce %>%
