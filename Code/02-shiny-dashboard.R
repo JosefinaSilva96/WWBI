@@ -393,6 +393,17 @@ public_sector_workforce_first_last <- public_sector_workforce_first_last %>%
 gender_workforce <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Females, as a share of public paid employees", 
                                                                "Females, as a share of private paid employees"), ]
 
+#Rename Indicator 
+
+gender_workforce <- gender_workforce %>%
+  mutate(indicator_name = ifelse(indicator_name == "Females, as a share of public paid employees", "as a share of public paid employees", indicator_name))
+
+
+gender_workforce <- gender_workforce %>%
+  mutate(indicator_name = ifelse(indicator_name == "Females, as a share of private paid employees", "as a share of private paid employees", indicator_name))
+
+#Multiply value
+
 gender_workforce <- gender_workforce %>%
   mutate(value_percentage = value * 100)
 
@@ -3367,14 +3378,14 @@ server <- function(input, output, session) {
     
     # Ensure factor levels match color scale
     filtered_data$indicator_name <- factor(filtered_data$indicator_name, 
-                                           levels = c("Females, as a share of private paid employees", 
-                                                      "Females, as a share of public paid employees"))
+                                           levels = c("as a share of private paid employees", 
+                                                      "as a share of public paid employees"))
     
     ggplotly(
       ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
         geom_bar(stat = "identity", position = "dodge") +
-        scale_fill_manual(values = c("Females, as a share of private paid employees" = "#B3242B", 
-                                     "Females, as a share of public paid employees" = "#003366")) +
+        scale_fill_manual(values = c("as a share of private paid employees" = "#B3242B", 
+                                     "as a share of public paid employees" = "#003366")) +
         labs(title = "Female Employment by Sector (Last Year Available)", 
              x = "Country", y = "Employment (%)", fill = "Sector") +
         theme_minimal()
@@ -3391,15 +3402,15 @@ server <- function(input, output, session) {
     
     # Ensure factor levels match color scale
     filtered_data$indicator_name <- factor(filtered_data$indicator_name, 
-                                           levels = c("Females, as a share of private paid employees", 
-                                                      "Females, as a share of public paid employees"))
+                                           levels = c("as a share of private paid employees", 
+                                                      "as a share of public paid employees"))
     
     ggplotly(
       ggplot(filtered_data, aes(x = year, y = value_percentage, color = indicator_name)) +
         geom_line(size = 1.2) +
         geom_point(size = 3) +
-        scale_color_manual(values = c("Females, as a share of private paid employees" = "#B3242B", 
-                                      "Females, as a share of public paid employees" = "#003366")) +
+        scale_color_manual(values = c("as a share of private paid employees" = "#B3242B", 
+                                      "as a share of public paid employees" = "#003366")) +
         labs(title = paste("Female Employment by Sector Over Time in", input$country_gender), 
              x = "Year", y = "Female Employment (%)", color = "Sector") +
         theme_minimal()
@@ -3428,8 +3439,8 @@ server <- function(input, output, session) {
       first_graph <- ggplot(gender_workforce %>% filter(country_name %in% input$countries_gender), 
                             aes(x = country_name, y = value_percentage, fill = indicator_name)) +
         geom_bar(stat = "identity", position = "dodge") +
-        scale_fill_manual(values = c("Females, as a share of private paid employees" = "#B3242B", 
-                                     "Females, as a share of public paid employees" = "#003366")) +
+        scale_fill_manual(values = c("as a share of private paid employees" = "#B3242B", 
+                                     "as a share of public paid employees" = "#003366")) +
         labs(title = "Female Employment by Sector (Last Year Available)", 
              x = "Country", y = "Employment (%)", fill = "Sector") +
         theme_minimal()
@@ -3444,8 +3455,8 @@ server <- function(input, output, session) {
                              aes(x = year, y = value_percentage, color = indicator_name)) +
         geom_line(size = 1.2) +
         geom_point(size = 3) +
-        scale_color_manual(values = c("Females, as a share of private paid employees" = "#B3242B", 
-                                      "Females, as a share of public paid employees" = "#003366")) +
+        scale_color_manual(values = c("as a share of private paid employees" = "#B3242B", 
+                                      "as a share of public paid employees" = "#003366")) +
         labs(title = paste("Female Employment by Sector Over Time in", input$country_gender), 
              x = "Year", y = "Female Employment (%)", color = "Sector") +
         theme_minimal()
@@ -3494,8 +3505,8 @@ server <- function(input, output, session) {
     first_graph <- ggplot(filtered_data, 
                           aes(x = country_name, y = value_percentage, fill = indicator_name)) +
       geom_bar(stat = "identity", position = "dodge") +
-      scale_fill_manual(values = c("Females, as a share of private paid employees" = "#B3242B", 
-                                   "Females, as a share of public paid employees" = "#003366")) +
+      scale_fill_manual(values = c("as a share of private paid employees" = "#B3242B", 
+                                   "as a share of public paid employees" = "#003366")) +
       labs(title = "Female Employment by Sector (Last Year Available)", 
            x = "Country", y = "Employment (%)", fill = "Sector") +
       theme_minimal()
@@ -3505,66 +3516,66 @@ server <- function(input, output, session) {
     
     # ✅ Extract summary statistics
     highest_public_country <- filtered_data %>%
-      filter(indicator_name == "Females, as a share of public paid employees") %>%
+      filter(indicator_name == "as a share of public paid employees") %>%
       filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>%
       pull(country_name) %>%
       first()
     
     lowest_public_country <- filtered_data %>%
-      filter(indicator_name == "Females, as a share of public paid employees") %>%
+      filter(indicator_name == "as a share of public paid employees") %>%
       filter(value_percentage == min(value_percentage, na.rm = TRUE)) %>%
       pull(country_name) %>%
       first()
     
     highest_private_country <- filtered_data %>%
-      filter(indicator_name == "Females, as a share of private paid employees") %>%
+      filter(indicator_name == "as a share of private paid employees") %>%
       filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>%
       pull(country_name) %>%
       first()
     
     lowest_private_country <- filtered_data %>%
-      filter(indicator_name == "Females, as a share of private paid employees") %>%
+      filter(indicator_name == "as a share of private paid employees") %>%
       filter(value_percentage == min(value_percentage, na.rm = TRUE)) %>%
       pull(country_name) %>%
       first()
     
-    avg_public <- round(mean(filtered_data$value_percentage[filtered_data$indicator_name == "Females, as a share of public paid employees"], na.rm = TRUE), 1)
-    avg_private <- round(mean(filtered_data$value_percentage[filtered_data$indicator_name == "Females, as a share of private paid employees"], na.rm = TRUE), 1)
+    avg_public <- round(mean(filtered_data$value_percentage[filtered_data$indicator_name == "as a share of public paid employees"], na.rm = TRUE), 1)
+    avg_private <- round(mean(filtered_data$value_percentage[filtered_data$indicator_name == "as a share of private paid employees"], na.rm = TRUE), 1)
     
     # ✅ Extract employment levels for the first country and comparison
     first_country_public <- filtered_data %>%
-      filter(country_name == first_country, indicator_name == "Females, as a share of public paid employees") %>%
+      filter(country_name == first_country, indicator_name == "as a share of public paid employees") %>%
       pull(value_percentage) %>%
       first() %>%
       coalesce(0)
     
     first_country_private <- filtered_data %>%
-      filter(country_name == first_country, indicator_name == "Females, as a share of private paid employees") %>%
+      filter(country_name == first_country, indicator_name == "as a share of private paid employees") %>%
       pull(value_percentage) %>%
       first() %>%
       coalesce(0)
     
     # ✅ Compare first country with others
     comparison_public <- if (first_country_public > avg_public) {
-      paste0("This is **higher** than the average of **", avg_public, "%** across the other selected countries.")
+      paste0("This is higher than the average of", avg_public, "% across the other selected countries.")
     } else {
-      paste0("This is **lower** than the average of **", avg_public, "%** across the other selected countries.")
+      paste0("This is lower than the average of", avg_public, "% across the other selected countries.")
     }
     
     comparison_private <- if (first_country_private > avg_private) {
-      paste0("This is **higher** than the average of **", avg_private, "%** across the other selected countries.")
+      paste0("This is higher than the average of", avg_private, "% across the other selected countries.")
     } else {
-      paste0("This is **lower** than the average of **", avg_private, "%** across the other selected countries.")
+      paste0("This is lower than the average of", avg_private, "% across the other selected countries.")
     }
     
     interpretation_text1 <- paste0(
       "This graph compares female employment in the public and private sectors across selected countries. ",
-      "On average, **", avg_public, "%** of public sector employees are female, while in the private sector, the share is **", avg_private, "%**. ",
-      "The highest female employment in the public sector is in **", highest_public_country, "**, while the lowest is in **", lowest_public_country, "**. ",
-      "In the private sector, **", highest_private_country, "** has the highest share of female employees, whereas **", lowest_private_country, "** has the lowest.\n\n",
-      "In **", first_country, "**, female representation in the public sector is **", first_country_public, "%**. ", 
+      "On average,", avg_public, "% of public sector employees are female, while in the private sector, the share is", avg_private, "%. ",
+      "The highest female employment in the public sector is in", highest_public_country, ", while the lowest is in", lowest_public_country, ". ",
+      "In the private sector,", highest_private_country, "has the highest share of female employees, whereas", lowest_private_country, "has the lowest.\n\n",
+      "In", first_country, ", female representation in the public sector is", first_country_public, "%.", 
       comparison_public, "\n",
-      "In the private sector, female representation in **", first_country, "** is **", first_country_private, "%**. ",
+      "In the private sector, female representation in", first_country, "is", first_country_private, "%. ",
       comparison_private
     )
     
@@ -3735,6 +3746,7 @@ server <- function(input, output, session) {
       pull(country_name) %>%
       first()
     
+    # ✅ Round averages to 1 decimal place
     avg_public_managers <- round(mean(filtered_data$value_percentage[filtered_data$indicator_label == "Managers-Public"], na.rm = TRUE), 1)
     avg_private_managers <- round(mean(filtered_data$value_percentage[filtered_data$indicator_label == "Managers-Private"], na.rm = TRUE), 1)
     avg_public_clerks <- round(mean(filtered_data$value_percentage[filtered_data$indicator_label == "Clerks-Public"], na.rm = TRUE), 1)
@@ -3745,35 +3757,37 @@ server <- function(input, output, session) {
       filter(country_name == first_country, indicator_label == "Managers-Public") %>%
       pull(value_percentage) %>%
       first() %>%
-      coalesce(0)
+      coalesce(0) %>%
+      round(1)  # ✅ Round to 1 decimal place
     
     first_country_private_managers <- filtered_data %>%
       filter(country_name == first_country, indicator_label == "Managers-Private") %>%
       pull(value_percentage) %>%
       first() %>%
-      coalesce(0)
+      coalesce(0) %>%
+      round(1)  # ✅ Round to 1 decimal place
     
     # ✅ Compare first country with others
     comparison_public_managers <- if (first_country_public_managers > avg_public_managers) {
-      paste0("This is **higher** than the average of **", avg_public_managers, "%** across the other selected countries.")
+      paste0("This is higher than the average of ", format(avg_public_managers, nsmall = 1), "% across the other selected countries.")
     } else {
-      paste0("This is **lower** than the average of **", avg_public_managers, "%** across the other selected countries.")
+      paste0("This is lower than the average of ", format(avg_public_managers, nsmall = 1), "% across the other selected countries.")
     }
     
     comparison_private_managers <- if (first_country_private_managers > avg_private_managers) {
-      paste0("This is **higher** than the average of **", avg_private_managers, "%** across the other selected countries.")
+      paste0("This is higher than the average of ", format(avg_private_managers, nsmall = 1), "% across the other selected countries.")
     } else {
-      paste0("This is **lower** than the average of **", avg_private_managers, "%** across the other selected countries.")
+      paste0("This is lower than the average of ", format(avg_private_managers, nsmall = 1), "% across the other selected countries.")
     }
     
     interpretation_text <- paste0(
       "This graph compares female representation in different occupational groups across selected countries. ",
-      "On average, **", avg_public_managers, "%** of public sector managers are female, while in the private sector, female managers account for **", avg_private_managers, "%**. ",
-      "The highest female representation among public sector managers is in **", highest_public_managers, "**, whereas the lowest is in **", lowest_public_managers, "**. ",
-      "In the private sector, the highest female manager share is in **", highest_private_managers, "**, while the lowest is in **", lowest_private_managers, "**.\n\n",
-      "In **", first_country, "**, female managers account for **", first_country_public_managers, "%** in the public sector. ", 
+      "On average,", avg_public_managers, "% of public sector managers are female, while in the private sector, female managers account for", avg_private_managers, "%. ",
+      "The highest female representation among public sector managers is in", highest_public_managers, ", whereas the lowest is i", lowest_public_managers, ". ",
+      "In the private sector, the highest female manager share is in", highest_private_managers, "**, while the lowest is in", lowest_private_managers, ".\n\n",
+      "In", first_country, ", female managers account for", first_country_public_managers, "% in the public sector. ", 
       comparison_public_managers, "\n",
-      "In the private sector, female managers in **", first_country, "** represent **", first_country_private_managers, "%**. ",
+      "In the private sector, female managers in", first_country, "represent", first_country_private_managers, "%. ",
       comparison_private_managers
     )
     
