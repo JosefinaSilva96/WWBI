@@ -1773,20 +1773,48 @@ server <- function(input, output, session) {
       return(doc)
     }
     
-    # Get the first country name
-    countries <- if (!is.null(input$countries) & length(input$countries) > 0) {
-      input$countries[1]
+    # ✅ Extract the first selected country
+    first_country <- if (!is.null(input$countries_first) && length(input$countries_first) > 0) {
+      input$countries_first[1]  
     } else {
       "Unknown Country"
     }
     
+    # ✅ Extract values for the first country
+    first_country_values <- filtered_data_df %>%
+      filter(country_name == first_country) %>%
+      summarise(
+        wage_bill = round(first(indicator_value), 1),  
+        gdp_per_capita = round(exp(first(log_gdp)), 0)  # Convert log GDP back to actual GDP per capita
+      )
     
-    # Add Introduction
+    # ✅ Extract regional averages for comparison
+    regional_avg <- filtered_data_df %>%
+      summarise(
+        avg_wage_bill = round(mean(indicator_value, na.rm = TRUE), 1),
+        avg_gdp_per_capita = round(exp(mean(log_gdp, na.rm = TRUE)), 0)
+      )
+    
+    # ✅ Construct the interpretation text without bold
+    interpretation_text <- paste0(
+      "This graph illustrates the relationship between the wage bill as a percentage of public expenditure ",
+      "and GDP per capita across selected countries. In ", first_country, ", the wage bill represents ",
+      first_country_values$wage_bill, "% of public expenditure, with a GDP per capita of $",
+      format(first_country_values$gdp_per_capita, big.mark = ","), ".\n\n",
+      "Relative to the selected region, where the average wage bill is ", regional_avg$avg_wage_bill, 
+      "% and the average GDP per capita is $", format(regional_avg$avg_gdp_per_capita, big.mark = ","), 
+      ", ", first_country, "'s wage bill is ", 
+      ifelse(first_country_values$wage_bill > regional_avg$avg_wage_bill, "higher", "lower"),
+      " than the regional average."
+    )
+    
+    
+    # ✅ Add section header and introduction
     doc <- doc %>% 
-      body_add_par("Introduction", style = "heading 2") %>%
+      body_add_par("Wage bill (% of public expenditure) and GDP per capita in the region", style = "heading 2") %>%
       body_add_par("This note presents evidence on public sector employment and compensation practices in relation to GDP per capita.", style = "Normal")
     
-    # Create and Save Plot
+    # ✅ Create and Save Plot
     plot <- ggplot(filtered_data_df, aes(x = log_gdp, y = indicator_value, color = country_name)) +
       geom_point(size = 3) +
       geom_smooth(method = "lm", color = "gray", linetype = "dashed") +
@@ -1798,15 +1826,14 @@ server <- function(input, output, session) {
       ) +
       theme_minimal()
     
-    
     img_path <- tempfile(fileext = ".png")
     ggsave(filename = img_path, plot = plot, width = 8, height = 6, dpi = 300)
     
-    # Add Image and Note
+    # ✅ Add Image and Interpretation
     doc <- doc %>% 
       body_add_img(src = img_path, width = 6, height = 4) %>%
-      body_add_par("Note: This indicator represents the relationship between wage bill and log(GDP per capita). The trendline provides a visual reference for the overall pattern.", 
-                   style = "Normal")
+      body_add_par("Note: This indicator represents the relationship between wage bill and log(GDP per capita). The trendline provides a visual reference for the overall pattern.", style = "Normal") %>%
+      body_add_par(interpretation_text, style = "Normal")
     
     return(doc)
   }
