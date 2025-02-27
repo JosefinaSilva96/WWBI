@@ -2037,9 +2037,9 @@ server <- function(input, output, session) {
     
     # ✅ Compare first country with others
     education_comparison <- if (education_share > comparison_education_share) {
-      paste0("This is **higher** than the average of **", round(comparison_education_share, 1), "%** among the other selected countries.")
+      paste0("This is higher than the average of", round(comparison_education_share, 1), "% among the other selected countries.")
     } else {
-      paste0("This is **lower** than the average of **", round(comparison_education_share, 1), "%** among the other selected countries.")
+      paste0("This is lower than the average of", round(comparison_education_share, 1), "% among the other selected countries.")
     }
     
     health_comparison <- if (health_share > comparison_health_share) {
@@ -2425,9 +2425,9 @@ server <- function(input, output, session) {
     # ✅ Construct comparative interpretation text
     interpretation_text <- paste0(
       "This graph compares public sector wage premiums across selected countries. ",
-      "On average, public sector employees earn **", avg_wage_premium, "%** more than private sector employees. ",
+      "On average, public sector employees earn **", avg_wage_premium, "% more than private sector employees. ",
       "The country with the highest wage premium is **", highest_country, "**, while **", lowest_country, "** has the lowest wage premium.\n\n",
-      "In **", first_country, "**, the public sector wage premium is **", round(first_country_premium, 1), "%**. ", 
+      "In", first_country, "**, the public sector wage premium is", round(first_country_premium, 1), "%. ", 
       comparison_statement
     )
     
