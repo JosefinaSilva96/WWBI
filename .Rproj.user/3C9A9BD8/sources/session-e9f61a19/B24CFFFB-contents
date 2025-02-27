@@ -2053,10 +2053,10 @@ server <- function(input, output, session) {
     
     # ✅ Construct dynamic interpretation text
     sector_interpretation_text <- paste0(
-       first_country, " has the highest proportion of public sector employees in", largest_sector,
-      "with", round(largest_sector_share, 1), "% of paid public sector workers employed in this area. ",
-      "Following", largest_sector, ", the education sector also represents a substantial portion of the workforce, accounting for",
-      round(education_share, 1), "%. ", education_comparison, " ", health_comparison
+      first_country, " has the highest proportion of public sector employees in ", largest_sector,
+      ", with ", round(largest_sector_share, 1), "% of paid public sector workers employed in this area. ",
+      "The education sector represents ", round(education_share, 1), "% of the workforce. ", education_comparison, " ",
+      "The health sector accounts for ", round(health_share, 1), "%, ", health_comparison
     )
     
     doc <- doc %>% 
@@ -2201,9 +2201,9 @@ server <- function(input, output, session) {
     # ✅ Construct interpretation text
     interpretation_text <- paste0(
       "This graph compares tertiary education attainment among employees in the public and private sectors across selected countries. ",
-      "On average, **", avg_public, "%** of public sector employees have completed tertiary education, while in the private sector, the share is **", avg_private, "%**. ",
-      "The country with the highest share of tertiary-educated public sector employees is **", highest_public_country, "**, whereas **", lowest_public_country, "** has the lowest proportion. ",
-      "In the private sector, **", highest_private_country, "** has the highest tertiary education level among employees, while **", lowest_private_country, "** has the lowest."
+      "On average,", avg_public, "% of public sector employees have completed tertiary education, while in the private sector, the share is **", avg_private, "%. ",
+      "The country with the highest share of tertiary-educated public sector employees is", highest_public_country, ", whereas", lowest_public_country, "has the lowest proportion. ",
+      "In the private sector,", highest_private_country, "has the highest tertiary education level among employees, while", lowest_private_country, " has the lowest."
     )
     
     # ✅ Add image and interpretation text to the document
