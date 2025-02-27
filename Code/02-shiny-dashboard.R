@@ -1690,7 +1690,7 @@ server <- function(input, output, session) {
       "The wage bill as a share of public expenditures has ",
       ifelse(!is.na(wage_bill_exp_2010) & !is.na(wage_bill_exp_latest),
              paste0("changed from ", round(wage_bill_exp_2010, 1), " percent in 2010 to ",
-                    round(wage_bill_exp_latest, 1), " percent in ", latest_year, ", as shown in Figure 1."),
+                    round(wage_bill_exp_latest, 1), " percent in ", latest_year, ", as shown in Figure 1.2."),
              "varied over time, as shown in Figure 1.2."),
       " The public sector wage bill in ", first_country, " has exhibited ", stability_text, 
       " compared to the volatility observed in regional peers."
@@ -2037,18 +2037,18 @@ server <- function(input, output, session) {
     
     # ✅ Compare first country with others
     education_comparison <- if (education_share > comparison_education_share) {
-      paste0("This is higher than the average of", round(comparison_education_share, 1), "% among the other selected countries.")
+      paste0("This is higher than the average of ", round(comparison_education_share, 1), "% among the other selected countries.")
     } else {
       paste0("This is lower than the average of", round(comparison_education_share, 1), "% among the other selected countries.")
     }
     
     health_comparison <- if (health_share > comparison_health_share) {
-      paste0("The health sector, while representing a smaller segment at **", 
-             round(health_share, 1), "%**, still surpasses the average of **", 
-             round(comparison_health_share, 1), "%** in other selected countries.")
+      paste0("The health sector, while representing a smaller segment at ", 
+             round(health_share, 1), "%, still surpasses the average of ", 
+             round(comparison_health_share, 1), "% in other selected countries.")
     } else {
-      paste0("The health sector accounts for **", round(health_share, 1), "%**, aligning closely with the average of **", 
-             round(comparison_health_share, 1), "%** in other selected countries.")
+      paste0("The health sector accounts for ", round(health_share, 1), "%, aligning closely with the average of", 
+             round(comparison_health_share, 1), "% in other selected countries.")
     }
     
     # ✅ Construct dynamic interpretation text
