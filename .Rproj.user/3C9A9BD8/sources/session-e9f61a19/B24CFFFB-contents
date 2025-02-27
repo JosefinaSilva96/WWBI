@@ -2867,7 +2867,7 @@ server <- function(input, output, session) {
       filter(country_name %in% input$countries_first)
     
     ggplotly(
-      ggplot(filtered_data, aes(x = country_name, y = value, color = indicator_name)) +
+      ggplot(filtered_data, aes(x = country_name, y = value, color = indicator_label)) +
         geom_point(size = 4) +
         labs(title = "Public Sector Employment (Last Year Available)", 
              x = "Country", y = "Value") +
@@ -2886,7 +2886,7 @@ server <- function(input, output, session) {
       filter(country_name == input$country_second)
     
     ggplotly(
-      ggplot(filtered_data, aes(x = year, y = value_percentage, color = indicator_name)) +
+      ggplot(filtered_data, aes(x = year, y = value_percentage, color = indicator_label)) +
         geom_line(size = 1.2) +
         geom_point(size = 3) +
         labs(title = "Public Sector Employment Over Time", 
@@ -2918,7 +2918,7 @@ server <- function(input, output, session) {
       
       # First Graph - Save as Image
       first_graph <- ggplot(public_sector_emp_temp_last %>% filter(country_name %in% input$countries_first), 
-                            aes(x = country_name, y = value, color = indicator_name)) +
+                            aes(x = country_name, y = value, color = indicator_label)) +
         geom_point(size = 4) +
         labs(title = "Public Sector Employment (Last Year Available)", x = "Country", y = "Value") +
         theme_minimal()
@@ -2931,7 +2931,7 @@ server <- function(input, output, session) {
       
       # Second Graph - Save as Image
       second_graph <- ggplot(public_sector_emp_temp %>% filter(country_name == input$country_second), 
-                             aes(x = year, y = value_percentage, color = indicator_name)) +
+                             aes(x = year, y = value_percentage, color = indicator_label)) +
         geom_line(size = 1.2) +
         geom_point(size = 3) +
         labs(title = "Public Sector Employment Over Time", x = "Year", y = "Value") +
@@ -2980,7 +2980,7 @@ server <- function(input, output, session) {
     
     # ✅ Generate First Graph - Public Sector Employment (Last Year Available)
     first_graph <- ggplot(filtered_data, 
-                          aes(x = country_name, y = value, color = indicator_name)) +
+                          aes(x = country_name, y = value, color = indicator_label)) +
       geom_point(size = 4) +
       labs(title = "Public Sector Employment (Last Year Available)", x = "Country", y = "Employment (%)", color = "Sector") +
       theme_minimal()
