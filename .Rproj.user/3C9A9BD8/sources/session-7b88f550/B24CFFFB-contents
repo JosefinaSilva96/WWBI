@@ -4104,6 +4104,45 @@ server <- function(input, output, session) {
     return(doc)
   }
   
+  generate_sizepublicsector_section <- function(doc) {
+    # Initialize Word document
+    doc <- read_docx() 
+    
+    # Define a bold, blue style for section headings
+    section_style <- fp_text(color = "#003366", font.size = 14, bold = TRUE)
+    
+    # ✅ Add section title using styled text
+    doc <- doc %>% body_add_fpar(fpar(ftext("The size of the public sector", prop = section_style)))
+    
+    return(doc)
+  }
+  
+  generate_characworkforce_section <- function(doc) {
+    # Initialize Word document
+    doc <- read_docx() 
+    
+    # Define a bold, blue style for section headings
+    section_style <- fp_text(color = "#003366", font.size = 14, bold = TRUE)
+    
+    # ✅ Add section title using styled text
+    doc <- doc %>% body_add_fpar(fpar(ftext("Characteristics of the public sector workforce", prop = section_style)))
+    
+    return(doc)
+  }
+  
+  generate_publicsectorwages_section <- function(doc) {
+    # Initialize Word document
+    doc <- read_docx() 
+    
+    # Define a bold, blue style for section headings
+    section_style <- fp_text(color = "#003366", font.size = 14, bold = TRUE)
+    
+    # ✅ Add section title using styled text
+    doc <- doc %>% body_add_fpar(fpar(ftext("Competitiveness of public sector wages", prop = section_style)))
+    
+    return(doc)
+  }
+  
   generate_conclusion_section <- function(doc) {
     # Add Section Title
     doc <- doc %>% body_add_par("Conclusion", style = "heading 1")
@@ -4139,14 +4178,17 @@ server <- function(input, output, session) {
       doc <- generate_wage_bill_analysis_section(doc) #  Wage Bill Analysis
       doc <- generate_gdp_analysis_section(doc)       #GDP 
       doc <- generate_public_sector_workforce_section(doc) #Public Sector Workforce Analysis
+      doc <- generate_sizepublicsector_section (doc) #The size of the public sector section
       doc <- generate_tertiary_education_section(doc) # Tertiary Education Analysis
       doc <- generate_wage_premium_report_section(doc) #Public Sector Wage Premium Report
       doc <- generate_wage_premium_gender_section(doc) #Wage Premium Gender Analysis
       doc <- generate_wage_premium_education_section(doc) #Wage Premium by Education
       doc <- generate_public_sector_employment_section(doc)  #Public Sector Employment
       doc <- generate_wage_premium_gender_report_section(doc) #Wage Premium Gender Report
+      doc <- generate_characworkforce_section (doc) #Characteristics of the public sector workforce section
       doc <- generate_gender_workforce_section(doc) #Gender Workforce Analysis
       doc <- generate_females_occupation_groups_section(doc) #Females by Occupational Groups
+      doc <- generate_publicsectorwages_section(doc) #Competitiveness of public sector wages section
       doc <- generate_gender_wage_premium_section(doc)    # Wage Premium by industry Analysis
       
       # ✅ Add Conclusion Section at the End
