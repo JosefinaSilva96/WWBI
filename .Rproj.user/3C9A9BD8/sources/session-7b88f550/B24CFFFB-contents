@@ -865,6 +865,13 @@ server <- function(input, output, session) {
               "The Worldwide Bureaucracy Indicators (WWBI) database is a unique cross-national dataset on public sector employment and wages that aims to fill an information gap, thereby helping researchers, development practitioners, and policymakers gain a better understanding of the personnel dimensions of state capability, the footprint of the public sector within the overall labor market, and the fiscal implications of the public sector wage bill. The dataset is derived from administrative data and household surveys, thereby complementing existing, expert perception-based approaches.")
         )
       )
+    } else if (tab == "instructions") {
+      tagList(
+        h3("Instructions Manual"),
+        
+        # Button to download the PDF
+        downloadButton("download_pdf", "Download Instructions")
+      )
       
     } else if(tab == "metadata") {
       tagList(
@@ -1308,6 +1315,14 @@ server <- function(input, output, session) {
 )
 
   # ---------------------------
+    output$download_pdf <- downloadHandler(
+      filename = "instructions.pdf",
+      content = function(file) {
+        file.copy("C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/WWBI Codebook v3.1.pdf", file)
+      }
+    )
+
+  
   # 3. All your original outputs and downloadHandlers follow.
   # (For brevity, the code below is the same as in your original server code.)
   
