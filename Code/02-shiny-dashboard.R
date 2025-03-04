@@ -833,7 +833,9 @@ server <- function(input, output, session) {
   
   # Update active_tab when each sidebar link is clicked
   observeEvent(input$nav_dashboard,         { active_tab("dashboard") })
+  observeEvent(input$nav_instructions,         { active_tab("instructions") })
   observeEvent(input$nav_metadata,          { active_tab("metadata") })
+  observeEvent(input$nav_publications,          { active_tab("publications") })
   observeEvent(input$nav_wagebill,          { active_tab("wagebill") })
   observeEvent(input$nav_wagebill_gdp,      { active_tab("wagebill_gdp") })
   observeEvent(input$nav_public_workforce,  { active_tab("public_workforce") })
