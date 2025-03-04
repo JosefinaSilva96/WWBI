@@ -1774,9 +1774,9 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
-  generate_gdp_analysis_section <- function(doc) {
+  generate_gdp_analysis_section <- function(doc, selected_countries) {
     # Filter data for selected countries
-    filtered_data_df <- merged_data %>% filter(country_name %in% input$countries_first)
+    filtered_data_df <- merged_data %>% filter(country_name %in% selected_countries)
     
     # Ensure the dataset is not empty
     if (nrow(filtered_data_df) == 0) {
@@ -1784,19 +1784,12 @@ server <- function(input, output, session) {
       return(doc)
     }
     
-    # ✅ Extract the first selected country
-    first_country <- if (!is.null(input$countries_first) && length(input$countries_first) > 0) {
-      input$countries_first[1]  
-    } else {
-      "Unknown Country"
-    }
-    
-    # ✅ Extract values for the first country
-    first_country_values <- filtered_data_df %>%
-      filter(country_name == first_country) %>%
+    # ✅ Extract values for selected countries
+    country_summary <- filtered_data_df %>%
+      group_by(country_name) %>%
       summarise(
-        wage_bill = round(first(indicator_value), 1),  
-        gdp_per_capita = round(exp(first(log_gdp)), 0)  # Convert log GDP back to actual GDP per capita
+        wage_bill = round(mean(indicator_value, na.rm = TRUE), 1),  
+        gdp_per_capita = round(exp(mean(log_gdp, na.rm = TRUE)), 0) 
       )
     
     # ✅ Extract regional averages for comparison
@@ -1806,19 +1799,13 @@ server <- function(input, output, session) {
         avg_gdp_per_capita = round(exp(mean(log_gdp, na.rm = TRUE)), 0)
       )
     
-    # ✅ Construct the interpretation text without bold
+    # ✅ Construct interpretation text for multiple countries
     interpretation_text <- paste0(
       "This graph illustrates the relationship between the wage bill as a percentage of public expenditure ",
-      "and GDP per capita across selected countries. In ", first_country, ", the wage bill represents ",
-      first_country_values$wage_bill, "% of public expenditure, with a GDP per capita of $",
-      format(first_country_values$gdp_per_capita, big.mark = ","), ".\n\n",
-      "Relative to the selected region, where the average wage bill is ", regional_avg$avg_wage_bill, 
-      "% and the average GDP per capita is $", format(regional_avg$avg_gdp_per_capita, big.mark = ","), 
-      ", ", first_country, "'s wage bill is ", 
-      ifelse(first_country_values$wage_bill > regional_avg$avg_wage_bill, "higher", "lower"),
-      " than the regional average."
+      "and GDP per capita across selected countries. The selected countries have an average wage bill of ",
+      regional_avg$avg_wage_bill, "%, with a GDP per capita of $",
+      format(regional_avg$avg_gdp_per_capita, big.mark = ","), ".\n\n"
     )
-    
     
     # ✅ Add section header and introduction
     doc <- doc %>% 
