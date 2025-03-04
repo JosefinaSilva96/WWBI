@@ -870,7 +870,7 @@ server <- function(input, output, session) {
         h3("Instructions Manual"),
         
         # Button to download the PDF
-        downloadButton("download_pdf", "Download Instructions")
+        downloadButton("download_pdf", "Download Codebook")
       )
       
     } else if(tab == "metadata") {
@@ -1316,7 +1316,7 @@ server <- function(input, output, session) {
 
   # ---------------------------
     output$download_pdf <- downloadHandler(
-      filename = "instructions.pdf",
+      filename = "Codebook and Explanatory Note.pdf",
       content = function(file) {
         file.copy("C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/WWBI Codebook v3.1.pdf", file)
       }
