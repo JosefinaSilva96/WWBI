@@ -778,7 +778,9 @@ ui <- bootstrapPage(
     div(
       id = "sidebar",
       div(class = "nav-item", actionLink("nav_dashboard", "Dashboard")),
+      div(class = "nav-item", actionLink("nav_instructions", "Instructions")),
       div(class = "nav-item", actionLink("nav_metadata", "Metadata")),
+      div(class = "nav-item", actionLink("nav_publications", "Publications")),
       
       # Collapsible Section - The Macro Fundamentals
       div(class = "nav-section", onclick = "toggleSection('macro_section')", "The Macro Fundamentals"),
