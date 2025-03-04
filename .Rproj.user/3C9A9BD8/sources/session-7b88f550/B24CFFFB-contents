@@ -4125,7 +4125,10 @@ server <- function(input, output, session) {
       paste0("Wage_bill_and_public_employment_analysis_", Sys.Date(), ".docx") 
     },
     content = function(file) {
-      
+          
+      # Get the selected countries dynamically
+          selected_countries <- input$countries_first  
+  
       # Initialize Word document
       doc <- read_docx() 
       
@@ -4140,9 +4143,8 @@ server <- function(input, output, session) {
       
       # Add Sections from Each Tab
       doc <- generate_wage_bill_analysis_section(doc) #  Wage Bill Analysis
-      doc <- generate_gdp_analysis_section(doc)       #GDP 
+      doc <- generate_gdp_analysis_section(doc, selected_countries)
       doc <- generate_tertiary_education_section(doc) # Tertiary Education Analysis
-      doc <- generate_wage_premium_report_section(doc) #Public Sector Wage Premium Report
       doc <- generate_wage_premium_gender_section(doc) #Wage Premium Gender Analysis
       doc <- generate_wage_premium_education_section(doc) #Wage Premium by Education
       
@@ -4157,7 +4159,7 @@ server <- function(input, output, session) {
       doc <- generate_females_occupation_groups_section(doc) #Females by Occupational Groups
       
       doc <- doc %>% body_add_fpar(fpar(ftext("Competitiveness of public sector wages", prop = section_style)))
-      
+      doc <- generate_wage_premium_report_section(doc) #Public Sector Wage Premium Report
       doc <- generate_gender_wage_premium_section(doc)    # Wage Premium by industry Analysis
       
       # ✅ Add Conclusion Section at the End
