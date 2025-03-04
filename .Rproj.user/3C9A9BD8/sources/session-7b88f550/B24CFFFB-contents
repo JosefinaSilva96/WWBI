@@ -2978,7 +2978,8 @@ server <- function(input, output, session) {
         geom_point(size = 4) +
         labs(title = "Public Sector Employment (Last Year Available)", 
              x = "Country", y = "Value") +
-        theme_minimal()
+        theme_minimal()+
+        theme(axis.text.x = element_text(angle = 45, hjust = 1))
     ) %>% 
       layout(legend = list(title = list(text = "Indicator")))  # Rename legend title
   })
@@ -3425,7 +3426,7 @@ server <- function(input, output, session) {
         }
         
         interpretation_text2 <- paste0(
-          "In **", input$country_second, ", the gender wage premium in the public sector has **", trend_direction, "** from **", 
+          "In **", input$country_second, ", the gender wage premium in the public sector has ", trend_direction, "  from ", 
           round(wage_premium_first_year, 1), "% in ", first_year, "to ", 
           round(wage_premium_last_year, 1), "% in ", last_year, "."
         )
@@ -3615,45 +3616,49 @@ server <- function(input, output, session) {
       pull(country_name) %>%
       first()
     
-    avg_public <- round(mean(filtered_data$value_percentage[filtered_data$indicator_name == "as a share of public paid employees"], na.rm = TRUE), 1)
-    avg_private <- round(mean(filtered_data$value_percentage[filtered_data$indicator_name == "as a share of private paid employees"], na.rm = TRUE), 1)
+    # ✅ Round all extracted values to integers
+    avg_public <- round(mean(filtered_data$value_percentage[filtered_data$indicator_name == "as a share of public paid employees"], na.rm = TRUE), 0)
+    avg_private <- round(mean(filtered_data$value_percentage[filtered_data$indicator_name == "as a share of private paid employees"], na.rm = TRUE), 0)
     
-    # ✅ Extract employment levels for the first country and comparison
     first_country_public <- filtered_data %>%
       filter(country_name == first_country, indicator_name == "as a share of public paid employees") %>%
       pull(value_percentage) %>%
       first() %>%
-      coalesce(0)
+      coalesce(0) %>%
+      round(0)
     
     first_country_private <- filtered_data %>%
       filter(country_name == first_country, indicator_name == "as a share of private paid employees") %>%
       pull(value_percentage) %>%
       first() %>%
-      coalesce(0)
+      coalesce(0) %>%
+      round(0)
     
-    # ✅ Compare first country with others
+    # ✅ Compare first country with others using rounded numbers
     comparison_public <- if (first_country_public > avg_public) {
-      paste0("This is higher than the average of", avg_public, "% across the other selected countries.")
+      paste0("This is higher than the average of ", avg_public, "% across the other selected countries.")
     } else {
-      paste0("This is lower than the average of", avg_public, "% across the other selected countries.")
+      paste0("This is lower than the average of ", avg_public, "% across the other selected countries.")
     }
     
     comparison_private <- if (first_country_private > avg_private) {
-      paste0("This is higher than the average of", avg_private, "% across the other selected countries.")
+      paste0("This is higher than the average of ", avg_private, "% across the other selected countries.")
     } else {
-      paste0("This is lower than the average of", avg_private, "% across the other selected countries.")
+      paste0("This is lower than the average of ", avg_private, "% across the other selected countries.")
     }
     
+    # ✅ Ensure all numbers in interpretation_text1 are rounded integers
     interpretation_text1 <- paste0(
       "This graph compares female employment in the public and private sectors across selected countries. ",
       "On average, ", avg_public, "% of public sector employees are female, while in the private sector, the share is ", avg_private, "%. ",
       "The highest female employment in the public sector is in ", highest_public_country, ", while the lowest is in ", lowest_public_country, ". ",
-      "In the private sector, ", highest_private_country, "has the highest share of female employees, whereas ", lowest_private_country, "has the lowest.\n\n",
-      "In", first_country, ", female representation in the public sector is ", first_country_public, "%.", 
+      "In the private sector, ", highest_private_country, " has the highest share of female employees, whereas ", lowest_private_country, " has the lowest.\n\n",
+      "In ", first_country, ", female representation in the public sector is ", first_country_public, "%.", 
       comparison_public, "\n",
-      "In the private sector, female representation in ", first_country, "is ", first_country_private, "%. ",
+      "In the private sector, female representation in ", first_country, " is ", first_country_private, "%. ",
       comparison_private
     )
+    
     
     # ✅ Add First Graph and Interpretation
     doc <- doc %>% 
