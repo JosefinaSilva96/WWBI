@@ -828,6 +828,7 @@ ui <- bootstrapPage(
 
 # SERVER
 
+
 server <- function(input, output, session) {
   
   # 1. Track the active tab via a reactive value  
@@ -4002,28 +4003,30 @@ server <- function(input, output, session) {
       pull(country_name) %>%
       first()
     
-    avg_admin <- round(mean(filtered_data$value_percentage[filtered_data$indicator_label == "Public Administration"], na.rm = TRUE), 1)
-    avg_education <- round(mean(filtered_data$value_percentage[filtered_data$indicator_label == "Education"], na.rm = TRUE), 1)
-    avg_health <- round(mean(filtered_data$value_percentage[filtered_data$indicator_label == "Health"], na.rm = TRUE), 1)
+    # ✅ Round all extracted values to integers
+    avg_admin <- round(mean(filtered_data$value_percentage[filtered_data$indicator_label == "Public Administration"], na.rm = TRUE), 0)
+    avg_education <- round(mean(filtered_data$value_percentage[filtered_data$indicator_label == "Education"], na.rm = TRUE), 0)
+    avg_health <- round(mean(filtered_data$value_percentage[filtered_data$indicator_label == "Health"], na.rm = TRUE), 0)
     
-    # ✅ Extract wage premium for the first country and comparison
     first_country_admin <- filtered_data %>%
       filter(country_name == first_country, indicator_label == "Public Administration") %>%
       pull(value_percentage) %>%
       first() %>%
-      coalesce(0)
+      coalesce(0) %>%
+      round(0)
     
     first_country_education <- filtered_data %>%
       filter(country_name == first_country, indicator_label == "Education") %>%
       pull(value_percentage) %>%
       first() %>%
-      coalesce(0)
+      coalesce(0) %>%
+      round(0)
     
-    # ✅ Compare first country with others
+    # ✅ Compare first country with others using rounded numbers
     comparison_admin <- if (first_country_admin > avg_admin) {
       paste0("This is higher than the average of ", avg_admin, "% across the other selected countries.")
     } else {
-      paste0("This is lower than the average of **", avg_admin, "% across the other selected countries.")
+      paste0("This is lower than the average of ", avg_admin, "% across the other selected countries.")
     }
     
     comparison_education <- if (first_country_education > avg_education) {
@@ -4032,19 +4035,19 @@ server <- function(input, output, session) {
       paste0("This is lower than the average of ", avg_education, "% across the other selected countries.")
     }
     
+    # ✅ Ensure all numbers in interpretation_text are rounded integers
     interpretation_text <- paste0(
       "This graph compares the gender wage premium in the public sector across different industries. ",
-      "On average, the wage premium in Public Administration is ", avg_admin, "%, in Education it is", avg_education, "%, ",
+      "On average, the wage premium in Public Administration is ", avg_admin, "%, in Education it is ", avg_education, "%, ",
       "and in Health it is ", avg_health, "%.\n\n",
-      "The highest wage premium in Public Administration is in", highest_admin, ", while the lowest is in ", lowest_admin, ". ",
-      "In Education, the highest wage premium is observed in", highest_education, ", whereas the lowest is in ", lowest_education, ". ",
-      "For Health, the highest gender wage premium is in ", highest_health, ", while the lowest is in", lowest_health, ".\n\n",
-      "In ", first_country, ", the wage premium in Public Administration is", first_country_admin, "%. ", 
+      "The highest wage premium in Public Administration is in ", highest_admin, ", while the lowest is in ", lowest_admin, ". ",
+      "In Education, the highest wage premium is observed in ", highest_education, ", whereas the lowest is in ", lowest_education, ". ",
+      "For Health, the highest gender wage premium is in ", highest_health, ", while the lowest is in ", lowest_health, ".\n\n",
+      "In ", first_country, ", the wage premium in Public Administration is ", first_country_admin, "%. ", 
       comparison_admin, "\n",
-      "In Education, the wage premium in", first_country, "is", first_country_education, "%. ",
+      "In Education, the wage premium in ", first_country, " is ", first_country_education, "%. ",
       comparison_education
     )
-    
     # ✅ Add Image and Interpretation to the Document
     doc <- doc %>% 
       body_add_img(src = img_path, width = 6, height = 4) %>% 
