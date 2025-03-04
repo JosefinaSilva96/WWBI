@@ -299,7 +299,8 @@ public_sector_emp_temp_last <- public_sector_emp %>%
   filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
   ungroup()                                      # Ungroup the data
 
-
+public_sector_emp_temp_last <- public_sector_emp_temp_last %>%
+  mutate(value_percentage = value * 100)
 
 
 # Filter the data for the specific indicator "Characteristics of the public sector workforce"
@@ -2934,7 +2935,7 @@ server <- function(input, output, session) {
       filter(country_name %in% input$countries_first)
     
     ggplotly(
-      ggplot(filtered_data, aes(x = country_name, y = value, color = indicator_label)) +
+      ggplot(filtered_data, aes(x = country_name, y = value_percentage, color = indicator_label)) +
         geom_point(size = 4) +
         labs(title = "Public Sector Employment (Last Year Available)", 
              x = "Country", y = "Value") +
@@ -2985,7 +2986,7 @@ server <- function(input, output, session) {
       
       # First Graph - Save as Image
       first_graph <- ggplot(public_sector_emp_temp_last %>% filter(country_name %in% input$countries_first), 
-                            aes(x = country_name, y = value, color = indicator_label)) +
+                            aes(x = country_name, y = value_percentage, color = indicator_label)) +
         geom_point(size = 4) +
         labs(title = "Public Sector Employment (Last Year Available)", x = "Country", y = "Value") +
         theme_minimal()
@@ -3047,7 +3048,7 @@ server <- function(input, output, session) {
     
     # ✅ Generate First Graph - Public Sector Employment (Last Year Available)
     first_graph <- ggplot(filtered_data, 
-                          aes(x = country_name, y = value, color = indicator_label)) +
+                          aes(x = country_name, y = value_percentage, color = indicator_label)) +
       geom_point(size = 4) +
       labs(title = "Public Sector Employment (Last Year Available)", x = "Country", y = "Employment (%)", color = "Sector") +
       theme_minimal()
