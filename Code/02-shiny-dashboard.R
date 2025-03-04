@@ -833,7 +833,6 @@ ui <- bootstrapPage(
 
 # SERVER
 
-
 server <- function(input, output, session) {
   
   # 1. Track the active tab via a reactive value  
@@ -1696,7 +1695,7 @@ server <- function(input, output, session) {
     }
     
     # Construct dynamic interpretation text
-    # Construct dynamic interpretation text
+
     gdp_interpretation_text <- paste0(
       "Figure 1.1 illustrates the Wage bill as a percentage of GDP for the selected countries, showing ", relationship_text, 
       " between a country’s level of economic development and the size of its public sector in the ", first_region, " region. ",
@@ -2222,7 +2221,8 @@ server <- function(input, output, session) {
       scale_fill_manual(values = c("as a share of private paid employees" = "#B3242B", 
                                    "as a share of public paid employees" = "#003366")) +
       labs(title = "Tertiary Education by Sector and Country", x = "Country", y = "Tertiary Education (%)", fill = "Sector") +
-      theme_minimal()
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
     
     # ✅ Save the plot as an image
     img_path <- tempfile(fileext = ".png")
