@@ -3584,7 +3584,8 @@ server <- function(input, output, session) {
                                    "as a share of public paid employees" = "#003366")) +
       labs(title = "Female Employment by Sector (Last Year Available)", 
            x = "Country", y = "Employment (%)", fill = "Sector") +
-      theme_minimal()
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
     
     img_path1 <- tempfile(fileext = ".png")
     ggsave(img_path1, plot = first_graph, width = 8, height = 6)
