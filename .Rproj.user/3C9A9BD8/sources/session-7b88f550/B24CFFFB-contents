@@ -547,6 +547,9 @@ gender_wage_premium <- gender_wage_premium %>%
                                   "Public sector wage premium, by gender: Female (compared to all private employees)" = "Female", 
                                   "Public sector wage premium, by gender: Male (compared to all private employees)" = "Male"))
 
+gender_wage_premium <- gender_wage_premium %>%
+  mutate(value_percentage = value * 100)
+
 
 # Keep the last year available for each country
 
@@ -556,7 +559,8 @@ gender_wage_premium_last <- gender_wage_premium %>%
   filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
   ungroup()                                      # Ungroup the data
 
-
+gender_wage_premium_last <- gender_wage_premium_last %>%
+  mutate(value_percentage = value * 100)
 
 
 public_sector_emp_temp <- public_sector_emp_temp %>%
