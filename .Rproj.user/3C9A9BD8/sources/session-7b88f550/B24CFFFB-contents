@@ -1409,7 +1409,7 @@ server <- function(input, output, session) {
       intro_text <- paste0(
         "This note presents evidence on public sector employment and compensation practices in ", first_country,
         " using the Worldwide Bureaucracy Indicators (WWBI). The primary data source is the Labor Force Survey (LFS), conducted by the Bureau of Statistics, ",
-        "which offers extensive, nationally representative data over multiple years up to 2022. ",
+        "which offers extensive, nationally representative data over multiple years up to 2022. ", 
         "For international comparisons, the analysis includes a set of peer countries for benchmarking, with a particular focus on countries from the ",
         first_region, " region and other aspirational peers."
       )
@@ -1664,8 +1664,8 @@ server <- function(input, output, session) {
     
     # Construct dynamic interpretation text
     gdp_interpretation_text <- paste0(
-      "Figure 1.1 illustrates ", relationship_text, " between a country’s level of economic development ",
-      "(as measured by GDP per capita) and the size of its public sector in the ", first_region, " region. ",
+      "Figure 1.1 illustrates the Wage bill as a percentage of GDP for the selected countries", relationship_text, " between a country’s level of economic development ",
+      "and the size of its public sector in the ", first_region, " region. ",
       "This means that as GDP per capita increases, the public sector wage bill tends to ",
       ifelse(regional_trend < -0.2, "decrease.", ifelse(regional_trend > 0.2, "increase.", "remain relatively stable.")), 
       " Given ", first_country, "’s position in this trend, it indicates that ", first_country, 
@@ -3161,7 +3161,7 @@ server <- function(input, output, session) {
       filter(country_name %in% input$countries_first)
     
     ggplotly(
-      ggplot(filtered_data, aes(x = country_name, y = value, color = indicator_label)) +
+      ggplot(filtered_data, aes(x = country_name, y = value_percentage, color = indicator_label)) +
         geom_point(size = 4) +
         labs(title = "Public Sector Wage Premium by Gender (Last Year Available)", 
              x = "Country", 
@@ -3180,7 +3180,7 @@ server <- function(input, output, session) {
       filter(country_name == input$country_second)
     
     ggplotly(
-      ggplot(filtered_data, aes(x = year, y = value, color = indicator_label)) +
+      ggplot(filtered_data, aes(x = year, y = value_percentage, color = indicator_label)) +
         geom_line(size = 1.2) +
         geom_point(size = 3) +
         labs(title = "Public Sector Wage Premium by Gender Over Time", 
@@ -3188,7 +3188,7 @@ server <- function(input, output, session) {
              y = "Wage Premium (%)",
              color = "Indicator") +  # Updated label for legend
         theme_minimal() +
-        annotate("text", x = Inf, y = min(filtered_data$value) - 5,  # Adjusted variable name
+        annotate("text", x = Inf, y = min(filtered_data$value_percentage) - 5,  # Adjusted variable name
                  label = "This indicator represents the gender wage premium across industries in the public sector.", 
                  hjust = 1, size = 4, color = "black", fontface = "italic")
       
@@ -3218,7 +3218,7 @@ server <- function(input, output, session) {
       
       # First Graph - Save as Image
       first_graph <- ggplot(gender_wage_premium_last %>% filter(country_name %in% input$countries_first), 
-                            aes(x = country_name, y = value, color = indicator_label)) +
+                            aes(x = country_name, y = value_percentage, color = indicator_label)) +
         geom_point(size = 4) +
         labs(title = "Public Sector Wage Premium by Gender (Last Year Available)", 
              x = "Country", 
@@ -3233,7 +3233,7 @@ server <- function(input, output, session) {
       
       # Second Graph - Save as Image
       second_graph <- ggplot(gender_wage_premium %>% filter(country_name == input$country_second), 
-                             aes(x = year, y = value, color = indicator_label)) +
+                             aes(x = year, y = value_percentage, color = indicator_label)) +
         geom_line(size = 1.2) +
         geom_point(size = 3) +
         labs(title = "Public Sector Wage Premium by Gender Over Time", 
@@ -3285,7 +3285,7 @@ server <- function(input, output, session) {
     
     # ✅ Generate First Graph - Public Sector Wage Premium by Gender (Last Year Available)
     first_graph <- ggplot(filtered_data, 
-                          aes(x = country_name, y = value, color = indicator_label)) +
+                          aes(x = country_name, y = value_percentage, color = indicator_label)) +
       geom_point(size = 4) +
       labs(title = "Public Sector Wage Premium by Gender (Last Year Available)", 
            x = "Country", 
@@ -3298,27 +3298,27 @@ server <- function(input, output, session) {
     
     # ✅ Extract summary statistics
     highest_country <- filtered_data %>%
-      filter(value == max(value, na.rm = TRUE)) %>%
+      filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>%
       pull(country_name) %>%
       first()
     
     lowest_country <- filtered_data %>%
-      filter(value == min(value, na.rm = TRUE)) %>%
+      filter(value_percentage == min(value_percentage, na.rm = TRUE)) %>%
       pull(country_name) %>%
       first()
     
-    avg_wage_premium <- round(mean(filtered_data$value, na.rm = TRUE), 1)
+    avg_wage_premium <- round(mean(filtered_data$value_percentage, na.rm = TRUE), 1)
     
     # ✅ Extract wage premium for the first country and comparison
     first_country_premium <- filtered_data %>%
       filter(country_name == first_country) %>%
-      pull(value) %>%
+      pull(value_percentage) %>%
       first() %>%
       coalesce(0)
     
     comparison_premium <- filtered_data %>%
       filter(country_name != first_country) %>%
-      summarise(avg_other_countries = mean(value, na.rm = TRUE)) %>%
+      summarise(avg_other_countries = mean(value_percentage, na.rm = TRUE)) %>%
       pull(avg_other_countries) %>%
       coalesce(0)
     
@@ -3349,7 +3349,7 @@ server <- function(input, output, session) {
       
       if (nrow(time_series_data) > 0) {
         second_graph <- ggplot(time_series_data, 
-                               aes(x = year, y = value, color = indicator_label)) +
+                               aes(x = year, y = value_percentage, color = indicator_label)) +
           geom_line(size = 1.2) +
           geom_point(size = 3) +
           labs(title = paste("Public Sector Wage Premium by Gender in", input$country_second, "Over Time"), 
@@ -3367,13 +3367,13 @@ server <- function(input, output, session) {
         
         wage_premium_first_year <- time_series_data %>%
           filter(year == first_year) %>%
-          pull(value) %>%
+          pull(value_percentage) %>%
           first() %>%
           coalesce(NA)
         
         wage_premium_last_year <- time_series_data %>%
           filter(year == last_year) %>%
-          pull(value) %>%
+          pull(value_percentage) %>%
           first() %>%
           coalesce(NA)
         
@@ -4185,7 +4185,13 @@ server <- function(input, output, session) {
       doc <- generate_gender_workforce_section(doc) #Gender Workforce Analysis
       doc <- generate_females_occupation_groups_section(doc) #Females by Occupational Groups
       
-      doc <- doc %>% body_add_fpar(fpar(ftext("Competitiveness of public sector wages", prop = section_style)))
+      doc <- doc %>% 
+        body_add_fpar(fpar(ftext("Competitiveness of Public Sector Wages", prop = section_style))) %>%
+        body_add_par(
+          "Public sector compensation should theoretically be designed with an awareness of its influence on the broader labor market. According to the theory of “compensating wage differentials,” a job should pay more (or less) depending on its non-wage characteristics that are undesirable (or desirable). Therefore, the optimal design of public sector wages should account for the greater presence of both financial and non-financial benefits in public service. Ideally, public sector wages should include a slight penalty in base wages due to the higher non-monetary benefits such as job security, pension plans, and the opportunity to serve the public. This structure means that, despite lower monetary compensation, the total de facto compensation (including these non-monetary benefits) that individuals receive would be roughly equivalent to that in the private sector. Public sector wages should also track private sector wages, maintaining a small penalty while ensuring that wage rigidities in the public sector do not create a significant gap between the two sectors. This alignment would ensure that public sector compensation remains competitive without being distortionary, preventing shortages of skills or qualified applicants in either sector.",
+          style = "Normal"
+        )
+      
       doc <- generate_wage_premium_report_section(doc) #Public Sector Wage Premium Report
       doc <- generate_gender_wage_premium_section(doc)    # Wage Premium by industry Analysis
       
