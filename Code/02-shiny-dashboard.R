@@ -4030,7 +4030,7 @@ server <- function(input, output, session) {
       "This graph compares the gender wage premium in the public sector across different industries. ",
       "On average, the wage premium in Public Administration is ", avg_admin, "%, in Education it is", avg_education, "%, ",
       "and in Health it is ", avg_health, "%.\n\n",
-      "The highest wage premium in **Public Administration is in", highest_admin, ", while the lowest is in ", lowest_admin, ". ",
+      "The highest wage premium in Public Administration is in", highest_admin, ", while the lowest is in ", lowest_admin, ". ",
       "In Education, the highest wage premium is observed in", highest_education, ", whereas the lowest is in ", lowest_education, ". ",
       "For Health, the highest gender wage premium is in ", highest_health, ", while the lowest is in", lowest_health, ".\n\n",
       "In ", first_country, ", the wage premium in Public Administration is", first_country_admin, "%. ", 
