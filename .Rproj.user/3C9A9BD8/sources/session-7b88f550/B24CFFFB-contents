@@ -1661,15 +1661,50 @@ server <- function(input, output, session) {
     } else {
       "uncertain compared to regional peers"
     }
+    # Extract wage bill for the first selected country in 2010
+    first_country_2010_wage_bill <- wage_bill_gdp %>%
+      filter(country_name == first_country, year == 2010) %>%
+      summarise(wage_bill_2010 = first(value)) %>%
+      pull(wage_bill_2010) %>%
+      coalesce(NA)
+    
+    # Extract wage bill for the first selected country in the last available year
+    latest_year <- wage_bill_gdp %>%
+      filter(country_name == first_country) %>%
+      summarise(last_year = max(year, na.rm = TRUE)) %>%
+      pull(last_year)
+    
+    first_country_latest_wage_bill <- wage_bill_gdp %>%
+      filter(country_name == first_country, year == latest_year) %>%
+      summarise(wage_bill_latest = first(value)) %>%
+      pull(wage_bill_latest) %>%
+      coalesce(NA)
+    
+    # Determine increase or decrease
+    trend_text <- if (!is.na(first_country_2010_wage_bill) && !is.na(first_country_latest_wage_bill)) {
+      if (first_country_latest_wage_bill > first_country_2010_wage_bill) {
+        paste0("an increase from ", round(first_country_2010_wage_bill, 0), "% in 2010 to ", 
+               round(first_country_latest_wage_bill, 0), "% in ", latest_year, ".")
+      } else if (first_country_latest_wage_bill < first_country_2010_wage_bill) {
+        paste0("a decrease from ", round(first_country_2010_wage_bill, 0), "% in 2010 to ", 
+               round(first_country_latest_wage_bill, 0), "% in ", latest_year, ".")
+      } else {
+        paste0("no significant change, remaining at ", round(first_country_2010_wage_bill, 0), "% from 2010 to ", latest_year, ".")
+      }
+    } else {
+      "insufficient data to determine the trend."
+    }
     
     # Construct dynamic interpretation text
+    # Construct dynamic interpretation text
     gdp_interpretation_text <- paste0(
-      "Figure 1.1 illustrates the Wage bill as a percentage of GDP for the selected countries", relationship_text, " between a country’s level of economic development ",
-      "and the size of its public sector in the ", first_region, " region. ",
+      "Figure 1.1 illustrates the Wage bill as a percentage of GDP for the selected countries, showing ", relationship_text, 
+      " between a country’s level of economic development and the size of its public sector in the ", first_region, " region. ",
       "This means that as GDP per capita increases, the public sector wage bill tends to ",
       ifelse(regional_trend < -0.2, "decrease.", ifelse(regional_trend > 0.2, "increase.", "remain relatively stable.")), 
       " Given ", first_country, "’s position in this trend, it indicates that ", first_country, 
-      " spends ", spending_pattern, " on its public sector wage bill compared to other countries in ", first_region, "."
+      " spends ", spending_pattern, " on its public sector wage bill compared to other countries in ", first_region, ".\n\n",
+      "For ", first_country, ", the wage bill as a percentage of GDP was ", trend_text
     )
     
     doc <- doc %>% 
