@@ -2524,8 +2524,8 @@ server <- function(input, output, session) {
              legend = list(title = list(text = "<b>Sector</b>")),
              hovermode = "closest")
     plot <- plot %>% add_annotations(x = data_to_plot_long$year, 
-                                     y = data_to_plot_long$value, 
-                                     text = round(data_to_plot_long$value, 2),
+                                     y = data_to_plot_long$value_percentage, 
+                                     text = round(data_to_plot_long$value_percentage, 2),
                                      showarrow = FALSE,
                                      font = list(size = 12, color = "black"),
                                      xanchor = "center",
@@ -2547,9 +2547,9 @@ server <- function(input, output, session) {
         body_add_par("This report presents evidence on public sector employment and compensation practices for the selected countries.", style = "Normal")
       if("firstGraphgender" %in% input$graphs_to_download & length(input$countries_first) > 0) {
         data_to_plot <- gender_wage_premium_last %>% filter(country_name %in% input$countries_first)
-        data_to_plot_long <- data_to_plot %>% select(country_name, indicator_label, year, value) %>% 
+        data_to_plot_long <- data_to_plot %>% select(country_name, indicator_label, year, value, value_percentage) %>% 
           mutate(indicator_label = factor(indicator_label))
-        first_graph_wage_premium_gender <- ggplot(data_to_plot_long, aes(x = country_name, y = value, color = indicator_label)) +
+        first_graph_wage_premium_gender <- ggplot(data_to_plot_long, aes(x = country_name, y = value_percentage, color = indicator_label)) +
           geom_point(size = 3) +
           labs(title = "Wage Premium Gender (Multi-Country)", x = "Country", y = "Value") +
           theme_minimal()
@@ -2561,9 +2561,9 @@ server <- function(input, output, session) {
       }
       if("secondGraphgender" %in% input$graphs_to_download & !is.null(input$country_second)) {
         data_to_plot <- gender_wage_premium %>% filter(country_name == input$country_second)
-        data_to_plot_long <- data_to_plot %>% select(year, indicator_name, value) %>% 
+        data_to_plot_long <- data_to_plot %>% select(year, indicator_name, value, value_percentage) %>% 
           mutate(indicator_name = factor(indicator_name))
-        second_graph_wage_premium_gender <- ggplot(data_to_plot_long, aes(x = year, y = value, color = indicator_name)) +
+        second_graph_wage_premium_gender <- ggplot(data_to_plot_long, aes(x = year, y = value_percentage, color = indicator_name)) +
           geom_line(size = 1) +
           geom_point(size = 3) +
           labs(title = paste("Public sector wage premium, by gender in", input$country_second, "Over Time"), x = "Year", y = "Employment Value") +
@@ -2593,10 +2593,10 @@ server <- function(input, output, session) {
       
       if (nrow(data_to_plot) > 0) {
         data_to_plot_long <- data_to_plot %>% 
-          select(country_name, indicator_label, year, value) %>% 
+          select(country_name, indicator_label, year, value, value_percentage) %>% 
           mutate(indicator_label = factor(indicator_label))
         
-        first_graph_wage_premium_gender <- ggplot(data_to_plot_long, aes(x = country_name, y = value, color = indicator_label)) +
+        first_graph_wage_premium_gender <- ggplot(data_to_plot_long, aes(x = country_name, y = value_percentage, color = indicator_label)) +
           geom_point(size = 3) +
           labs(title = "Wage Premium Gender (Multi-Country)", x = "Country", y = "Value") +
           theme_minimal()
@@ -2608,26 +2608,26 @@ server <- function(input, output, session) {
         # ✅ Extract summary statistics
         first_country <- input$countries_first[1]
         
-        avg_wage_premium <- round(mean(data_to_plot$value, na.rm = TRUE), 1)
+        avg_wage_premium <- round(mean(data_to_plot$value_percentage, na.rm = TRUE), 1)
         
         highest_country <- data_to_plot %>%
-          filter(value == max(value, na.rm = TRUE)) %>%
+          filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>%
           pull(country_name) %>%
           first()
         
         lowest_country <- data_to_plot %>%
-          filter(value == min(value, na.rm = TRUE)) %>%
+          filter(value_percentage == min(value_percentage, na.rm = TRUE)) %>%
           pull(country_name) %>%
           first()
         
         first_country_premium <- data_to_plot %>%
           filter(country_name == first_country) %>%
-          pull(value) %>%
+          pull(value_percentage) %>%
           coalesce(0)
         
         comparison_premium <- data_to_plot %>%
           filter(country_name != first_country) %>%
-          summarise(avg_other_countries = mean(value, na.rm = TRUE)) %>%
+          summarise(avg_other_countries = mean(value_percentage, na.rm = TRUE)) %>%
           pull(avg_other_countries) %>%
           coalesce(0)
         
@@ -2663,10 +2663,10 @@ server <- function(input, output, session) {
       
       if (nrow(data_to_plot) > 0) {
         data_to_plot_long <- data_to_plot %>% 
-          select(year, indicator_name, value) %>% 
+          select(year, indicator_name, value, value_percentage) %>% 
           mutate(indicator_name = factor(indicator_name))
         
-        second_graph_wage_premium_gender <- ggplot(data_to_plot_long, aes(x = year, y = value, color = indicator_name)) +
+        second_graph_wage_premium_gender <- ggplot(data_to_plot_long, aes(x = year, y = value_percentage, color = indicator_name)) +
           geom_line(size = 1) +
           geom_point(size = 3) +
           labs(title = paste("Public Sector Wage Premium by Gender in", input$country_second, "Over Time"), 
