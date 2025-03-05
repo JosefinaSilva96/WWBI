@@ -2986,11 +2986,10 @@ server <- function(input, output, session) {
     }
     
     interpretation_text <- paste0(
-      "This graph compares public sector wage premiums by education level across selected countries. ",
-      "On average, the public sector wage premium is ", avg_wage_premium, "%. ",
-      "The highest wage premium is observed for ", highest_education, ", while the lowest wage premium is seen in ", lowest_education, ".\n\n",
-      "In ", first_country, ", the average public sector wage premium is ", round(first_country_premium, 1), "%. ", 
-      comparison_statement
+      "This graph illustrates public sector wage premiums by education level in ", first_country, 
+      ", comparing earnings with private sector formal workers. ",
+      "On average, the public sector wage premium in ", first_country, " is ", round(first_country_premium, 0), "%. ",
+      "The highest wage premium is observed for those with ", highest_education, ", while the lowest wage premium is for those with ", lowest_education, "."
     )
     
     # ✅ Add image and interpretation text to the document
@@ -3129,34 +3128,35 @@ server <- function(input, output, session) {
                           aes(x = country_name, y = value_percentage, color = indicator_label)) +
       geom_point(size = 4) +
       labs(title = "Public Sector Employment (Last Year Available)", x = "Country", y = "Employment (%)", color = "Sector") +
-      theme_minimal()
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
     
     img_path1 <- tempfile(fileext = ".png")
     ggsave(img_path1, plot = first_graph, width = 8, height = 6)
     
     # ✅ Extract summary statistics
     highest_country <- filtered_data %>%
-      filter(value == max(value, na.rm = TRUE)) %>%
+      filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>%
       pull(country_name) %>%
       first()
     
     lowest_country <- filtered_data %>%
-      filter(value == min(value, na.rm = TRUE)) %>%
+      filter(value_percentage == min(value_percentage, na.rm = TRUE)) %>%
       pull(country_name) %>%
       first()
     
-    avg_employment <- round(mean(filtered_data$value, na.rm = TRUE), 1)
+    avg_employment <- round(mean(filtered_data$value_percentage, na.rm = TRUE), 1)
     
     # ✅ Extract employment level for the first country and comparison
     first_country_employment <- filtered_data %>%
       filter(country_name == first_country) %>%
-      pull(value) %>%
+      pull(value_percentage) %>%
       first() %>%
       coalesce(0)
     
     comparison_employment <- filtered_data %>%
       filter(country_name != first_country) %>%
-      summarise(avg_other_countries = mean(value, na.rm = TRUE)) %>%
+      summarise(avg_other_countries = mean(value_percentage, na.rm = TRUE)) %>%
       pull(avg_other_countries) %>%
       coalesce(0)
     
