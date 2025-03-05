@@ -868,6 +868,13 @@ server <- function(input, output, session) {
                       background: linear-gradient(to right, #4A90E2, #D4145A);
                       color: white; font-size: 16px; text-align: center;",
               "The Worldwide Bureaucracy Indicators (WWBI) database is a unique cross-national dataset on public sector employment and wages that aims to fill an information gap, thereby helping researchers, development practitioners, and policymakers gain a better understanding of the personnel dimensions of state capability, the footprint of the public sector within the overall labor market, and the fiscal implications of the public sector wage bill. The dataset is derived from administrative data and household surveys, thereby complementing existing, expert perception-based approaches.")
+        ), 
+        fluidRow(
+          div(style = "border: 2px solid white; padding: 15px; border-radius: 10px; 
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
+              "Contact Information: Zahid Hasnain-zhasnain@worldbank.org and
+                                    Daniel Rogger-drogger@worldbank.org")
         )
       )
     } else if (tab == "instructions") {
@@ -3003,7 +3010,7 @@ server <- function(input, output, session) {
   
   
 
-  #Public Sector Employment Graphs 
+  #Public Sector Graphs 
   
   # First Graph - Multi-Country Dot Plot
   output$firstGraphpublic <- renderPlotly({
@@ -3100,7 +3107,7 @@ server <- function(input, output, session) {
     
     # Add Introduction
     doc <- doc %>% body_add_par(
-      "This section presents an analysis of public sector employment in the selected country, comparing three key indicators and tracking trends over time.", 
+      "This section presents the analysis of public sector employment across selected countries and its trend over time.", 
       style = "Normal"
     )
     
@@ -3113,100 +3120,114 @@ server <- function(input, output, session) {
     # ✅ Extract the first selected country
     first_country <- input$countries_first[1]
     
-    # ✅ Filter data for the selected country (last available year)
+    # ✅ Filter data for selected countries (last available year)
     filtered_data <- public_sector_emp_temp_last %>% 
-      filter(country_name == first_country)
+      filter(country_name %in% input$countries_first)
     
     # ✅ Handle empty dataset case
     if (nrow(filtered_data) == 0) {
-      doc <- doc %>% body_add_par(paste0("No data available for ", first_country, "."), style = "Normal")
+      doc <- doc %>% body_add_par("No data available for the selected countries.", style = "Normal")
       return(doc)
     }
     
-    # ✅ Generate First Graph - Public Sector Employment by Indicator (Last Year Available)
+    # ✅ Generate First Graph - Public Sector Employment (Last Year Available)
     first_graph <- ggplot(filtered_data, 
-                          aes(x = indicator_label, y = value_percentage, fill = indicator_label)) +
-      geom_bar(stat = "identity", position = "dodge") +
-      labs(title = paste("Public Sector Employment in", first_country, "(Last Year Available)"), 
-           x = "Indicator", y = "Employment (%)", fill = "Indicator") +
+                          aes(x = country_name, y = value_percentage, color = indicator_label)) +
+      geom_point(size = 4) +
+      labs(title = "Public Sector Employment (Last Year Available)", x = "Country", y = "Employment (%)", color = "Sector") +
       theme_minimal() +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1))  # ✅ Rotates x-axis labels
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
     
     img_path1 <- tempfile(fileext = ".png")
     ggsave(img_path1, plot = first_graph, width = 8, height = 6)
     
-    # ✅ Extract values for three indicators in the first country (Rounded)
-    indicator_values <- filtered_data %>%
-      group_by(indicator_label) %>%
-      summarise(value = round(mean(value_percentage, na.rm = TRUE), 0)) %>%
-      pivot_wider(names_from = indicator_label, values_from = value)
+    # ✅ Extract summary statistics
+    highest_country <- filtered_data %>%
+      filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>%
+      pull(country_name) %>%
+      first()
     
-    indicator1 <- names(indicator_values)[2]
-    indicator2 <- names(indicator_values)[3]
-    indicator3 <- names(indicator_values)[4]
+    lowest_country <- filtered_data %>%
+      filter(value_percentage == min(value_percentage, na.rm = TRUE)) %>%
+      pull(country_name) %>%
+      first()
     
-    value1 <- indicator_values[[2]]
-    value2 <- indicator_values[[3]]
-    value3 <- indicator_values[[4]]
+    avg_employment <- round(mean(filtered_data$value_percentage, na.rm = TRUE), 1)
+    
+    # ✅ Extract employment level for the first country and comparison
+    first_country_employment <- filtered_data %>%
+      filter(country_name == first_country) %>%
+      pull(value_percentage) %>%
+      first() %>%
+      coalesce(0)
+    
+    comparison_employment <- filtered_data %>%
+      filter(country_name != first_country) %>%
+      summarise(avg_other_countries = mean(value_percentage, na.rm = TRUE)) %>%
+      pull(avg_other_countries) %>%
+      coalesce(0)
+    
+    # ✅ Compare first country with others
+    comparison_statement <- if (first_country_employment > comparison_employment) {
+      paste0("This is higher than the average of", round(comparison_employment, 1), "% across the other selected countries.")
+    } else {
+      paste0("This is lower than the average of", round(comparison_employment, 1), "% across the other selected countries.")
+    }
     
     interpretation_text1 <- paste0(
-      "This graph presents public sector employment in ", first_country, " based on three key indicators. ",
-      "The employment rate for ", indicator1, " is ", value1, "%, for ", indicator2, " is ", value2, "%, and for ",
-      indicator3, " is ", value3, "%."
+      "This graph compares public sector employment across selected countries. ",
+      "On average, public sector employment accounts for  ", avg_employment, "% of total employment. ",
+      "The highest public sector employment is observed in ", highest_country, ", while the lowest is in ", lowest_country, ".\n\n",
+      "In ", first_country, ", public sector employment is ", round(first_country_employment, 1), "%. ", 
+      comparison_statement
     )
     
     # ✅ Add First Graph and Interpretation
     doc <- doc %>% 
-      body_add_par(paste("Public Sector Employment in", first_country), style = "heading 2") %>% 
+      body_add_par("Public Sector Employment - Last Year Available", style = "heading 2") %>% 
       body_add_img(src = img_path1, width = 6, height = 4) %>% 
       body_add_par(interpretation_text1, style = "Normal")
     
     # ✅ Second Graph - Public Sector Employment Over Time
-    time_series_data <- public_sector_emp_temp %>% filter(country_name == first_country)
-    
-    if (nrow(time_series_data) > 0) {
-      # ✅ Extract employment levels for 2010 and the latest available year
-      first_year <- 2010
-      last_year <- max(time_series_data$year, na.rm = TRUE)
+    if (!is.null(input$country_second) && input$country_second != "") {
+      time_series_data <- public_sector_emp_temp %>% filter(country_name == input$country_second)
       
-      employment_2010 <- time_series_data %>%
-        filter(year == first_year) %>%
-        group_by(indicator_label) %>%
-        summarise(value_2010 = round(mean(value_percentage, na.rm = TRUE), 0)) %>%
-        pivot_wider(names_from = indicator_label, values_from = value_2010)
-      
-      employment_latest <- time_series_data %>%
-        filter(year == last_year) %>%
-        group_by(indicator_label) %>%
-        summarise(value_latest = round(mean(value_percentage, na.rm = TRUE), 0)) %>%
-        pivot_wider(names_from = indicator_label, values_from = value_latest)
-      
-      # ✅ Generate time series plot
-      second_graph <- ggplot(time_series_data, 
-                             aes(x = year, y = value_percentage, color = indicator_label)) +
-        geom_line(size = 1.2) +
-        geom_point(size = 3) +
-        labs(title = paste("Public Sector Employment in", first_country, "Over Time"), 
-             x = "Year", y = "Employment (%)", color = "Indicator") +
-        theme_minimal()
-      
-      img_path2 <- tempfile(fileext = ".png")
-      ggsave(img_path2, plot = second_graph, width = 8, height = 6)
-      
-      interpretation_text2 <- paste0(
-        "In ", first_country, ", public sector employment has evolved between 2010 and ", last_year, ".\n\n",
-        "For ", indicator1, ", the employment rate was ", employment_2010[[2]], "% in 2010 and is now ", employment_latest[[2]], "% in ", last_year, ". ",
-        "For ", indicator2, ", the employment rate was ", employment_2010[[3]], "% in 2010 and is now ", employment_latest[[3]], "% in ", last_year, ". ",
-        "For ", indicator3, ", the employment rate was ", employment_2010[[4]], "% in 2010 and is now ", employment_latest[[4]], "% in ", last_year, "."
-      )
-      
-      # ✅ Add Second Graph and Interpretation
-      doc <- doc %>% 
-        body_add_par("Public Sector Employment Over Time", style = "heading 2") %>% 
-        body_add_img(src = img_path2, width = 6, height = 4) %>% 
-        body_add_par(interpretation_text2, style = "Normal")
-    } else {
-      doc <- doc %>% body_add_par("No data available for Public Sector Employment trends over time.", style = "Normal")
+      if (nrow(time_series_data) > 0) {
+        first_year <- min(time_series_data$year, na.rm = TRUE)
+        last_year <- max(time_series_data$year, na.rm = TRUE)
+        
+        employment_first_year <- time_series_data %>%
+          filter(year == first_year) %>%
+          pull(value_percentage) %>%
+          first() %>%
+          coalesce(NA)
+        
+        employment_last_year <- time_series_data %>%
+          filter(year == last_year) %>%
+          pull(value_percentage) %>%
+          first() %>%
+          coalesce(NA)
+        
+        trend_direction <- if (!is.na(employment_last_year) && !is.na(employment_first_year)) {
+          if (employment_last_year > employment_first_year) {
+            "increased"
+          } else if (employment_last_year < employment_first_year) {
+            "decreased"
+          } else {
+            "remained stable"
+          }
+        } else {
+          "data not available"
+        }
+        
+        interpretation_text2 <- paste0(
+          "In ", input$country_second, ", public sector employment has ", trend_direction, "from ", 
+          round(employment_first_year, 1), "% in ", first_year, "to ", 
+          round(employment_last_year, 1), "% in ", last_year, "."
+        )
+        
+        doc <- doc %>% body_add_par(interpretation_text2, style = "Normal")
+      }
     }
     
     return(doc)
@@ -3389,93 +3410,94 @@ server <- function(input, output, session) {
     time_series_data <- gender_wage_premium %>% filter(country_name == first_country)
     
     if (nrow(time_series_data) > 0) {
-      second_graph <- ggplot(time_series_data, 
-                             aes(x = year, y = value_percentage, color = indicator_label)) +
-        geom_line(size = 1.2) +
-        geom_point(size = 3) +
-        labs(title = paste("Public Sector Wage Premium by Gender in", first_country, "Over Time"), 
-             x = "Year", 
-             y = "Wage Premium (%)",
-             color = "Gender Wage Premium") +
-        theme_minimal()
-      
-      img_path2 <- tempfile(fileext = ".png")
-      ggsave(img_path2, plot = second_graph, width = 8, height = 6)
-      
-      # ✅ Extract wage premium trend for 2010 and last available year
-      first_year <- 2010
-      last_year <- max(time_series_data$year, na.rm = TRUE)
-      
-      male_premium_2010 <- time_series_data %>%
-        filter(year == first_year, indicator_label == "Male") %>%
-        pull(value_percentage) %>%
-        first() %>%
-        coalesce(NA) %>%
-        round(0)
-      
-      female_premium_2010 <- time_series_data %>%
-        filter(year == first_year, indicator_label == "Female") %>%
-        pull(value_percentage) %>%
-        first() %>%
-        coalesce(NA) %>%
-        round(0)
-      
-      male_premium_last <- time_series_data %>%
-        filter(year == last_year, indicator_label == "Male") %>%
-        pull(value_percentage) %>%
-        first() %>%
-        coalesce(NA) %>%
-        round(0)
-      
-      female_premium_last <- time_series_data %>%
-        filter(year == last_year, indicator_label == "Female") %>%
-        pull(value_percentage) %>%
-        first() %>%
-        coalesce(NA) %>%
-        round(0)
-      
-      male_trend <- if (!is.na(male_premium_last) && !is.na(male_premium_2010)) {
-        if (male_premium_last > male_premium_2010) {
-          "increased"
-        } else if (male_premium_last < male_premium_2010) {
-          "decreased"
+        second_graph <- ggplot(time_series_data, 
+                               aes(x = year, y = value_percentage, color = indicator_label)) +
+          geom_line(size = 1.2) +
+          geom_point(size = 3) +
+          labs(title = paste("Public Sector Wage Premium by Gender in", first_country, "Over Time"), 
+               x = "Year", 
+               y = "Wage Premium (%)",
+               color = "Gender Wage Premium") +
+          theme_minimal()
+        
+        img_path2 <- tempfile(fileext = ".png")
+        ggsave(img_path2, plot = second_graph, width = 8, height = 6)
+        
+        # ✅ Extract wage premium trend for 2010 and last available year
+        first_year <- 2010
+        last_year <- max(time_series_data$year, na.rm = TRUE)
+        
+        male_premium_2010 <- time_series_data %>%
+          filter(year == first_year, indicator_label == "Male") %>%
+          pull(value_percentage) %>%
+          first() %>%
+          coalesce(NA) %>%
+          round(0)
+        
+        female_premium_2010 <- time_series_data %>%
+          filter(year == first_year, indicator_label == "Female") %>%
+          pull(value_percentage) %>%
+          first() %>%
+          coalesce(NA) %>%
+          round(0)
+        
+        male_premium_last <- time_series_data %>%
+          filter(year == last_year, indicator_label == "Male") %>%
+          pull(value_percentage) %>%
+          first() %>%
+          coalesce(NA) %>%
+          round(0)
+        
+        female_premium_last <- time_series_data %>%
+          filter(year == last_year, indicator_label == "Female") %>%
+          pull(value_percentage) %>%
+          first() %>%
+          coalesce(NA) %>%
+          round(0)
+        
+        male_trend <- if (!is.na(male_premium_last) && !is.na(male_premium_2010)) {
+          if (male_premium_last > male_premium_2010) {
+            "increased"
+          } else if (male_premium_last < male_premium_2010) {
+            "decreased"
+          } else {
+            "remained stable"
+          }
         } else {
-          "remained stable"
+          "data not available"
         }
-      } else {
-        "data not available"
-      }
-      
-      female_trend <- if (!is.na(female_premium_last) && !is.na(female_premium_2010)) {
-        if (female_premium_last > female_premium_2010) {
-          "increased"
-        } else if (female_premium_last < female_premium_2010) {
-          "decreased"
+        
+        female_trend <- if (!is.na(female_premium_last) && !is.na(female_premium_2010)) {
+          if (female_premium_last > female_premium_2010) {
+            "increased"
+          } else if (female_premium_last < female_premium_2010) {
+            "decreased"
+          } else {
+            "remained stable"
+          }
         } else {
-          "remained stable"
+          "data not available"
         }
-      } else {
-        "data not available"
-      }
-      
-      interpretation_text2 <- paste0(
-        "In ", first_country, ", the male public sector wage premium has ", male_trend, " from ", 
-        male_premium_2010, "% in ", first_year, " to ", male_premium_last, "% in ", last_year, ". ",
-        "Meanwhile, the female public sector wage premium has ", female_trend, " from ", 
-        female_premium_2010, "% in ", first_year, " to ", female_premium_last, "% in ", last_year, "."
-      )
-      
-      # ✅ Add Second Graph and Interpretation
-      doc <- doc %>% 
-        body_add_par("Public Sector Wage Premium by Gender Over Time", style = "heading 2") %>% 
-        body_add_img(src = img_path2, width = 6, height = 4) %>% 
-        body_add_par(interpretation_text2, style = "Normal")
+        
+        interpretation_text2 <- paste0(
+          "In ", first_country, ", the male public sector wage premium has ", male_trend, " from ", 
+          male_premium_2010, "% in ", first_year, " to ", male_premium_last, "% in ", last_year, ". ",
+          "Meanwhile, the female public sector wage premium has ", female_trend, " from ", 
+          female_premium_2010, "% in ", first_year, " to ", female_premium_last, "% in ", last_year, "."
+        )
+        
+        # ✅ Add Second Graph and Interpretation
+        doc <- doc %>% 
+          body_add_par("Public Sector Wage Premium by Gender Over Time", style = "heading 2") %>% 
+          body_add_img(src = img_path2, width = 6, height = 4) %>% 
+          body_add_par(interpretation_text2, style = "Normal")
     } else {
-      doc <- doc %>% body_add_par("No data available for Public Sector Wage Premium by Gender trends over time.", style = "Normal")
+        doc <- doc %>% body_add_par("No data available for Public Sector Wage Premium by Gender trends over time.", style = "Normal")
     }
     
     return(doc)
-  }
+}
+
   
   # Gender Workforce Graphs
   
@@ -4173,7 +4195,7 @@ server <- function(input, output, session) {
     # Construct Introduction Text Dynamically
     intro_text <- paste0(
       "This note presents evidence on public sector employment and compensation practices in ", first_country,
-      " using the Worldwide Bureaucracy Indicators (WWBI). ",
+      " using the Worldwide Bureaucracy Indicators (WWBI). The primary data source is the Labor Force Survey , conducted by the National Statistics Office. ",
       "For international comparisons, peer countries from ", first_region, " are included.",
       "\n\n",  # Add line break for a new paragraph
       "The public sector is typically a major source of employment in most countries. ",
@@ -4345,7 +4367,7 @@ server <- function(input, output, session) {
 shinyApp(ui = ui, server = server)
 
 
-###############################################
+# the end##############################################
 
 
     
