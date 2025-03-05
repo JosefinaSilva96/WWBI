@@ -3365,7 +3365,8 @@ server <- function(input, output, session) {
            x = "Country", 
            y = "Wage Premium (%)",
            color = "Gender Wage Premium") +
-      theme_minimal()
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
     
     img_path1 <- tempfile(fileext = ".png")
     ggsave(img_path1, plot = first_graph, width = 8, height = 6)
@@ -3464,7 +3465,7 @@ server <- function(input, output, session) {
         }
         
         interpretation_text2 <- paste0(
-          "In **", input$country_second, ", the gender wage premium in the public sector has ", trend_direction, "  from ", 
+          "In ", input$country_second, ", the gender wage premium in the public sector has ", trend_direction, "  from ", 
           round(wage_premium_first_year, 1), "% in ", first_year, "to ", 
           round(wage_premium_last_year, 1), "% in ", last_year, "."
         )
