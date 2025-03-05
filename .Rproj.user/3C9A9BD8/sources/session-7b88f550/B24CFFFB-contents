@@ -1896,7 +1896,7 @@ server <- function(input, output, session) {
     
     # ✅ Construct interpretation text incorporating first-country values
     interpretation_text <- paste0(
-      "This graph illustrates the relationship between the wage bill as a percentage of public expenditure ",
+      "Figure 1.3 illustrates the relationship between the wage bill as a percentage of public expenditure ",
       "and GDP per capita across selected countries. The selected countries have an average wage bill of ",
       regional_avg$avg_wage_bill, "%, with a GDP per capita of $",
       format(regional_avg$avg_gdp_per_capita, big.mark = ","), ".\n\n",
@@ -2803,7 +2803,7 @@ server <- function(input, output, session) {
     
     req(input$selected_country)  # Ensure a country is selected
     
-    # Filter the dataset for the selected country
+    # Filter the data set for the selected country
     filtered_data <- public_wage_premium_educ %>%
       filter(country_name == input$selected_country) %>%
       drop_na(value_percentage)  # Remove NAs
@@ -2839,9 +2839,7 @@ server <- function(input, output, session) {
   output$note_education_wage_premium <- renderText({
     "Note: This indicator represents the public sector wage premium across different education levels, comparing public sector wages to those of private formal workers."
   })
-  # -----------------------------------
-  # 📄 Download Handler for Word Report
-  # -----------------------------------
+  
   output$downloadEducationWagePremium <- downloadHandler(
     filename = function() {
       paste0("Public_Sector_Wage_Premium_Education_", Sys.Date(), ".docx")
@@ -3708,8 +3706,7 @@ server <- function(input, output, session) {
     return(doc)
   }
   
-  
-  
+
   # Women Leadership 
   
   output$barPlotwomen <- renderPlotly({
