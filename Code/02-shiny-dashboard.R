@@ -3579,19 +3579,22 @@ server <- function(input, output, session) {
     
     # ✅ Generate First Graph - Female Employment by Sector (Last Year Available)
     first_graph <- ggplot(filtered_data, 
-                          aes(x = country_name, y = value_percentage, fill = indicator_name)) +
+                          aes(x = country_name, y = round(value_percentage, 0), fill = indicator_name)) +  # ✅ Ensure rounded values in the graph
       geom_bar(stat = "identity", position = "dodge") +
       scale_fill_manual(values = c("as a share of private paid employees" = "#B3242B", 
                                    "as a share of public paid employees" = "#003366")) +
       labs(title = "Female Employment by Sector (Last Year Available)", 
            x = "Country", y = "Employment (%)", fill = "Sector") +
       theme_minimal() +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))  # ✅ Rotate labels to avoid overlap
     
     img_path1 <- tempfile(fileext = ".png")
     ggsave(img_path1, plot = first_graph, width = 8, height = 6)
     
-    # ✅ Extract summary statistics
+    # ✅ Extract summary statistics (Rounded to Whole Numbers)
+    avg_public <- round(mean(filtered_data$value_percentage[filtered_data$indicator_name == "as a share of public paid employees"], na.rm = TRUE), 0)
+    avg_private <- round(mean(filtered_data$value_percentage[filtered_data$indicator_name == "as a share of private paid employees"], na.rm = TRUE), 0)
+    
     highest_public_country <- filtered_data %>%
       filter(indicator_name == "as a share of public paid employees") %>%
       filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>%
@@ -3616,10 +3619,7 @@ server <- function(input, output, session) {
       pull(country_name) %>%
       first()
     
-    # ✅ Round all extracted values to integers
-    avg_public <- round(mean(filtered_data$value_percentage[filtered_data$indicator_name == "as a share of public paid employees"], na.rm = TRUE), 0)
-    avg_private <- round(mean(filtered_data$value_percentage[filtered_data$indicator_name == "as a share of private paid employees"], na.rm = TRUE), 0)
-    
+    # ✅ Extract and round employment values for the first selected country
     first_country_public <- filtered_data %>%
       filter(country_name == first_country, indicator_name == "as a share of public paid employees") %>%
       pull(value_percentage) %>%
@@ -3658,7 +3658,6 @@ server <- function(input, output, session) {
       "In the private sector, female representation in ", first_country, " is ", first_country_private, "%. ",
       comparison_private
     )
-    
     
     # ✅ Add First Graph and Interpretation
     doc <- doc %>% 
@@ -3863,10 +3862,10 @@ server <- function(input, output, session) {
     
     interpretation_text <- paste0(
       "This graph compares female representation in different occupational groups across selected countries. ",
-      "On average,", avg_public_managers, "% of public sector managers are female, while in the private sector, female managers account for", avg_private_managers, "%. ",
-      "The highest female representation among public sector managers is in", highest_public_managers, ", whereas the lowest is i", lowest_public_managers, ". ",
-      "In the private sector, the highest female manager share is in", highest_private_managers, "**, while the lowest is in", lowest_private_managers, ".\n\n",
-      "In", first_country, ", female managers account for", first_country_public_managers, "% in the public sector. ", 
+      "On average,", avg_public_managers, "% of public sector managers are female, while in the private sector, female managers account for ", avg_private_managers, "%. ",
+      "The highest female representation among public sector managers is in ", highest_public_managers, ", whereas the lowest is in ", lowest_public_managers, ". ",
+      "In the private sector, the highest female manager share is in ", highest_private_managers, "**, while the lowest is in", lowest_private_managers, ".\n\n",
+      "In", first_country, ", female managers account for ", first_country_public_managers, "% in the public sector. ", 
       comparison_public_managers, "\n",
       "In the private sector, female managers in ", first_country, "represent", first_country_private_managers, "%. ",
       comparison_private_managers
