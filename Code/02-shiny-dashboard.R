@@ -1320,6 +1320,7 @@ server <- function(input, output, session) {
 )
 
   # ---------------------------
+  
     output$download_pdf <- downloadHandler(
       filename = "Codebook and Explanatory Note.pdf",
       content = function(file) {
@@ -1712,37 +1713,47 @@ server <- function(input, output, session) {
       body_add_par(gdp_interpretation_text, style = "Normal")
     
     # Add Public Expenditure Graph to the Document
+    
     # Extract wage bill as % of public expenditure for the selected country
     wage_bill_exp_trend <- wage_bill_publicexp %>%
       filter(country_name == first_country)
     
-    # Get the wage bill values for 2010 and latest available year
+    # ✅ Get the wage bill values for 2010 and latest available year (Rounded)
     wage_bill_exp_2010 <- wage_bill_exp_trend %>%
       filter(year == 2010) %>%
       summarise(value_2010 = max(value, na.rm = TRUE)) %>%
-      pull(value_2010)
+      pull(value_2010) %>%
+      coalesce(NA) %>%
+      round(0)
     
-    latest_year <- max(wage_bill_exp_trend$year, na.rm = TRUE)
+    latest_year <- wage_bill_exp_trend %>%
+      summarise(last_year = max(year, na.rm = TRUE)) %>%
+      pull(last_year)
+    
     wage_bill_exp_latest <- wage_bill_exp_trend %>%
       filter(year == latest_year) %>%
       summarise(value_latest = max(value, na.rm = TRUE)) %>%
-      pull(value_latest)
+      pull(value_latest) %>%
+      coalesce(NA) %>%
+      round(0)
     
-    # Compute volatility (standard deviation) of the selected country
+    # ✅ Compute volatility (standard deviation) of the selected country
     country_volatility <- wage_bill_exp_trend %>%
       summarise(volatility = sd(value, na.rm = TRUE)) %>%
-      pull(volatility)
+      pull(volatility) %>%
+      coalesce(NA)
     
-    # Compute average volatility for the region
+    # ✅ Compute average volatility for the region
     regional_volatility <- wage_bill_publicexp %>%
       filter(wb_region == first_region) %>%
       group_by(country_name) %>%
       summarise(volatility = sd(value, na.rm = TRUE)) %>%
       ungroup() %>%
       summarise(mean_volatility = mean(volatility, na.rm = TRUE)) %>%
-      pull(mean_volatility)
+      pull(mean_volatility) %>%
+      coalesce(NA)
     
-    # Compare country to regional volatility
+    # ✅ Compare country to regional volatility
     stability_text <- if (!is.na(country_volatility) && !is.na(regional_volatility)) {
       if (country_volatility < regional_volatility * 0.8) {
         "more stable"
@@ -1755,17 +1766,27 @@ server <- function(input, output, session) {
       "uncertain compared to regional peers"
     }
     
-    # Construct dynamic interpretation text
+    # ✅ Construct dynamic interpretation text with 2010 and latest year values
     public_exp_interpretation_text <- paste0(
-      "The wage bill as a share of public expenditures has ",
-      ifelse(!is.na(wage_bill_exp_2010) & !is.na(wage_bill_exp_latest),
-             paste0("changed from ", round(wage_bill_exp_2010, 1), " percent in 2010 to ",
-                    round(wage_bill_exp_latest, 1), " percent in ", latest_year, ", as shown in Figure 1.2."),
-             "varied over time, as shown in Figure 1.2."),
-      " The public sector wage bill in ", first_country, " has exhibited ", stability_text, 
+      "The wage bill as a share of public expenditures in ", first_country, " was ",
+      if (!is.na(wage_bill_exp_2010) && !is.na(wage_bill_exp_latest)) {
+        paste0(wage_bill_exp_2010, "% in 2010 and has ",
+               if (wage_bill_exp_latest > wage_bill_exp_2010) {
+                 "increased"
+               } else if (wage_bill_exp_latest < wage_bill_exp_2010) {
+                 "decreased"
+               } else {
+                 "remained the same"
+               },
+               " to ", wage_bill_exp_latest, "% in ", latest_year, ", as shown in Figure 1.2.")
+      } else {
+        "varied over time, as shown in Figure 1.2."
+      },
+      " The public sector wage bill in ", first_country, " has exhibited ", stability_text,
       " compared to the volatility observed in regional peers."
     )
     
+    # Add Interpretation to Document
     doc <- doc %>% 
       body_add_par("Wage Bill as % of Public Expenditure Over Time", style = "heading 2") %>% 
       body_add_img(src = img_path_exp, width = 6, height = 4) %>% 
