@@ -1786,7 +1786,7 @@ server <- function(input, output, session) {
       " compared to the volatility observed in regional peers."
     )
     
-    # Add Interpretation to Document
+    # ✅ Add Interpretation to Document
     doc <- doc %>% 
       body_add_par("Wage Bill as % of Public Expenditure Over Time", style = "heading 2") %>% 
       body_add_img(src = img_path_exp, width = 6, height = 4) %>% 
@@ -1864,27 +1864,45 @@ server <- function(input, output, session) {
       return(doc)
     }
     
+    # ✅ Extract the first selected country
+    first_country <- selected_countries[1]
+    
     # ✅ Extract values for selected countries
     country_summary <- filtered_data_df %>%
       group_by(country_name) %>%
       summarise(
-        wage_bill = round(mean(indicator_value, na.rm = TRUE), 1),  
+        wage_bill = round(mean(indicator_value, na.rm = TRUE), 0),  
         gdp_per_capita = round(exp(mean(log_gdp, na.rm = TRUE)), 0) 
       )
+    
+    # ✅ Extract values for the first selected country
+    first_country_values <- country_summary %>%
+      filter(country_name == first_country)
+    
+    first_country_wage_bill <- first_country_values %>%
+      pull(wage_bill) %>%
+      coalesce(NA)
+    
+    first_country_gdp <- first_country_values %>%
+      pull(gdp_per_capita) %>%
+      coalesce(NA)
     
     # ✅ Extract regional averages for comparison
     regional_avg <- filtered_data_df %>%
       summarise(
-        avg_wage_bill = round(mean(indicator_value, na.rm = TRUE), 1),
+        avg_wage_bill = round(mean(indicator_value, na.rm = TRUE), 0),
         avg_gdp_per_capita = round(exp(mean(log_gdp, na.rm = TRUE)), 0)
       )
     
-    # ✅ Construct interpretation text for multiple countries
+    # ✅ Construct interpretation text incorporating first-country values
     interpretation_text <- paste0(
       "This graph illustrates the relationship between the wage bill as a percentage of public expenditure ",
       "and GDP per capita across selected countries. The selected countries have an average wage bill of ",
       regional_avg$avg_wage_bill, "%, with a GDP per capita of $",
-      format(regional_avg$avg_gdp_per_capita, big.mark = ","), ".\n\n"
+      format(regional_avg$avg_gdp_per_capita, big.mark = ","), ".\n\n",
+      "For ", first_country, ", the wage bill represents ", first_country_wage_bill, 
+      "% of public expenditure, with a GDP per capita of $",
+      format(first_country_gdp, big.mark = ","), "."
     )
     
     # ✅ Add section header and introduction
@@ -1915,6 +1933,7 @@ server <- function(input, output, session) {
     
     return(doc)
   }
+  
   
   
   
