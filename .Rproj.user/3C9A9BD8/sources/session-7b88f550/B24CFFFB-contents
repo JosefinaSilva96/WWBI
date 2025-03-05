@@ -3655,7 +3655,7 @@ server <- function(input, output, session) {
       "In the private sector, ", highest_private_country, " has the highest share of female employees, whereas ", lowest_private_country, " has the lowest.\n\n",
       "In ", first_country, ", female representation in the public sector is ", first_country_public, "%.", 
       comparison_public, "\n",
-      "In the private sector, female representation in ", first_country, " is ", first_country_private, "%. ",
+      "In the private sector, female representation in  ", first_country, " is  ", first_country_private, "%. ",
       comparison_private
     )
     
