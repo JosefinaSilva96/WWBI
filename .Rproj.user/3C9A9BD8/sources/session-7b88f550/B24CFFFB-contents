@@ -1319,15 +1319,40 @@ server <- function(input, output, session) {
       )
     } else if(tab == "download_all") {
       tagList(
-        h3("Download All Graphs"),
+        h3("Download Report"),
         fluidRow(
           div(style = "border: 1px solid white; padding: 10px;",
-              "Download a comprehensive report containing all visualizations and analyses.")
+              "Choose whether to download the full report or select specific graphs to include.")
         ),
+        
+        # ✅ Checkbox options for users to select specific graphs (matching server logic)
         fluidRow(
-          downloadButton("downloadAllGraphsDoc", "Download Full Report")
+          checkboxGroupInput("selected_graphs", "Select Graphs to Include:",
+                             choices = list(
+                               "Wage Bill Graphs" = "wagebill",
+                               "Wage Bill & GDP Graphs" = "wagebill_gdp",
+                               "Tertiary Education Graphs" = "tertiaryeducation",
+                               "Gender Wage Premium Graphs" = "genderwagepremium",
+                               "Wage Premium by Education" = "wagepremiumeducation",
+                               "Public Sector Employment" = "public_employment",
+                               "Wage Premium by Gender" = "wagepremiumgender",
+                               "Public Sector Workforce Graphs" = "public_workforce",
+                               "Gender Workforce Graphs" = "gender_workforce",
+                               "Female Occupation Groups" = "femaleocuupation",
+                               "Public Sector Wage Premium" = "wagepremium",
+                               "Competitiveness of Public Sector Wages" = "gender_wage_premium"
+                             ),
+                             selected = NULL  # Initially empty
+          )
+        ),
+        
+        # ✅ Download buttons for Full Report or Selected Graphs
+        fluidRow(
+          column(6, downloadButton("downloadAllGraphsDoc", "Download Full Report")),
+          column(6, downloadButton("downloadSelectedGraphsDoc", "Download Selected Graphs"))
         )
       )
+    
     }
   }
 )
@@ -4242,6 +4267,77 @@ server <- function(input, output, session) {
     
     return(doc)
   }
+  
+  #Download selected graphs 
+  
+  output$downloadSelectedGraphsDoc <- downloadHandler(
+    filename = function() { 
+      paste0("Wage_bill_and_public_employment_analysis_Selected_Report_", Sys.Date(), ".docx") 
+    },
+    content = function(file) {
+      # Get the selected countries dynamically
+      selected_countries <- input$countries_first  
+      
+      # Initialize Word document
+      doc <- read_docx() 
+      
+      # Add Report Title
+      title_style <- fp_text(color = "#722F37", font.size = 20, bold = TRUE)
+      doc <- doc %>% body_add_fpar(fpar(ftext("Wage_bill_and_public_employment_analysis_Selected_Report_", prop = title_style)))
+      doc <- generate_intro_section(doc)  # Add the Intro First
+      
+      # Define Section Style 
+      section_style <- fp_text(color = "#003366", font.size = 14, bold = TRUE)
+      
+      # ✅ Dynamically include only selected sections
+      selected_sections <- input$selected_graphs
+      
+      # ✅ Ensure selected_sections is not NULL before checking length
+      if (is.null(selected_sections) || length(selected_sections) == 0) {
+        doc <- doc %>% body_add_par("No sections selected for download.", style = "Normal")
+      } else {
+        if ("wagebill" %in% selected_sections) {
+          doc <- generate_wage_bill_analysis_section(doc)
+        }
+        if ("wagebill_gdp" %in% selected_sections) {
+          doc <- generate_gdp_analysis_section(doc, selected_countries)
+        }
+        if ("tertiaryeducation" %in% selected_sections) {
+          doc <- generate_tertiary_education_section(doc)
+        }
+        if ("genderwagepremium" %in% selected_sections) {
+          doc <- generate_wage_premium_gender_section(doc)
+        }
+        if ("wagepremiumeducation" %in% selected_sections) {
+          doc <- generate_wage_premium_education_section(doc)
+        }
+        if ("public_employment" %in% selected_sections) {
+          doc <- generate_public_sector_employment_section(doc) 
+        }
+        if ("wagepremiumgender" %in% selected_sections) {
+          doc <- generate_wage_premium_gender_report_section(doc)
+        }
+        if ("public_workforce" %in% selected_sections) {
+          doc <- generate_public_sector_workforce_section(doc)
+        }
+        if ("gender_workforce" %in% selected_sections) {
+          doc <- generate_gender_workforce_section(doc)
+        }
+        if ("femaleoccupation" %in% selected_sections) {  # Fixed typo from "femaleocuupation"
+          doc <- generate_females_occupation_groups_section(doc)
+        }
+        if ("wagepremium" %in% selected_sections) {
+          doc <- generate_wage_premium_report_section(doc)
+        }
+        if ("gender_wage_premium" %in% selected_sections) {
+          doc <- generate_gender_wage_premium_section(doc)
+        }
+      }
+      
+      # ✅ Save the customized report
+      print(doc, target = file)
+    }
+  )
   
   
   #Download one single report
