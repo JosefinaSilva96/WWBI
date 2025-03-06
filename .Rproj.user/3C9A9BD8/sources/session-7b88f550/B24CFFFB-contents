@@ -38,7 +38,6 @@ library(bs4Dash)
 library(wbstats)
 library(webshots)
 library(htmlwidgets)
-library(rsconnect)
 
 
 
@@ -798,6 +797,7 @@ ui <- bootstrapPage(
       # Collapsible Section - The Size of the Public Sector
       div(class = "nav-section", onclick = "toggleSection('public_sector_section')", "The Size of the Public Sector"),
       div(id = "public_sector_section", style = "display: none;",
+          div(class = "nav-sub-item", actionLink("nav_wagepremium", "Public Sector Wage Premium")),
           div(class = "nav-sub-item", actionLink("nav_public_workforce", "Public Sector Workforce Graphs")), 
           div(class = "nav-sub-item", actionLink("nav_public_graphs", "Public Sector Employment"))
       ),
@@ -815,7 +815,6 @@ ui <- bootstrapPage(
       # Collapsible Section - Competitiveness of Public Sector Wages
       div(class = "nav-section", onclick = "toggleSection('public_sector_wages_section')", "Competitiveness of Public Sector Wages"),
       div(id = "public_sector_wages_section", style = "display: none;",
-          div(class = "nav-sub-item", actionLink("nav_wagepremium", "Public Sector Wage Premium")),
           div(class = "nav-sub-item", actionLink("nav_wagepremium_gender", "Wage Premium Gender Graphs"))
       ),
       
@@ -4287,59 +4286,59 @@ server <- function(input, output, session) {
       doc <- doc %>% body_add_fpar(fpar(ftext("Wage_bill_and_public_employment_analysis_Selected_Report_", prop = title_style)))
       doc <- generate_intro_section(doc)  # Add the Intro First
       
-      # Define Section Style 
+      #Define Section Style 
+      
       section_style <- fp_text(color = "#003366", font.size = 14, bold = TRUE)
       
       # ✅ Dynamically include only selected sections
       selected_sections <- input$selected_graphs
       
-      # ✅ Ensure selected_sections is not NULL before checking length
-      if (is.null(selected_sections) || length(selected_sections) == 0) {
+      if ("wagebill" %in% selected_sections) {
+        doc <- generate_wage_bill_analysis_section(doc)
+      }
+      if ("wagebill_gdp" %in% selected_sections) {
+        doc <- doc <- generate_gdp_analysis_section(doc, selected_countries)
+      }
+      if ("tertiaryeducation" %in% selected_sections) {
+        doc <- generate_tertiary_education_section(doc)
+      }
+      if ("genderwagepremium" %in% selected_sections) {
+        doc <- generate_wage_premium_gender_section(doc)
+      }
+      if ("wagepremiumeducation" %in% selected_sections) {
+        doc <- generate_wage_premium_education_section(doc)
+      }
+      if ("public_employment" %in% selected_sections) {
+        doc <-generate_public_sector_employment_section(doc) 
+      }
+      if ("wagepremiumgender" %in% selected_sections) {
+        doc <-generate_wage_premium_gender_report_section(doc)
+      }
+      if ("public_workforce" %in% selected_sections) {
+        doc <- generate_public_sector_workforce_section(doc)
+      }
+      if ("gender_workforce" %in% selected_sections) {
+        doc <- generate_gender_workforce_section(doc)
+      }
+      if ("femaleocuupation" %in% selected_sections) {
+        doc <- generate_females_occupation_groups_section(doc)
+      }
+      if ("wagepremium" %in% selected_sections) {
+        doc <- generate_wage_premium_report_section(doc)
+      }
+      if ("gender_wage_premium" %in% selected_sections) {
+        doc <- generate_gender_wage_premium_section(doc)
+      }
+      
+      # ✅ Ensure at least one section is included
+      if (length(selected_sections) == 0) {
         doc <- doc %>% body_add_par("No sections selected for download.", style = "Normal")
-      } else {
-        if ("wagebill" %in% selected_sections) {
-          doc <- generate_wage_bill_analysis_section(doc)
-        }
-        if ("wagebill_gdp" %in% selected_sections) {
-          doc <- generate_gdp_analysis_section(doc, selected_countries)
-        }
-        if ("tertiaryeducation" %in% selected_sections) {
-          doc <- generate_tertiary_education_section(doc)
-        }
-        if ("genderwagepremium" %in% selected_sections) {
-          doc <- generate_wage_premium_gender_section(doc)
-        }
-        if ("wagepremiumeducation" %in% selected_sections) {
-          doc <- generate_wage_premium_education_section(doc)
-        }
-        if ("public_employment" %in% selected_sections) {
-          doc <- generate_public_sector_employment_section(doc) 
-        }
-        if ("wagepremiumgender" %in% selected_sections) {
-          doc <- generate_wage_premium_gender_report_section(doc)
-        }
-        if ("public_workforce" %in% selected_sections) {
-          doc <- generate_public_sector_workforce_section(doc)
-        }
-        if ("gender_workforce" %in% selected_sections) {
-          doc <- generate_gender_workforce_section(doc)
-        }
-        if ("femaleoccupation" %in% selected_sections) {  # Fixed typo from "femaleocuupation"
-          doc <- generate_females_occupation_groups_section(doc)
-        }
-        if ("wagepremium" %in% selected_sections) {
-          doc <- generate_wage_premium_report_section(doc)
-        }
-        if ("gender_wage_premium" %in% selected_sections) {
-          doc <- generate_gender_wage_premium_section(doc)
-        }
       }
       
       # ✅ Save the customized report
       print(doc, target = file)
     }
   )
-  
   
   #Download one single report
  
@@ -4470,7 +4469,7 @@ server <- function(input, output, session) {
 shinyApp(ui = ui, server = server)
 
 
-# the end ##############################################
+# the end##############################################
 
 
     
