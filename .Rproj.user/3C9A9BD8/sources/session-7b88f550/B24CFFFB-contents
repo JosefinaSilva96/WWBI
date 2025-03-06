@@ -38,6 +38,7 @@ library(bs4Dash)
 library(wbstats)
 library(webshots)
 library(htmlwidgets)
+library(rsconnect)
 
 
 
