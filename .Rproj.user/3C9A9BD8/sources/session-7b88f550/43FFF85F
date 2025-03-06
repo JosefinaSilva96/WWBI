@@ -3,7 +3,7 @@
     "path": "C:/WBG/GitHub/WWBI/Code/0-main.R",
     "project_path": "Code/0-main.R",
     "type": "r_source",
-    "hash": "0",
+    "hash": "1786063022",
     "contents": "",
     "dirty": false,
     "created": 1730900610990.0,
@@ -12,15 +12,15 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "36,0",
+        "cursorPosition": "37,0",
         "scrollLine": "21"
     },
     "folds": "",
-    "lastKnownWriteTime": 1741278668,
+    "lastKnownWriteTime": 1741292734,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1741278668129,
+    "last_content_update": 1741292734722,
     "read_only": false,
     "read_only_alternatives": []
 }
