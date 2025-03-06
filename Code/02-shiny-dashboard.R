@@ -798,7 +798,6 @@ ui <- bootstrapPage(
       # Collapsible Section - The Size of the Public Sector
       div(class = "nav-section", onclick = "toggleSection('public_sector_section')", "The Size of the Public Sector"),
       div(id = "public_sector_section", style = "display: none;",
-          div(class = "nav-sub-item", actionLink("nav_wagepremium", "Public Sector Wage Premium")),
           div(class = "nav-sub-item", actionLink("nav_public_workforce", "Public Sector Workforce Graphs")), 
           div(class = "nav-sub-item", actionLink("nav_public_graphs", "Public Sector Employment"))
       ),
@@ -816,6 +815,7 @@ ui <- bootstrapPage(
       # Collapsible Section - Competitiveness of Public Sector Wages
       div(class = "nav-section", onclick = "toggleSection('public_sector_wages_section')", "Competitiveness of Public Sector Wages"),
       div(id = "public_sector_wages_section", style = "display: none;",
+          div(class = "nav-sub-item", actionLink("nav_wagepremium", "Public Sector Wage Premium")),
           div(class = "nav-sub-item", actionLink("nav_wagepremium_gender", "Wage Premium Gender Graphs"))
       ),
       
@@ -4470,7 +4470,7 @@ server <- function(input, output, session) {
 shinyApp(ui = ui, server = server)
 
 
-# the end##############################################
+# the end ##############################################
 
 
     
