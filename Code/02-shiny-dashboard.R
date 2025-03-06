@@ -880,6 +880,12 @@ server <- function(input, output, session) {
     } else if (tab == "instructions") {
       tagList(
         h3("Instructions Manual"),
+        fluidRow(
+          div(style = "border: 2px solid white; padding: 15px; border-radius: 10px; 
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
+              "The Worldwide Bureaucracy Indicators (WWBI), developed by the Bureaucracy Lab at the World Bank, provide a unique cross-national dataset on public sector employment and wages. Designed to fill critical data gaps, the WWBI support researchers, development practitioners, and policymakers in understanding the size, structure, and fiscal impact of the public sector. The dataset, derived from household surveys and administrative data, offers insights into public-sector employment demographics, wage competitiveness, and the overall wage bill. Version 3.1 expands the dataset with 129 new surveys, two additional countries, and updated wage bill data for 195 countries (2022), strengthening its role as a key tool for comparative and quantitative research on state capacity and public-sector labor markets worldwide.")
+        ),
         
         # Button to download the PDF
         downloadButton("download_pdf", "Download Codebook")
@@ -4367,7 +4373,7 @@ server <- function(input, output, session) {
 shinyApp(ui = ui, server = server)
 
 
-# the end##############################################
+# the end ##############################################
 
 
     
