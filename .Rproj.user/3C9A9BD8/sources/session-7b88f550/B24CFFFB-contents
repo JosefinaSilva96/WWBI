@@ -797,7 +797,6 @@ ui <- bootstrapPage(
       # Collapsible Section - The Size of the Public Sector
       div(class = "nav-section", onclick = "toggleSection('public_sector_section')", "The Size of the Public Sector"),
       div(id = "public_sector_section", style = "display: none;",
-          div(class = "nav-sub-item", actionLink("nav_wagepremium", "Public Sector Wage Premium")),
           div(class = "nav-sub-item", actionLink("nav_public_workforce", "Public Sector Workforce Graphs")), 
           div(class = "nav-sub-item", actionLink("nav_public_graphs", "Public Sector Employment"))
       ),
@@ -815,6 +814,7 @@ ui <- bootstrapPage(
       # Collapsible Section - Competitiveness of Public Sector Wages
       div(class = "nav-section", onclick = "toggleSection('public_sector_wages_section')", "Competitiveness of Public Sector Wages"),
       div(id = "public_sector_wages_section", style = "display: none;",
+          div(class = "nav-sub-item", actionLink("nav_wagepremium", "Public Sector Wage Premium")),
           div(class = "nav-sub-item", actionLink("nav_wagepremium_gender", "Wage Premium Gender Graphs"))
       ),
       
@@ -848,11 +848,11 @@ server <- function(input, output, session) {
   observeEvent(input$nav_public_workforce,  { active_tab("public_workforce") })
   observeEvent(input$nav_gender_workforce,  { active_tab("gender_workforce") })
   observeEvent(input$nav_education,         { active_tab("education") })
-  observeEvent(input$nav_wagepremium,       { active_tab("wagepremium") })
   observeEvent(input$nav_public_educ,       { active_tab("public_educ") })
   observeEvent(input$nav_public_graphs,     { active_tab("public_graphs") })
   observeEvent(input$nav_wagepremium_gender,{ active_tab("wagepremium_gender") })
   observeEvent(input$nav_female_leadership, { active_tab("female_leadership") })
+  observeEvent(input$nav_wagepremium,       { active_tab("wagepremium") })
   observeEvent(input$nav_gender_wage_premium, { active_tab("gender_wage_premium") })
   observeEvent(input$nav_download_all,      { active_tab("download_all") })
   
@@ -4340,7 +4340,7 @@ server <- function(input, output, session) {
     })
   })
   
-  # Change infoBox colors to "purple" to match the quartz theme
+  # Change info Box colors to "purple" to match the quartz theme
   
   output$numberIndicatorsBox <- renderInfoBox({
     infoBox("Indicators", 302, icon = icon("list"), color = "purple")
