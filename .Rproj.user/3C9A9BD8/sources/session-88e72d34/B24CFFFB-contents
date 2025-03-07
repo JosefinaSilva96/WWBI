@@ -3165,14 +3165,19 @@ server <- function(input, output, session) {
       style = "Normal"
     )
     
-    # ✅ Ensure at least one country is selected
-    if (is.null(input$countries_first) || length(na.omit(input$countries_first)) == 0) {
+    # ✅ Ensure at least one country is selected safely
+    if (is.null(input$countries_first) || length(input$countries_first) == 0) {
       doc <- doc %>% body_add_par("No countries selected for analysis.", style = "Normal")
       return(doc)
     }
     
     selected_countries <- input$countries_first
-    first_country <- selected_countries[1]
+    first_country <- if (length(selected_countries) > 0) selected_countries[1] else NA
+    
+    if (is.na(first_country)) {
+      doc <- doc %>% body_add_par("Invalid country selection.", style = "Normal")
+      return(doc)
+    }
     
     # ✅ Filter data for selected countries (last available year)
     filtered_data <- public_sector_emp_temp_last %>% 
@@ -3200,13 +3205,14 @@ server <- function(input, output, session) {
     
     # ✅ Extract employment levels per indicator for the first country
     get_value <- function(df, country, indicator) {
-      df %>% filter(country_name == country, indicator_label == indicator) %>% 
-        pull(value_percentage) %>% first() %>% coalesce(NA)
+      val <- df %>% filter(country_name == country, indicator_label == indicator) %>% 
+        pull(value_percentage) %>% first()
+      ifelse(length(val) == 0 || is.na(val), "Data not available", round(val, 0))
     }
     
-    formal_first <- round(get_value(filtered_data, first_country, "as a share of formal employment"), 0)
-    paid_first <- round(get_value(filtered_data, first_country, "as a share of paid employment"), 0)
-    total_first <- round(get_value(filtered_data, first_country, "as a share of total employment"), 0)
+    formal_first <- get_value(filtered_data, first_country, "as a share of formal employment")
+    paid_first <- get_value(filtered_data, first_country, "as a share of paid employment")
+    total_first <- get_value(filtered_data, first_country, "as a share of total employment")
     
     # ✅ Get highest and lowest countries per indicator
     get_extreme_country <- function(df, indicator, func) {
@@ -3222,9 +3228,9 @@ server <- function(input, output, session) {
     formal_lowest <- get_extreme_country(filtered_data, "as a share of formal employment", min)
     
     paid_highest <- get_extreme_country(filtered_data, "as a share of paid employment", max)
-    paid_lowest <- get_extreme_country(filtered_data, "es a share of paid employment", min)
+    paid_lowest <- get_extreme_country(filtered_data, "as a share of paid employment", min)
     
-    total_highest <- get_extreme_country(filtered_data, "es a share of total employment", max)
+    total_highest <- get_extreme_country(filtered_data, "as a share of total employment", max)
     total_lowest <- get_extreme_country(filtered_data, "as a share of total employment", min)
     
     # ✅ Compare first country with other countries
