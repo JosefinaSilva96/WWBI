@@ -796,7 +796,6 @@ ui <- bootstrapPage(
       # Collapsible Section - The Size of the Public Sector
       div(class = "nav-section", onclick = "toggleSection('public_sector_section')", "The Size of the Public Sector"),
       div(id = "public_sector_section", style = "display: none;",
-          div(class = "nav-sub-item", actionLink("nav_wagepremium", "Public Sector Wage Premium")),
           div(class = "nav-sub-item", actionLink("nav_public_workforce", "Public Sector Workforce Graphs")), 
           div(class = "nav-sub-item", actionLink("nav_public_graphs", "Public Sector Employment"))
       ),
@@ -814,6 +813,7 @@ ui <- bootstrapPage(
       # Collapsible Section - Competitiveness of Public Sector Wages
       div(class = "nav-section", onclick = "toggleSection('public_sector_wages_section')", "Competitiveness of Public Sector Wages"),
       div(id = "public_sector_wages_section", style = "display: none;",
+          div(class = "nav-sub-item", actionLink("nav_wagepremium", "Public Sector Wage Premium")),
           div(class = "nav-sub-item", actionLink("nav_wagepremium_gender", "Wage Premium Gender Graphs"))
       ),
       
@@ -2360,9 +2360,9 @@ server <- function(input, output, session) {
     # ✅ Construct interpretation text
     interpretation_text <- paste0(
       "This graph compares tertiary education attainment among employees in the public and private sectors across selected countries. ",
-      "On average,", avg_public, "% of public sector employees have completed tertiary education, while in the private sector, the share is", avg_private, "%. ",
-      "The country with the highest share of tertiary-educated public sector employees is", highest_public_country, ", whereas", lowest_public_country, "has the lowest proportion. ",
-      "In the private sector,", highest_private_country, "has the highest tertiary education level among employees, while", lowest_private_country, " has the lowest."
+      "On average,",  avg_public, "% of public sector employees have completed tertiary education, while in the private sector, the share is ", avg_private, "%. ",
+      "The country with the highest share of tertiary-educated public sector employees is ", highest_public_country, ", whereas ", lowest_public_country, "has the lowest proportion. ",
+      "In the private sector, ", highest_private_country, "has the highest tertiary education level among employees, while ", lowest_private_country, " has the lowest."
     )
     
     # ✅ Add image and interpretation text to the document
@@ -2584,9 +2584,9 @@ server <- function(input, output, session) {
     # ✅ Construct comparative interpretation text
     interpretation_text <- paste0(
       "This graph compares public sector wage premiums across selected countries. ",
-      "On average, public sector employees earn **", avg_wage_premium, "% more than private sector employees. ",
-      "The country with the highest wage premium is", highest_country, ", while", lowest_country, "has the lowest wage premium.\n\n",
-      "In", first_country, ", the public sector wage premium is", round(first_country_premium, 1), "%. ", 
+      "On average, public sector employees earn ",avg_wage_premium, "% more than private sector employees. ",
+      "The country with the highest wage premium is ",  highest_country, ", while ",  lowest_country, " has the lowest wage premium.\n\n",
+      "In ", first_country, ", the public sector wage premium is", round(first_country_premium, 1), "%. ", 
       comparison_statement
     )
     
@@ -3395,7 +3395,7 @@ server <- function(input, output, session) {
     
     # Add Introduction
     doc <- doc %>% body_add_par(
-      "This section presents an analysis of the public sector wage premium by gender in the selected country and its trend over time.", 
+      "This section presents an analysis of the public sector wage premium by gender across selected countries.", 
       style = "Normal"
     )
     
@@ -3405,112 +3405,110 @@ server <- function(input, output, session) {
       return(doc)
     }
     
-    first_country <- input$countries_first[1]
-    if (is.na(first_country)) {
-      doc <- doc %>% body_add_par("Invalid country selection.", style = "Normal")
-      return(doc)
-    }
+    selected_countries <- input$countries_first
+    first_country <- selected_countries[1]
     
-    # ✅ Filter data for selected country (last available year)
+    # ✅ Filter data for selected countries (last available year)
     filtered_data <- gender_wage_premium_last %>% 
-      filter(country_name == first_country) %>%
+      filter(country_name %in% selected_countries) %>%
       drop_na(value_percentage)
     
     # ✅ Handle empty dataset case
     if (nrow(filtered_data) == 0) {
-      doc <- doc %>% body_add_par(paste0("No data available for ", first_country, "."), style = "Normal")
+      doc <- doc %>% body_add_par("No data available for the selected countries.", style = "Normal")
       return(doc)
     }
     
-    # ✅ Generate First Graph - Public Sector Wage Premium by Gender (Last Year Available)
-    first_graph <- ggplot(filtered_data, aes(x = indicator_label, y = value_percentage, fill = indicator_label)) +
-      geom_bar(stat = "identity", position = "dodge") +
-      labs(title = paste("Public Sector Wage Premium by Gender in", first_country), 
-           x = "Gender", 
+    # ✅ Function to get rounded values safely
+    get_rounded_value <- function(df, country, indicator) {
+      val <- df %>% filter(country_name == country, indicator_label == indicator) %>%
+        pull(value_percentage) %>% first()
+      ifelse(is.na(val), "Data not available", round(val, 0))
+    }
+    
+    # ✅ Values for the first selected country
+    male_first_country <- get_rounded_value(filtered_data, first_country, "Male")
+    female_first_country <- get_rounded_value(filtered_data, first_country, "Female")
+    
+    # ✅ Get the country with the highest wage premium for each indicator
+    get_max_country <- function(df, indicator) {
+      max_row <- df %>% filter(indicator_label == indicator) %>%
+        filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>%
+        select(country_name, value_percentage) %>% first()
+      
+      if (nrow(max_row) == 0) return(list(country = "N/A", value = "Data not available"))
+      return(list(country = max_row$country_name, value = round(max_row$value_percentage, 0)))
+    }
+    
+    max_male <- get_max_country(filtered_data, "Male")
+    max_female <- get_max_country(filtered_data, "Female")
+    
+    # ✅ Generate **Dot Plot** for Public Sector Wage Premium by Gender (Last Year Available)
+    first_graph <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, color = indicator_label)) +
+      geom_point(size = 4) +
+      labs(title = "Public Sector Wage Premium by Gender (Last Year Available)", 
+           x = "Country", 
            y = "Wage Premium (%)",
-           fill = "Gender Wage Premium") +
+           color = "Indicator") +  
       theme_minimal() +
       theme(axis.text.x = element_text(angle = 45, hjust = 1))
     
     img_path1 <- tempfile(fileext = ".png")
     ggsave(img_path1, plot = first_graph, width = 8, height = 6)
     
-    # ✅ Extract male and female wage premiums for the first selected country safely
-    safe_extract <- function(df, label) {
-      val <- df %>% filter(indicator_label == label) %>% pull(value_percentage) %>% first()
-      ifelse(is.na(val), "Data not available", round(val, 0))
-    }
-    
-    male_premium <- safe_extract(filtered_data, "Male")
-    female_premium <- safe_extract(filtered_data, "Female")
-    
+    # ✅ Interpretation for the first graph
     interpretation_text1 <- paste0(
-      "This graph shows the public sector wage premium by gender in ", first_country, 
-      ". The wage premium for male employees is ", male_premium, 
-      "%, while for female employees, it is ", female_premium, 
-      "%. This comparison highlights gender-based differences in public sector compensation."
+      "This graph displays the public sector wage premium by gender for the last available year across the selected countries. ",
+      "In ", first_country, ", the wage premium for male employees is **", male_first_country, 
+      "%**, while for female employees, it is **", female_first_country, "%**. ",
+      "The country with the highest male wage premium is **", max_male$country, "** at **", max_male$value, 
+      "%**, while the highest female wage premium is in **", max_female$country, "** at **", max_female$value, "%**."
     )
     
     # ✅ Add First Graph and Interpretation
     doc <- doc %>% 
-      body_add_par(paste("Public Sector Wage Premium by Gender in", first_country), style = "heading 2") %>% 
+      body_add_par("Public Sector Wage Premium by Gender (Last Year Available)", style = "heading 2") %>% 
       body_add_img(src = img_path1, width = 6, height = 4) %>% 
       body_add_par(interpretation_text1, style = "Normal")
     
     # ✅ Second Graph - Public Sector Wage Premium by Gender Over Time
-    time_series_data <- gender_wage_premium %>% filter(country_name == first_country)
+    time_series_data <- gender_wage_premium %>% 
+      filter(country_name %in% selected_countries)
     
     if (nrow(time_series_data) > 0) {
-      second_graph <- ggplot(time_series_data, aes(x = year, y = value_percentage, color = indicator_label)) +
+      second_graph <- ggplot(time_series_data, aes(x = year, y = value_percentage, color = indicator_label, group = interaction(country_name, indicator_label))) +
         geom_line(size = 1.2) +
         geom_point(size = 3) +
-        labs(title = paste("Public Sector Wage Premium by Gender in", first_country, "Over Time"), 
+        labs(title = "Public Sector Wage Premium by Gender Over Time", 
              x = "Year", 
              y = "Wage Premium (%)",
-             color = "Gender Wage Premium") +
+             color = "Gender") +
         theme_minimal()
       
       img_path2 <- tempfile(fileext = ".png")
       ggsave(img_path2, plot = second_graph, width = 8, height = 6)
       
-      # ✅ Extract wage premium trend for 2010 and last available year safely
+      # ✅ Extract wage premium values for 2010 and last year available
       first_year <- 2010
       last_year <- max(time_series_data$year, na.rm = TRUE)
       
-      safe_extract_year <- function(df, year, label) {
-        val <- df %>% filter(year == year, indicator_label == label) %>% pull(value_percentage) %>% first()
+      get_year_value <- function(df, country, year, indicator) {
+        val <- df %>% filter(year == year, country_name == country, indicator_label == indicator) %>%
+          pull(value_percentage) %>% first()
         ifelse(is.na(val), "Data not available", round(val, 0))
       }
       
-      male_premium_2010 <- safe_extract_year(time_series_data, first_year, "Male")
-      female_premium_2010 <- safe_extract_year(time_series_data, first_year, "Female")
-      male_premium_last <- safe_extract_year(time_series_data, last_year, "Male")
-      female_premium_last <- safe_extract_year(time_series_data, last_year, "Female")
+      male_2010 <- get_year_value(time_series_data, first_country, first_year, "Male")
+      female_2010 <- get_year_value(time_series_data, first_country, first_year, "Female")
+      male_last <- get_year_value(time_series_data, first_country, last_year, "Male")
+      female_last <- get_year_value(time_series_data, first_country, last_year, "Female")
       
-      # ✅ Ensure valid trend descriptions
-      safe_trend <- function(first_val, last_val) {
-        if (first_val == "Data not available" || last_val == "Data not available") {
-          return("data not available")
-        }
-        first_val <- as.numeric(first_val)
-        last_val <- as.numeric(last_val)
-        if (last_val > first_val) {
-          return("increased")
-        } else if (last_val < first_val) {
-          return("decreased")
-        } else {
-          return("remained stable")
-        }
-      }
-      
-      male_trend <- safe_trend(male_premium_2010, male_premium_last)
-      female_trend <- safe_trend(female_premium_2010, female_premium_last)
-      
+      # ✅ Interpretation for the second graph
       interpretation_text2 <- paste0(
-        "In ", first_country, ", the male public sector wage premium has ", male_trend, 
-        " from ", male_premium_2010, "% in ", first_year, " to ", male_premium_last, "% in ", last_year, ". ",
-        "Meanwhile, the female public sector wage premium has ", female_trend, 
-        " from ", female_premium_2010, "% in ", first_year, " to ", female_premium_last, "% in ", last_year, "."
+        "This graph illustrates how the public sector wage premium by gender has evolved over time across selected countries. ",
+        "For **", first_country, "**, in **", first_year, "**, the male wage premium was **", male_2010, 
+        "%** and the female wage premium was **", female_2010, "%.** In **", last_year, 
+        "**, the male wage premium is **", male_last, "%** and the female wage premium is **", female_last, "%**."
       )
       
       # ✅ Add Second Graph and Interpretation
@@ -3525,6 +3523,7 @@ server <- function(input, output, session) {
     
     return(doc)
   }
+  
   
   # Gender Workforce Graphs
   
@@ -3943,9 +3942,9 @@ server <- function(input, output, session) {
     interpretation_text <- paste0(
       "This graph compares female representation in different occupational groups across selected countries. ",
       "On average,", avg_public_managers, "% of public sector managers are female, while in the private sector, female managers account for ", avg_private_managers, "%. ",
-      "The highest female representation among public sector managers is in ", highest_public_managers, ", whereas the lowest is in ", lowest_public_managers, ". ",
+      "The highest female representation among public sector managers is in ", highest_public_managers, ", whereas the lowest is in  ", lowest_public_managers, ". ",
       "In the private sector, the highest female manager share is in ", highest_private_managers, "**, while the lowest is in", lowest_private_managers, ".\n\n",
-      "In", first_country, ", female managers account for ", first_country_public_managers, "% in the public sector. ", 
+      "In ", first_country, ", female managers account for ", first_country_public_managers, "% in the public sector. ", 
       comparison_public_managers, "\n",
       "In the private sector, female managers in ", first_country, "represent", first_country_private_managers, "%. ",
       comparison_private_managers
