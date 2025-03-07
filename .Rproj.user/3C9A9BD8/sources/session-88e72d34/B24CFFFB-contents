@@ -37,6 +37,7 @@ library(countrycode)
 library(bs4Dash)
 library(wbstats)
 library(htmlwidgets)
+library(rsconnect)
 
 
 
@@ -44,7 +45,7 @@ library(htmlwidgets)
 
 #Set data path 
 
-data_path <- "C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/Data/Intermediate"
+data_path <- "C:/WBG/GitHub/WWBI/Data"
 
 #Load indicators data set 
 
@@ -1385,7 +1386,7 @@ server <- function(input, output, session) {
     output$download_pdf <- downloadHandler(
       filename = "Codebook and Explanatory Note.pdf",
       content = function(file) {
-        file.copy("C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/WWBI Codebook v3.1.pdf", file)
+        file.copy("WWBI Codebook v3.1.pdf", file)
       }
     )
 

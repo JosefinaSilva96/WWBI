@@ -16,13 +16,13 @@ library(lubridate)
 
 # Load the data sets
 
-data <- read_excel("C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/Worldwide Bureaucracy Indicators (WWBI) Version 3.1.xlsx", 
+data <- read_excel("Data/Worldwide Bureaucracy Indicators (WWBI) Version 3.1.xlsx", 
                    sheet = "Data") #61004 obs
 
 
 #Load GDP pc IMF for countries
 
-gdp_pc <-  read_excel("C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/Data/Intermediate/IMF_GDP.xls", 
+gdp_pc <-  read_excel("Data/IMF_GDP.xls", 
                       sheet = "gdp") #228 obs
 
 
