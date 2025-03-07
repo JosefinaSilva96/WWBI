@@ -1386,7 +1386,7 @@ server <- function(input, output, session) {
     output$download_pdf <- downloadHandler(
       filename = "Codebook and Explanatory Note.pdf",
       content = function(file) {
-        file.copy("WWBI Codebook v3.1.pdf", file)
+        file.copy("Files/WWBI Codebook v3.1.pdf", file)
       }
     )
 
