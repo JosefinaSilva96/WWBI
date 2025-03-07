@@ -5,6 +5,6 @@ account: josefinasilva
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 14187227
-bundleId: 9908548
+bundleId: 9908589
 url: https://josefinasilva.shinyapps.io/02-shiny-dashboard/
 version: 1

@@ -16,28 +16,21 @@ library(DT)
 library(maps)
 library(mapdata)
 library(leaflet)
-library(DT)
 library(rnaturalearth)
 library(sf)
 library(plotly)
 library(officer)
 library(flextable)
-library(rvg)
 library(viridis)
 library(here)
 library(glue)
 library(colourpicker)
-library(rmarkdown)
-library(quarto)
-library(tinytex)
-library(orca)
-library(bslib)
-library(shinythemes)
-library(countrycode)
-library(bs4Dash)
 library(wbstats)
 library(htmlwidgets)
-library(rsconnect)
+library(bs4Dash)
+library(countrycode)
+library(bslib)
+
 
 
 
@@ -1386,7 +1379,7 @@ server <- function(input, output, session) {
     output$download_pdf <- downloadHandler(
       filename = "Codebook and Explanatory Note.pdf",
       content = function(file) {
-        file.copy("WWBI Codebook v3.1.pdf", file)
+        file.copy("Files/WWBI Codebook v3.1.pdf", file)
       }
     )
 
