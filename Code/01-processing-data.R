@@ -265,6 +265,10 @@ selected_data_long <- selected_data_long %>%
   mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
   filter(!is.na(value))  # Remove rows with NA values
 
+#Save data set
+
+write_dta(selected_data_long, file.path(datapathshiny, "/selected_data_long.dta"))
+
 
 # Reshape the data using pivot_longer gdp data base 
 
@@ -274,6 +278,11 @@ data_gdp <- data_gdp %>%
                values_to = "value") %>%
   mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
   filter(!is.na(value))  # Remove rows with NA values
+
+#Save data set
+
+write_dta(data_gdp, file.path(datapathshiny, "/data_gdp.dta"))
+
 
 # View the reshaped data
 
@@ -320,17 +329,29 @@ data_wwbi_long <- bind_rows(data_wwbi_long, income_mean)
 
 data_wwbi_long <- data_wwbi_long %>% filter(!is.na(country_name))
 
+#Save data set
+
+write_dta(data_wwbi_long, file.path(datapathshiny, "/data_wwbi_long.dta"))
+
 
 
 # Filter the data for the specific indicator "Wage bill as a percentage of Public Expenditure"
 
 wage_bill_publicexp <- data_wwbi_long[data_wwbi_long$indicator_name == "Wage bill as a percentage of Public Expenditure", ]
 
+#Save data set
+
+write_dta(wage_bill_publicexp, file.path(datapathshiny, "/wage_bill_publicexp.dta"))
+
+
 
 # Filter the data for the specific indicator "Wage bill as a percentage of GDP"
 
 wage_bill_gdp <- data_wwbi_long[data_wwbi_long$indicator_name == "Wage bill as a percentage of GDP", ]
 
+#Save data set
+
+write_dta(wage_bill_gdp, file.path(datapathshiny, "/wwage_bill_gdp.dta"))
 
 
 
@@ -358,6 +379,12 @@ public_sector_emp_temp <- public_sector_emp_temp %>%
 public_sector_emp_temp <- public_sector_emp_temp %>%
   mutate(value_percentage = value * 100)
 
+#Save data set
+
+write_dta(public_sector_emp_temp, file.path(datapathshiny, "/public_sector_emp_temp.dta"))
+
+
+
 public_sector_emp <- public_sector_emp %>%
   select(year, indicator_name, value, country_name, wb_region, value_percentage) %>%
   mutate(indicator_name = factor(indicator_name)) %>%
@@ -372,6 +399,11 @@ public_sector_emp <- public_sector_emp %>%
 public_sector_emp <- public_sector_emp %>%
   mutate(value_percentage = value * 100)
 
+#Save data set
+
+write_dta(public_sector_emp, file.path(datapathshiny, "/public_sector_emp.dta"))
+
+
 
 # Keep the last year available for each country
 
@@ -383,6 +415,11 @@ public_sector_emp_temp_last <- public_sector_emp %>%
 
 public_sector_emp_temp_last <- public_sector_emp_temp_last %>%
   mutate(value_percentage = value * 100)
+
+#Save data set
+
+write_dta(public_sector_emp_temp_last, file.path(datapathshiny, "/public_sector_emp_temp_last.dta"))
+
 
 
 # Filter the data for the specific indicator "Characteristics of the public sector workforce"
@@ -442,7 +479,9 @@ public_sector_workforce <- public_sector_workforce %>%
 public_sector_workforce <- public_sector_workforce %>%
   mutate(indicator_name = ifelse(indicator_name == "Publicd Administration", "Public Administration", indicator_name))
 
+#Save data set
 
+write_dta(public_sector_workforce, file.path(datapathshiny, "/public_sector_workforce.dta"))
 
 
 
@@ -469,6 +508,9 @@ public_sector_workforce_first_last <- public_sector_workforce_first_last %>%
 public_sector_workforce_first_last <- public_sector_workforce_first_last %>%
   mutate(indicator_name = ifelse(indicator_name == "Public Administration", "Public Administration", indicator_name))
 
+#Save data set
+
+write_dta(public_sector_workforce_first_last, file.path(datapathshiny, "/public_sector_workforce_first_last.dta"))
 
 
 
@@ -492,6 +534,10 @@ gender_workforce <- gender_workforce %>%
 gender_workforce <- gender_workforce %>%
   mutate(value_percentage = value * 100)
 
+#Save data set
+
+write_dta(gender_workforce, file.path(datapathshiny, "/gender_workforce.dta"))
+
 
 
 # Filter GDP data for the year 2015
@@ -500,16 +546,33 @@ gdp_2015 <- data_gdp %>%
   filter(year == 2015) %>%
   select(country_name, value)
 
+#Save data set
+
+write_dta(gdp_2015, file.path(datapathshiny, "/gdp_2015.dta"))
+
+
 
 # Rename 'value' column to 'indicator_value' in data_indicators
 
 data_indicator_wb <- wage_bill_publicexp %>%
   rename(indicator_value = value)
 
+#Save data set
+
+write_dta(data_indicator_wb, file.path(datapathshiny, "/data_indicator_wb.dta"))
+
+
+
 # Rename 'value' column to 'gdp_value' in data_gdp
 
 gdp_2015 <- gdp_2015 %>%
   rename(gdp_value = value)
+
+#Save data set
+
+write_dta(gdp_2015, file.path(datapathshiny, "/gdp_2015.dta"))
+
+
 
 
 # Merge the datasets on 'country_name'
@@ -531,6 +594,11 @@ merged_data <- merged_data %>%
   group_by(country_name, indicator_name, wb_region, log_gdp) %>%  
   filter(year == max(year, na.rm = TRUE)) %>%  # Get the last available year for each group
   ungroup()
+
+#Save data set
+
+write_dta(merged_data, file.path(datapathshiny, "/merged_data.dta"))
+
 
 
 
@@ -557,6 +625,11 @@ tertiary_education <- tertiary_education %>%
 
 tertiary_education <- tertiary_education %>%
   mutate(indicator_name = ifelse(indicator_name == "Individuals with tertiary education as a share of public paid employees", "as a share of public paid employees", indicator_name))
+
+#Save data set
+
+write_dta(merged_data, file.path(datapathshiny, "/merged_data.dta"))
+
 
 
 # Public sector wage premium 
