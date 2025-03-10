@@ -111,6 +111,8 @@ write_dta(data_wwbi, file.path(data_path, "Data/Intermediate/data_wwbi.dta"))
 
 write_dta(data_gdp, file.path(data_path, "Data/Intermediate/data_gdp.dta"))
 
+#Part II ----
+
 #Set data path 
 
 data_path <- "C:/WBG/GitHub/WWBI/Data"
@@ -351,7 +353,7 @@ wage_bill_gdp <- data_wwbi_long[data_wwbi_long$indicator_name == "Wage bill as a
 
 #Save data set
 
-write_dta(wage_bill_gdp, file.path(datapathshiny, "/wwage_bill_gdp.dta"))
+write_dta(wage_bill_gdp, file.path(datapathshiny, "/wage_bill_gdp.dta"))
 
 
 
@@ -628,7 +630,7 @@ tertiary_education <- tertiary_education %>%
 
 #Save data set
 
-write_dta(merged_data, file.path(datapathshiny, "/merged_data.dta"))
+write_dta(tertiary_education, file.path(datapathshiny, "/tertiary_education.dta"))
 
 
 
