@@ -1,0 +1,10 @@
+name: 02-shiny-dashboard
+title:
+username: josefinasilva
+account: josefinasilva
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 14187227
+bundleId: 9919774
+url: https://josefinasilva.shinyapps.io/02-shiny-dashboard/
+version: 1
