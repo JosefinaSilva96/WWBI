@@ -4455,9 +4455,5 @@ shinyApp(ui = ui, server = server)
 # the end##############################################
 
 
-    
-library(shiny)
-
-runGitHub("YourRepoName", "YourGitHubUsername")
 
    
