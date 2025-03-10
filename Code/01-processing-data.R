@@ -649,6 +649,11 @@ public_wage_premium <- public_wage_premium %>%
   ungroup()                                      # Ungroup the data
 
 
+#Save data set
+
+write_dta(public_wage_premium, file.path(datapathshiny, "/public_wage_premium.dta"))
+
+
 #Public sector wage premium by education level (compared to private formal workers)
 
 
@@ -683,6 +688,9 @@ public_wage_premium_educ <- public_wage_premium_educ %>%
 public_wage_premium_educ <- public_wage_premium_educ %>%
   mutate(indicator_name = ifelse(indicator_name == "Public sector wage premium, by education level: No Education (compared to formal wage employees)", "No Education", indicator_name))
 
+#Save data set
+
+write_dta(public_wage_premium_educ, file.path(datapathshiny, "/public_wage_premium_educ.dta"))
 
 
 
@@ -705,6 +713,11 @@ gender_wage_premium <- gender_wage_premium %>%
 gender_wage_premium <- gender_wage_premium %>%
   mutate(value_percentage = value * 100)
 
+#Save data set
+
+write_dta(gender_wage_premium, file.path(datapathshiny, "/gender_wage_premium.dta"))
+
+
 
 # Keep the last year available for each country
 
@@ -717,6 +730,12 @@ gender_wage_premium_last <- gender_wage_premium %>%
 gender_wage_premium_last <- gender_wage_premium_last %>%
   mutate(value_percentage = value * 100)
 
+#Save data set
+
+write_dta(gender_wage_premium_last, file.path(datapathshiny, "/gender_wage_premium_last.dta"))
+
+
+#Public Sector Employment
 
 public_sector_emp_temp <- public_sector_emp_temp %>%
   select(country_name, indicator_name, year, value, wb_region) %>%
@@ -738,6 +757,12 @@ public_sector_emp_temp_last <- public_sector_emp_temp_last %>%
     "Public sector employment, as a share of paid employment" = "as a share of paid employment", 
     "Public sector employment, as a share of total employment" = "as a share of total employment"
   ))
+
+#Save data sets
+
+write_dta(public_sector_emp_temp, file.path(datapathshiny, "/public_sector_emp_temp.dta"))
+write_dta(public_sector_emp_temp_last, file.path(datapathshiny, "/public_sector_emp_temp_last.dta"))
+
 
 #Female Leadership 
 
@@ -770,14 +795,16 @@ gender_leadership <- gender_leadership %>%
 gender_leadership <- gender_leadership %>%
   mutate(value_percentage = value * 100)
 
+#Save data set
+
+write_dta(gender_leadership, file.path(datapathshiny, "/gender_leadership.dta"))
+
 
 #Gender Wage premium in the public sector, by industry 
 
 gender_wage_premiumpublic <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Gender wage premium in the public sector, by industry: Public Administration (compared to male paid employees)", 
                                                                                  "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)", 
                                                                                  "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)"), ]
-
-
 
 gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
   mutate(value_percentage = value * 100)
@@ -836,7 +863,11 @@ gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
 
 
 
+#Save data set
+
+write_dta(gender_wage_premiumpublic, file.path(datapathshiny, "/gender_wage_premiumpublic.dta"))
 
 
+#end of script
 
 
