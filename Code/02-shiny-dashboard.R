@@ -36,6 +36,8 @@ library(bslib)
 
 ### Load data sets ----
 
+datapathshiny <- "C:/WBG/GitHub/WWBI/ShinyApp"
+
 data_wwbi     <- read_dta(file.path(datapathshiny, "/data_wwbi.dta"))
 
 
@@ -84,6 +86,16 @@ public_wage_premium_educ     <- read_dta(file.path(datapathshiny, "/public_wage_
 gender_wage_premium     <- read_dta(file.path(datapathshiny, "/gender_wage_premium.dta"))
 
 gender_wage_premium_last     <- read_dta(file.path(datapathshiny, "/gender_wage_premium_last.dta"))
+
+public_sector_emp_temp     <- read_dta(file.path(datapathshiny, "/public_sector_emp_temp.dta"))
+
+
+public_sector_emp_temp_last     <- read_dta(file.path(datapathshiny, "/public_sector_emp_temp_last.dta"))
+
+gender_leadership     <- read_dta(file.path(datapathshiny, "gender_leadership.dta"))
+
+gender_wage_premiumpublic     <- read_dta(file.path(datapathshiny, "gender_wage_premiumpublic.dta"))
+
 
 
 

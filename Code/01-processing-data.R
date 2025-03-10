@@ -872,4 +872,8 @@ write_dta(gender_wage_premiumpublic, file.path(datapathshiny, "/gender_wage_prem
 
 #end of script
 
+rsconnect::deployApp(appDir = "C:/WBG/GitHub/WWBI/ShinyApp", 
+                     appPrimaryDoc = "02-shiny-dashboard.R")
+
+rsconnect::showLogs()
 
