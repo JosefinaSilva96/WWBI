@@ -161,10 +161,16 @@ data_wwbi <- merge(data_wwbi, wb_metadata, by = "iso3c", all.x = TRUE)
 
 setnames(data_wwbi, "income_group", "income_level")
 
+#Drop pvalue in the indicator column
+
+data_wwbi <- data_wwbi[!grepl("^P-Value:", data_wwbi$indicator_name), ]
+
 
 # Save the project data 
 
-write_dta(data_wwbi, file.path(data_path, "Data/Intermediate/data_wwbi.dta"))
+datapathshiny <- "C:/WBG/GitHub/WWBI/ShinyApp"
+
+write_dta(data_wwbi, file.path(datapathshiny, "/data_wwbi.dta"))
 
 
 #Load gdp data base 
@@ -182,6 +188,9 @@ color_palette <- colorFactor(c("lightgreen", "lightgray"), domain = c("reported"
 
 colnames(world_spdf)[colnames(world_spdf) == "name"] <- "country_name"
 
+# Save the spatial dataset in the Shiny folder
+
+st_write(world_spdf, file.path(datapathshiny, "world_spatial.gpkg"))
 
 #Countries 
 
