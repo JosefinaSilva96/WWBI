@@ -32,10 +32,6 @@ data_path <- "C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/Data
 
 
 
-# Run the R scripts ----
-
-source("Code/01-processing-data.R")
-source("Code/02-shiny-dashboard.R")
 
 
 
