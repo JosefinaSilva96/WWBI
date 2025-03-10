@@ -1,0 +1,28 @@
+{
+    "id": "B24CFFFB",
+    "path": "C:/WBG/GitHub/WWBI/Code/02-shiny-dashboard.R",
+    "project_path": "Code/02-shiny-dashboard.R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1730900591519.0,
+    "source_on_save": false,
+    "relative_order": 3,
+    "properties": {
+        "tempName": "Untitled1",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "3878,0",
+        "scrollLine": "3863",
+        "docOutlineVisible": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1741631058,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1741631059058,
+    "read_only": false,
+    "read_only_alternatives": []
+}

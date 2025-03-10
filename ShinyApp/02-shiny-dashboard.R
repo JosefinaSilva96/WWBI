@@ -34,644 +34,67 @@ library(bslib)
 
 
 
-### INITIAL COMMANDS ----
+### Load data sets ----
 
-#Set data path 
+datapathshiny <- "C:/WBG/GitHub/WWBI/ShinyApp"
 
-data_path <- "C:/WBG/GitHub/WWBI/Data"
+data_wwbi     <- read_dta(file.path(datapathshiny, "/data_wwbi.dta"))
 
-#Load indicators data set 
 
-data_wwbi <- read_dta(file.path(data_path, "data_wwbi.dta"))
+data_gdp     <- read_dta(file.path(datapathshiny, "/data_gdp.dta"))
 
-# Add continent column
+gdp_2015     <- read_dta(file.path(datapathshiny, "/gdp_2015.dta"))
 
-# Ensure data_wwbi is a data.table
 
+world_spdf <- st_read(file.path(datapathshiny, "/world_spatial.gpkg"))
 
-setDT(data_wwbi)  
 
-# Assign World Bank regions using countrycode()
+selected_data_long     <- read_dta(file.path(datapathshiny, "/selected_data_long.dta"))
 
-data_wwbi[, wb_region := countrycode(country_name, origin = "country.name", destination = "region")]
 
-unique(data_wwbi[, .(country_name, wb_region)])
+data_wwbi_long     <- read_dta(file.path(datapathshiny, "/data_wwbi_long.dta"))
 
-# Manually assign continent for unmatched countries
 
+wage_bill_publicexp     <- read_dta(file.path(datapathshiny, "/wage_bill_publicexp.dta"))
 
-data_wwbi[is.na(wb_region) & country_name == "Micronesia", wb_region := "East Asia & Pacific"]
 
+wage_bill_gdp     <- read_dta(file.path(datapathshiny, "/wage_bill_gdp.dta"))
 
-# Get the latest World Bank country metadata, including income groups
+public_sector_emp_temp     <- read_dta(file.path(datapathshiny, "/public_sector_emp_temp.dta"))
 
-wb_metadata <- wb_cachelist$countries[, c("iso3c", "income_level")]
+public_sector_emp     <- read_dta(file.path(datapathshiny, "/public_sector_emp.dta"))
 
-# Ensure your dataset has ISO3 country codes
+public_sector_emp_temp_last     <- read_dta(file.path(datapathshiny, "/public_sector_emp_temp_last.dta"))
 
-data_wwbi[, iso3c := countrycode(country_name, origin = "country.name", destination = "iso3c")]
+public_sector_workforce.dta     <- read_dta(file.path(datapathshiny, "/public_sector_workforce.dta"))
 
-# Manually assign missing ISO3C codes
+public_sector_workforce_first_last     <- read_dta(file.path(datapathshiny, "/public_sector_workforce_first_last.dta"))
 
-data_wwbi[country_name == "Kosovo", iso3c := "XKX"]
-data_wwbi[country_name == "Micronesia", iso3c := "FSM"]
+gender_workforce     <- read_dta(file.path(datapathshiny, "/gender_workforce.dta"))
 
-wb_metadata <- wb_metadata %>% rename(income_group = income_level)
 
-# Merge income group data
+data_indicator_wb     <- read_dta(file.path(datapathshiny, "/data_indicator_wb.dta"))
 
-data_wwbi <- merge(data_wwbi, wb_metadata, by = "iso3c", all.x = TRUE)
+merged_data     <- read_dta(file.path(datapathshiny, "/merged_data.dta"))
 
-# Rename column for clarity
+tertiary_education     <- read_dta(file.path(datapathshiny, "/tertiary_education.dta"))
 
-setnames(data_wwbi, "income_group", "income_level")
+public_wage_premium     <- read_dta(file.path(datapathshiny, "/public_wage_premium.dta"))
 
+public_wage_premium_educ     <- read_dta(file.path(datapathshiny, "/public_wage_premium_educ.dta"))
 
-#Load gdp data base 
+gender_wage_premium     <- read_dta(file.path(datapathshiny, "/gender_wage_premium.dta"))
 
-data_gdp <- read_dta(file.path(data_path, "data_gdp.dta"))
+gender_wage_premium_last     <- read_dta(file.path(datapathshiny, "/gender_wage_premium_last.dta"))
 
-# Load world spatial data
+public_sector_emp_temp     <- read_dta(file.path(datapathshiny, "/public_sector_emp_temp.dta"))
 
-world_spdf <- ne_countries(scale = "medium", returnclass = "sf")
 
-# Create a color palette for countries
+public_sector_emp_temp_last     <- read_dta(file.path(datapathshiny, "/public_sector_emp_temp_last.dta"))
 
-color_palette <- colorFactor(c("lightgreen", "lightgray"), domain = c("reported", "not_reported"))
+gender_leadership     <- read_dta(file.path(datapathshiny, "gender_leadership.dta"))
 
-
-colnames(world_spdf)[colnames(world_spdf) == "name"] <- "country_name"
-
-
-#Countries 
-
-countries <- c(
-  "Aruba", "Afghanistan", "Angola", "Anguilla", "Albania", "United Arab Emirates", 
-  "Argentina", "Armenia", "Antigua and Barbuda", "Australia", "Austria", "Azerbaijan", 
-  "Burundi", "Belgium", "Benin", "Burkina Faso", "Bangladesh", "Bulgaria", 
-  "Bahrain", "Bahamas", "The, Bosnia and Herzegovina", "Belarus", "Belize", 
-  "Bermuda", "Bolivia", "Brazil", "Barbados", "Brunei Darussalam", "Bhutan", 
-  "Botswana", "Central African Republic", "Canada", "Switzerland", "Chile", 
-  "China", "Cote d'Ivoire", "Cameroon", "Congo, Republic of", "Colombia", 
-  "Comoros", "Cabo Verde", "Costa Rica", "Curacao", "Cayman Islands", 
-  "Cyprus", "Czech Republic", "Germany", "Djibouti", "Dominica", "Denmark", "Dominican Republic", 
-  "Algeria", "Ecuador", "Egypt", "Arab Republic of", "Eritrea", "Spain", 
-  "Estonia", "Ethiopia", "Finland", "Fiji", "France", "Micronesia", 
-  "Federated States of, Gabon", "United Kingdom", "Georgia", 
-  "Ghana", "Guinea", "Gambia", "The, Guinea-Bissau", "Equatorial Guinea", 
-  "Greece", "Grenada", "Guatemala", "Guyana", "Hong Kong SAR", "China", "Honduras", 
-  "Croatia", "Haiti", "Hungary", "Indonesia", "India", "Ireland", "Iran", 
-  "Islamic Republic of, Iraq", "Iceland", "Israel", "Italy", "Jamaica", "Jordan", 
-  "Japan", "Kazakhstan", "Kenya", "Kyrgyz Republic", "Cambodia", "Kiribati", "St. Kitts and Nevis", 
-  "Korea, Republic of, Kuwait", "Lao People's Democratic Republic, Lebanon", "Liberia", 
-  "Libya", "St. Lucia", "Sri Lanka", "Lesotho", "Lithuania", "Luxembourg", "Latvia", 
-  "Macao SAR", "China", "Morocco", "Moldova", "Madagascar", "Maldives", "Mexico", 
-  "Marshall Islands", "North Macedonia", "Mali", "Malta", "Myanmar", "Montenegro", "Mongolia", 
-  "Mozambique", "Mauritania", "Montserrat", "Mauritius", "Malawi", "Malaysia", "Namibia", 
-  "Niger", "Nigeria", "Nicaragua", "Netherlands", "Norway", "Nepal", "Nauru", "New Zealand", 
-  "Oman", "Pakistan", "Panama", "Peru", "Philippines", "Palau", "Papua New Guinea", 
-  "Poland", "Puerto Rico", "Portugal", "Paraguay", "Qatar", "Romania", 
-  "Russian Federation", "Rwanda", "Saudi Arabia", "Sudan", "Senegal", 
-  "Singapore", "Solomon Islands", "Sierra Leone", "El Salvador", "San Marino", 
-  "Somalia", "South Sudan", "Sao Tome and Principe", "Suriname", "Slovak Republic", 
-  "Slovenia", "Sweden", "Eswatini", "Sint Maarten (Dutch part)", "Seychelles", 
-  "Syrian Arab Republic", "Turks and Caicos Islands", "Chad", 
-  "Togo", "Thailand", "Tajikistan", "Turkmenistan", "Tonga", 
-  "Trinidad and Tobago", "Tunisia", "Türkiye", "Tuvalu", "Taiwan", 
-  "China", "Tanzania", "Uganda", "Ukraine", "Uruguay", "United States", 
-  "Uzbekistan", "St. Vincent and the Grenadines", "Venezuela", 
-  "Republica Bolivariana de", "Vietnam", "Vanuatu", "Samoa", "Kosovo","South Africa",
-  "Zambia", "Zimbabwe", "Americas", "Asia", "Europe", "MENA", "Oceania", "Sub-Saharan Africa")
-
-#Drop pvalue in the indicator column
-
-data_wwbi <- data_wwbi[!grepl("^P-Value:", data_wwbi$indicator_name), ]
-
-# Extract available years and countries for select inputs
-
-years <- as.character(2000:2022)  # Years are 2000 to 2022 based on column names in your data
-
-countries <- unique(data_wwbi$country_name)  # Extract unique country names from the data set
-
-
-indicator <- unique(data_wwbi$indicator_name)
-
-# Transform data.table to a data.frame 
-
-data_wwbi <- as.data.frame(data_wwbi)
-
-# Filter the data using dplyr
-
-selected_data_long <- data_wwbi %>%
-  filter(indicator_name == indicator & country_name %in% countries) %>%
-  select(country_name, indicator_name,wb_region,income_level,  starts_with("year_"))  # Select relevant columns
-
-
-# Reshape the data using pivot_longer
-
-selected_data_long <- selected_data_long %>%
-  pivot_longer(cols = starts_with("year_"), 
-               names_to = "year", 
-               values_to = "value") %>%
-  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
-  filter(!is.na(value))  # Remove rows with NA values
-
-
-# Reshape the data using pivot_longer gdp data base 
-
-data_gdp <- data_gdp %>%
-  pivot_longer(cols = starts_with("year_"), 
-               names_to = "year", 
-               values_to = "value") %>%
-  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
-  filter(!is.na(value))  # Remove rows with NA values
-
-# View the reshaped data
-
-print(selected_data_long)
-
-print(data_gdp)
-
-data_wwbi_long <- data_wwbi %>%
-  pivot_longer(cols = starts_with("year_"), 
-               names_to = "year", 
-               values_to = "value") %>%
-  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
-  filter(!is.na(value)) #4096 obs
-
-
-regional_mean<- data_wwbi_long %>%
-  group_by(wb_region, year, indicator_name) %>%
-  summarise(mean_value = mean(value, na.rm = TRUE), .groups = 'drop')
-
-
-regional_mean <- regional_mean %>%
-  rename(country_name = wb_region)
-
-regional_mean <- regional_mean %>%
-  rename(value = mean_value)
-
-data_wwbi_long <- bind_rows(data_wwbi_long, regional_mean)
-
-income_mean <- data_wwbi_long %>%
-  group_by(income_level, year, indicator_name) %>%
-  summarise(mean_value = mean(value, na.rm = TRUE), .groups = 'drop')
-
-
-income_mean <- income_mean %>%
-  rename(country_name = income_level)
-
-income_mean <- income_mean %>%
-  rename(value = mean_value)
-
-
-data_wwbi_long <- bind_rows(data_wwbi_long, income_mean)
-
-#Drop Na observations in the column country_name
-
-data_wwbi_long <- data_wwbi_long %>% filter(!is.na(country_name))
-
-
-
-# Filter the data for the specific indicator "Wage bill as a percentage of Public Expenditure"
-
-wage_bill_publicexp <- data_wwbi_long[data_wwbi_long$indicator_name == "Wage bill as a percentage of Public Expenditure", ]
-
-
-# Filter the data for the specific indicator "Wage bill as a percentage of GDP"
-
-wage_bill_gdp <- data_wwbi_long[data_wwbi_long$indicator_name == "Wage bill as a percentage of GDP", ]
-
-
-
-
-# Filter the data for the specific indicator "Public sector employment, as a share of formal employment and paid employment "
-
-public_sector_emp <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Public sector employment, as a share of formal employment", 
-                                                               "Public sector employment, as a share of paid employment", 
-                                                               "Public sector employment, as a share of total employment"), ]
-
-public_sector_emp_temp <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Public sector employment, as a share of formal employment", 
-                                                               "Public sector employment, as a share of paid employment"), ]
-
-
-
-public_sector_emp_temp <- public_sector_emp_temp %>%
-  select(year, indicator_name, value,wb_region, country_name) %>%
-  mutate(indicator_name = factor(indicator_name)) %>%
-  # Modify indicator labels for shorter text
-  mutate(indicator_label = recode(indicator_name, 
-                                  "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
-                                  "Public sector employment, as a share of paid employment" = "as a share of paid employment", 
-                                  "Public sector employment, as a share of total employment"= "as a share of total employment"))
-
-
-public_sector_emp_temp <- public_sector_emp_temp %>%
-  mutate(value_percentage = value * 100)
-
-public_sector_emp <- public_sector_emp %>%
-  select(year, indicator_name, value, country_name, wb_region, value_percentage) %>%
-  mutate(indicator_name = factor(indicator_name)) %>%
-  # Modify indicator labels for shorter text
-  mutate(indicator_label = recode(indicator_name, 
-                                  "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
-                                  "Public sector employment, as a share of paid employment" = "as a share of paid employment", 
-                                  "Public sector employment, as a share of total employment"= "as a share of total employment"))
-
-
-
-public_sector_emp <- public_sector_emp %>%
-  mutate(value_percentage = value * 100)
-
-
-# Keep the last year available for each country
-
-public_sector_emp_temp_last <- public_sector_emp %>%
-  filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
-  group_by(country_name, indicator_name, wb_region) %>%                      # Group by country_name (or any other variable)
-  filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
-  ungroup()                                      # Ungroup the data
-
-public_sector_emp_temp_last <- public_sector_emp_temp_last %>%
-  mutate(value_percentage = value * 100)
-
-
-# Filter the data for the specific indicator "Characteristics of the public sector workforce"
-
-public_sector_workforce <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Education workers, as a share of public total employees", 
-                                                               "Health workers, as a share of public total employees", 
-                                                               "Public Administration workers, as a share of public total employees"), ]
-
-public_sector_workforce <- public_sector_workforce %>%
-  mutate(value_percentage = value * 100)
-
-
-# Step 1: Calculate the 'Other' value for each country and year
-
-public_sector_workforce <- public_sector_workforce %>%
-  group_by(country_name, year, wb_region) %>%
-  mutate(
-    # Calculate the value for 'Other' as 100 minus the sum of specific indicators
-    other_value = 100 - sum(value_percentage[indicator_name %in% c(
-      "Education workers, as a share of public total employees",
-      "Health workers, as a share of public total employees",
-      "Public Administration workers, as a share of public total employees"
-    )], na.rm = TRUE)
-  ) %>%
-  ungroup()
-
-# Step 2: Create a new dataset for the 'Other' indicator and update the value_percentage
-
-public_sector_workforce <- public_sector_workforce %>%
-  bind_rows(
-    public_sector_workforce %>%
-      # Filter rows for the specified indicators
-      filter(indicator_name %in% c(
-        "Education workers, as a share of public total employees",
-        "Health workers, as a share of public total employees",
-        "Public Administration workers, as a share of public total employees"
-      )) %>%
-      group_by(country_name, year, wb_region) %>%
-      summarize(
-        indicator_name = "Other",  # Set the indicator name to "Other"
-        value_percentage = first(other_value),  # Replace the value with the calculated 'other_value'
-        .groups = "drop"  # Drop the grouping after summarizing
-      ) %>%
-      ungroup()
-  )
-
-
-public_sector_workforce <- public_sector_workforce %>%
-  mutate(indicator_name = ifelse(indicator_name == "Education workers, as a share of public total employees", "Education", indicator_name))
-
-public_sector_workforce <- public_sector_workforce %>%
-  mutate(indicator_name = ifelse(indicator_name == "Health workers, as a share of public total employees", "Health", indicator_name))
-
-public_sector_workforce <- public_sector_workforce %>%
-  mutate(indicator_name = ifelse(indicator_name == "Public Administration workers, as a share of public total employees", "Public Administration", indicator_name))
-
-public_sector_workforce <- public_sector_workforce %>%
-  mutate(indicator_name = ifelse(indicator_name == "Publicd Administration", "Public Administration", indicator_name))
-
-
-
-
-
-# Keep the first and  last year available for each country
-
-public_sector_workforce_first_last <- public_sector_workforce %>%
-  filter(!is.na(value_percentage)) %>%               # Keep rows where `value_percentage` is not NA
-  group_by(country_name, indicator_name, wb_region) %>%         # Group by country and indicator
-  filter(year == max(year, na.rm = TRUE) |           # Keep rows for the last year
-           year == min(year, na.rm = TRUE)) %>%      # Keep rows for the first year
-  ungroup()
-
-
-public_sector_workforce_first_last <- public_sector_workforce_first_last %>%
-  mutate(indicator_name = ifelse(indicator_name == "Education workers, as a share of public total employees", "Education", indicator_name))
-
-public_sector_workforce_first_last <- public_sector_workforce_first_last %>%
-  mutate(indicator_name = ifelse(indicator_name == "Health workers, as a share of public total employees", "Health", indicator_name))
-
-public_sector_workforce_first_last <- public_sector_workforce_first_last %>%
-  mutate(indicator_name = ifelse(indicator_name == "Public Administration workers, as a share of public total employees", "Public Administration", indicator_name))
-
-
-public_sector_workforce_first_last <- public_sector_workforce_first_last %>%
-  mutate(indicator_name = ifelse(indicator_name == "Public Administration", "Public Administration", indicator_name))
-
-
-
-
-# Filter the data for the specific indicator "Characteristics of the gender workforce"
-
-
-gender_workforce <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Females, as a share of public paid employees", 
-                                                               "Females, as a share of private paid employees"), ]
-
-#Rename Indicator 
-
-gender_workforce <- gender_workforce %>%
-  mutate(indicator_name = ifelse(indicator_name == "Females, as a share of public paid employees", "as a share of public paid employees", indicator_name))
-
-
-gender_workforce <- gender_workforce %>%
-  mutate(indicator_name = ifelse(indicator_name == "Females, as a share of private paid employees", "as a share of private paid employees", indicator_name))
-
-#Multiply value
-
-gender_workforce <- gender_workforce %>%
-  mutate(value_percentage = value * 100)
-
-
-
-# Filter GDP data for the year 2015
-
-gdp_2015 <- data_gdp %>%
-  filter(year == 2015) %>%
-  select(country_name, value)
-
-
-# Rename 'value' column to 'indicator_value' in data_indicators
-
-data_indicator_wb <- wage_bill_publicexp %>%
-  rename(indicator_value = value)
-
-# Rename 'value' column to 'gdp_value' in data_gdp
-
-gdp_2015 <- gdp_2015 %>%
-  rename(gdp_value = value)
-
-
-# Merge the datasets on 'country_name'
-
-
-merged_data <- data_indicator_wb %>%
-  left_join(gdp_2015, by = "country_name") %>%
-  select(country_name, indicator_name, country_code, indicator_value, gdp_value, wb_region, year)
-
-
-# Add the log of GDP as a new column
-
-merged_data <- merged_data %>%
-  mutate(log_gdp = log(gdp_value))
-
-
-merged_data <- merged_data %>%
-  filter(!is.na(indicator_value)) %>%  # Keep rows where `indicator_value` is not NA
-  group_by(country_name, indicator_name, wb_region, log_gdp) %>%  
-  filter(year == max(year, na.rm = TRUE)) %>%  # Get the last available year for each group
-  ungroup()
-
-
-
-# Tertiary education by sector 
-
-tertiary_education <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Individuals with tertiary education as a share of public paid employees", 
-                                                              "Individuals with tertiary education as a share of private paid employees"), ]
-
-tertiary_education <- tertiary_education %>%
-  mutate(value_percentage = value * 100)
-
-# Keep the last year available for each country
-
-tertiary_education <- tertiary_education %>%
-  filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
-  group_by(country_name,indicator_name, wb_region) %>%                      # Group by country_name (or any other variable)
-  filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
-  ungroup()                                      # Ungroup the data
-
-#Rename the column indicator name 
-
-tertiary_education <- tertiary_education %>%
-  mutate(indicator_name = ifelse(indicator_name == "Individuals with tertiary education as a share of private paid employees", "as a share of private paid employees", indicator_name))
-
-tertiary_education <- tertiary_education %>%
-  mutate(indicator_name = ifelse(indicator_name == "Individuals with tertiary education as a share of public paid employees", "as a share of public paid employees", indicator_name))
-
-
-# Public sector wage premium 
-
-public_wage_premium <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Public sector wage premium (compared to all private employees)"), ]
-
-
-public_wage_premium <- public_wage_premium %>%
-  mutate(value_percentage = value * 100)
-
-# Keep the last year available for each country
-
-public_wage_premium <- public_wage_premium %>%
-  filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
-  group_by(country_name,indicator_name, wb_region) %>%                      # Group by country_name (or any other variable)
-  filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
-  ungroup()                                      # Ungroup the data
-
-
-#Public sector wage premium by education level (compared to private formal workers)
-
-
-public_wage_premium_educ <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Public sector wage premium, by education level: Tertiary Education (compared to formal wage employees)", 
-                                                                      "Public sector wage premium, by education level: Secondary Education (compared to formal wage employees)", 
-                                                                      "Public sector wage premium, by education level: Primary Education (compared to formal wage employees)", 
-                                                                      "Public sector wage premium, by education level: No Education (compared to formal wage employees)"), ]
-
-public_wage_premium_educ <- public_wage_premium_educ %>%
-  mutate(value_percentage = value * 100)
-
-# Keep the last year available for each country
-
-public_wage_premium_educ <- public_wage_premium_educ %>%
-  filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
-  group_by(country_name,indicator_name, wb_region) %>%                      # Group by country_name (or any other variable)
-  filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
-  ungroup()                                      # Ungroup the data
-
-
-
-public_wage_premium_educ <- public_wage_premium_educ %>%
-  mutate(indicator_name = ifelse(indicator_name == "Public sector wage premium, by education level: Tertiary Education (compared to formal wage employees)", "Tertiary Education", indicator_name))
-
-public_wage_premium_educ <- public_wage_premium_educ %>%
-  mutate(indicator_name = ifelse(indicator_name == "Public sector wage premium, by education level: Secondary Education (compared to formal wage employees)", "Secondary Education", indicator_name))
-
-public_wage_premium_educ <- public_wage_premium_educ %>%
-  mutate(indicator_name = ifelse(indicator_name == "Public sector wage premium, by education level: Primary Education (compared to formal wage employees)", "Primary Education", indicator_name))
-
-
-public_wage_premium_educ <- public_wage_premium_educ %>%
-  mutate(indicator_name = ifelse(indicator_name == "Public sector wage premium, by education level: No Education (compared to formal wage employees)", "No Education", indicator_name))
-
-
-
-
-#Gender Wage premium                                                                                                                                                                                                                                                                   
-
-# Filter the data for the specific indicator "Public sector wage premium, by gender: Female (compared to all private employees) and
-# Public sector wage premium, by gender: Male (compared to all private employees)"
-
-gender_wage_premium <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Public sector wage premium, by gender: Female (compared to all private employees)", 
-                                                               "Public sector wage premium, by gender: Male (compared to all private employees)"), ]
-
-gender_wage_premium <- gender_wage_premium %>%
-  select(year, indicator_name, value, country_name,wb_region) %>%
-  mutate(indicator_name = factor(indicator_name)) %>%
-  # Modify indicator labels for shorter text
-  mutate(indicator_label = recode(indicator_name, 
-                                  "Public sector wage premium, by gender: Female (compared to all private employees)" = "Female", 
-                                  "Public sector wage premium, by gender: Male (compared to all private employees)" = "Male"))
-
-gender_wage_premium <- gender_wage_premium %>%
-  mutate(value_percentage = value * 100)
-
-
-# Keep the last year available for each country
-
-gender_wage_premium_last <- gender_wage_premium %>%
-  filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
-  group_by(country_name, indicator_label, wb_region) %>%                      # Group by country_name (or any other variable)
-  filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
-  ungroup()                                      # Ungroup the data
-
-gender_wage_premium_last <- gender_wage_premium_last %>%
-  mutate(value_percentage = value * 100)
-
-
-public_sector_emp_temp <- public_sector_emp_temp %>%
-  select(country_name, indicator_name, year, value, wb_region) %>%
-  mutate(indicator_name = factor(indicator_name)) %>%
-  mutate(indicator_label = recode(
-    indicator_name, 
-    "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
-    "Public sector employment, as a share of paid employment" = "as a share of paid employment", 
-    "Public sector employment, as a share of total employment" = "as a share of total employment"
-  ))
-
-
-public_sector_emp_temp_last <- public_sector_emp_temp_last %>%
-  select(country_name, indicator_name, year, value, wb_region) %>%
-  mutate(indicator_name = factor(indicator_name)) %>%
-  mutate(indicator_label = recode(
-    indicator_name, 
-    "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
-    "Public sector employment, as a share of paid employment" = "as a share of paid employment", 
-    "Public sector employment, as a share of total employment" = "as a share of total employment"
-  ))
-
-#Female Leadership 
-
-gender_leadership <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Females, as a share of public paid employees by occupational group: Managers", 
-                                                                 "Females, as a share of public paid employees by occupational group: Clerks", 
-                                                               "Females, as a share of private paid employees by occupational group: Managers", 
-                                                               "Females, as a share of private paid employees by occupational group: Clerks" ), ]
-
-gender_leadership <- gender_leadership %>%
-  select(year, indicator_name, value, country_name,wb_region) %>%
-  mutate(indicator_name = factor(indicator_name)) %>%
-  # Modify indicator labels for shorter text
-  mutate(indicator_label = recode(indicator_name, 
-                                  "Females, as a share of public paid employees by occupational group: Managers" = "Managers-Public", 
-                                  "Females, as a share of public paid employees by occupational group: Clerks" = "Clerks-Public", 
-                                  "Females, as a share of private paid employees by occupational group: Managers" = "Managers-Private",
-                                  "Females, as a share of private paid employees by occupational group: Clerks" = "Clerks-Private"))
-
-
-# Keep the last year available for each country
-
-gender_leadership <- gender_leadership %>%
-  filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
-  group_by(country_name, indicator_label, wb_region) %>%                      # Group by country_name (or any other variable)
-  filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
-  ungroup()                                      # Ungroup the data
-
-
-
-gender_leadership <- gender_leadership %>%
-  mutate(value_percentage = value * 100)
-
-
-#Gender Wage premium in the public sector, by industry 
-
-gender_wage_premiumpublic <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Gender wage premium in the public sector, by industry: Public Administration (compared to male paid employees)", 
-                                                                         "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)", 
-                                                                         "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)"), ]
-
-
-
-gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
-  mutate(value_percentage = value * 100)
-
-gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
-  group_by(country_name, year, wb_region) %>%
-  mutate(
-    # Calculate the value for 'Other' as 100 minus the sum of specific indicators
-    other_value = 100 - sum(value_percentage[indicator_name %in% c(
-      "Gender wage premium in the public sector, by industry: Core Public Administration (compared to male paid employees)",
-      "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)",
-      "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)"
-    )], na.rm = TRUE)
-  ) %>%
-  ungroup()
-
-
-gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
-  bind_rows(
-    gender_wage_premiumpublic %>%
-      # Filter rows for the specified indicators
-      filter(indicator_name %in% c(
-        "Gender wage premium in the public sector, by industry: Core Public Administration (compared to male paid employees)",
-        "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)",
-        "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)"
-      )) %>%
-      group_by(country_name, year, wb_region) %>%
-      summarize(
-        indicator_name = "Other",  # Set the indicator name to "Other"
-        value_percentage = first(other_value),  # Replace the value with the calculated 'other_value'
-        .groups = "drop"  # Drop the grouping after summarizing
-      ) %>%
-      ungroup()
-  )
-
-
-gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
-  select(year, indicator_name, value, country_name,wb_region,value_percentage) %>%
-  mutate(indicator_name = factor(indicator_name)) %>%
-  # Modify indicator labels for shorter text
-  mutate(indicator_label = recode(indicator_name, 
-                                  "Gender wage premium in the public sector, by industry: Public Administration (compared to male paid employees)" = "Public Administration", 
-                                  "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)" = "Education", 
-                                  "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)" = "Health"))
-
-
-# Keep the last year available for each country
-
-gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
-  filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
-  group_by(country_name, indicator_label, wb_region) %>%                      # Group by country_name (or any other variable)
-  filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
-  ungroup()                                      # Ungroup the data
-
-
-
+gender_wage_premiumpublic     <- read_dta(file.path(datapathshiny, "gender_wage_premiumpublic.dta"))
 
 
 
@@ -1064,31 +487,31 @@ server <- function(input, output, session) {
         )
       )
     } else if(tab == "female_leadership") {
-        tagList(
-          h3("Females by Occupational Group and Sector"),
-          fluidRow(
-            div(style = "border: 2px solid white; padding: 10px; 
+      tagList(
+        h3("Females by Occupational Group and Sector"),
+        fluidRow(
+          div(style = "border: 2px solid white; padding: 10px; 
                       background: linear-gradient(to right, #4A90E2, #D4145A);
                       color: white; font-size: 16px; text-align: center;",
-                "This visualization shows the share of females in various occupational groups (Managers/Clerks) in the public and private sectors across selected countries.")
-          ),
-          fluidRow(
-            selectInput("selected_countries", "Select Countries", 
-                        choices = unique(gender_leadership$country_name), multiple = TRUE)
-          ),
-          fluidRow(
-            plotlyOutput("barPlotwomen", height = "600px")
-          ),
-          fluidRow(
-            div(style = "border: 2px solid white; padding: 10px; 
+              "This visualization shows the share of females in various occupational groups (Managers/Clerks) in the public and private sectors across selected countries.")
+        ),
+        fluidRow(
+          selectInput("selected_countries", "Select Countries", 
+                      choices = unique(gender_leadership$country_name), multiple = TRUE)
+        ),
+        fluidRow(
+          plotlyOutput("barPlotwomen", height = "600px")
+        ),
+        fluidRow(
+          div(style = "border: 2px solid white; padding: 10px; 
                       background: linear-gradient(to right, #4A90E2, #D4145A);
                       color: white; font-size: 16px; text-align: center;",
-                textOutput("note_barPlotwomen"))
-          ),
-          fluidRow(
-            downloadButton("downloadGraphsWordfemale", "Download Female Leadership Report")
-          )
+              textOutput("note_barPlotwomen"))
+        ),
+        fluidRow(
+          downloadButton("downloadGraphsWordfemale", "Download Female Leadership Report")
         )
+      )
     } else if(tab == "wagepremium_gender") {
       tagList(
         h3("Wage Premium by Gender Graphs"),
@@ -1372,17 +795,17 @@ server <- function(input, output, session) {
       )
     }
   }
-)
-
+  )
+  
   # ---------------------------
   
-    output$download_pdf <- downloadHandler(
-      filename = "Codebook and Explanatory Note.pdf",
-      content = function(file) {
-        file.copy("Files/WWBI Codebook v3.1.pdf", file)
-      }
-    )
-
+  output$download_pdf <- downloadHandler(
+    filename = "Codebook and Explanatory Note.pdf",
+    content = function(file) {
+      file.copy("Files/WWBI Codebook v3.1.pdf", file)
+    }
+  )
+  
   
   # 3. All your original outputs and downloadHandlers follow.
   # (For brevity, the code below is the same as in your original server code.)
@@ -1630,7 +1053,7 @@ server <- function(input, output, session) {
       summarise(last_year = max(year, na.rm = TRUE)) %>%
       pull(last_year)
     
-
+    
     
     # --- Add Both Graphs Based on User Selection ---
     
@@ -1751,7 +1174,7 @@ server <- function(input, output, session) {
     }
     
     # Construct dynamic interpretation text
-
+    
     gdp_interpretation_text <- paste0(
       "Figure 1.1 illustrates the Wage bill as a percentage of GDP for the selected countries, showing ", relationship_text, 
       " between a country’s level of economic development and the size of its public sector in the ", first_region, " region. ",
@@ -2416,7 +1839,7 @@ server <- function(input, output, session) {
   output$note_wage_premium <- renderText({
     "Note: This indicator represents the public sector wage premium compared to all private sector employees. A positive value indicates that public sector workers earn more than their private-sector counterparts, on average."
   })
-
+  
   # Download the Report as a Word Document
   output$downloadWagePremiumReport <- downloadHandler(
     filename = function() { paste0("Public_Sector_Wage_Premium_", Sys.Date(), ".docx") },
@@ -3057,7 +2480,7 @@ server <- function(input, output, session) {
   }
   
   
-
+  
   #Public Sector Graphs 
   
   # First Graph - Multi-Country Dot Plot
@@ -3269,8 +2692,8 @@ server <- function(input, output, session) {
     return(doc)
   }
   
-
-#Gender Wage premium 
+  
+  #Gender Wage premium 
   
   # First Graph - Multi-Country Dot Plot for Wage Premium by Gender
   output$firstGraphGenderWagePremium <- renderPlotly({
@@ -3604,7 +3027,7 @@ server <- function(input, output, session) {
       doc <- doc %>% body_add_par("Female Employment by Sector Over Time", style = "heading 2")
       doc <- doc %>% body_add_img(src = img_path2, width = 6, height = 4)
       
-   
+      
       # Save the Document
       print(doc, target = file)
     }
@@ -3730,7 +3153,7 @@ server <- function(input, output, session) {
     return(doc)
   }
   
-
+  
   # Women Leadership 
   
   output$barPlotwomen <- renderPlotly({
@@ -4324,16 +3747,16 @@ server <- function(input, output, session) {
   
   
   #Download one single report
- 
+  
   output$downloadAllGraphsDoc <- downloadHandler(
     filename = function() { 
       paste0("Wage_bill_and_public_employment_analysis_", Sys.Date(), ".docx") 
     },
     content = function(file) {
-          
+      
       # Get the selected countries dynamically
-          selected_countries <- input$countries_first  
-  
+      selected_countries <- input$countries_first  
+      
       # Initialize Word document
       doc <- read_docx() 
       
@@ -4453,7 +3876,3 @@ shinyApp(ui = ui, server = server)
 
 
 # the end##############################################
-
-
-
-   

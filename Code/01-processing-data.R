@@ -267,6 +267,10 @@ selected_data_long <- selected_data_long %>%
   mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
   filter(!is.na(value))  # Remove rows with NA values
 
+selected_data_long <- selected_data_long %>%
+  mutate(value_percentage = value * 100)
+
+
 #Save data set
 
 write_dta(selected_data_long, file.path(datapathshiny, "/selected_data_long.dta"))

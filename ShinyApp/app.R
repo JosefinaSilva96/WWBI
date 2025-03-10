@@ -2,10 +2,10 @@
 
 library(shiny)
 
-# Source your main app script
+# Source the dashboard script from the ShinyApp folder
 
-source("02-shiny-dashboard.R")
+
+source("ShinyApp/02-shiny-dashboard.R")
 
 # Run the app
-
 shinyApp(ui = ui, server = server)
