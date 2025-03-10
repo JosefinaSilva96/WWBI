@@ -32,6 +32,8 @@ data_path <- "C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/Data
 
 
 
+#Run the scripts 
+
 
 
 
