@@ -16,8 +16,14 @@ library(lubridate)
 
 # Load the data sets
 
+# Ensure the base data path is set correctly
+data_path <- getwd()  # Automatically detects the working directory
 
-data_wwbi      <- read_dta(file.path(data_path, "/Data/data_wwbi.dta"))
+# Debugging: Print the paths to check correctness
+print(file.path(data_path, "Data", "data_wwbi.dta"))
+
+# Load the data correctly
+data_wwbi <- read_dta(file.path(data_path, "Data", "data_wwbi.dta"))
 
 
 
@@ -57,15 +63,6 @@ glimpse(data_table_gdp)
 #Part II ----
 
 #Set data path 
-
-# Ensure the base data path is set correctly
-data_path <- getwd()  # Automatically detects the working directory
-
-# Debugging: Print the paths to check correctness
-print(file.path(data_path, "Data", "data_wwbi.dta"))
-
-# Load the data correctly
-data_wwbi <- read_dta(file.path(data_path, "Data", "data_wwbi.dta"))
 
 # Add continent column
 
