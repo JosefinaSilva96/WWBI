@@ -36,6 +36,10 @@ library(bslib)
 
 ### Load data sets ----
 
+# Load the data sets
+
+data_path <- here() 
+
 
 data_wwbi     <- read_dta(file.path(data_path, "Data/data_wwbi.dta"))
 
@@ -59,11 +63,19 @@ wage_bill_publicexp     <- read_dta(file.path(data_path, "Data/wage_bill_publice
 
 wage_bill_gdp     <- read_dta(file.path(data_path, "Data/wage_bill_gdp.dta"))
 
-public_sector_emp_temp     <- read_dta(file.path(data_path, "Data/public_sector_emp_temp.dta"))
+public_sector_emp_temp <- readRDS(file.path(data_path, "Data", "public_sector_emp_temp.rds"))
 
-public_sector_emp     <- read_dta(file.path(data_path, "Data/public_sector_emp.dta"))
+public_sector_emp_temp <- readRDS(file.path(data_path, "Data", "public_sector_emp_temp.rds")) %>%
+  mutate(
+    across(where(~inherits(.x, "haven_labelled")), as_factor)  # Convert haven-labelled to factors
+  )
 
-public_sector_emp_temp_last     <- read_dta(file.path(data_path, "Data/public_sector_emp_temp_last.dta"))
+public_sector_emp <- readRDS(file.path(data_path, "Data", "public_sector_emp.rds"))
+
+public_sector_emp_temp_last <- readRDS(file.path(data_path, "Data", "public_sector_emp_temp_last.rds")) %>%
+  mutate(
+    across(where(~inherits(.x, "haven_labelled")), as_factor)  # Convert haven-labelled to factors
+  )
 
 public_sector_workforce     <- read_dta(file.path(data_path, "Data/public_sector_workforce.dta"))
 
@@ -82,18 +94,18 @@ public_wage_premium     <- read_dta(file.path(data_path, "Data/public_wage_premi
 
 public_wage_premium_educ     <- read_dta(file.path(data_path, "Data/public_wage_premium_educ.dta"))
 
-gender_wage_premium     <- read_dta(file.path(data_path, "Data/gender_wage_premium.dta"))
 
-gender_wage_premium_last     <- read_dta(file.path(data_path, "Data/gender_wage_premium_last.dta"))
-
-public_sector_emp_temp     <- read_dta(file.path(data_path, "Data/public_sector_emp_temp.dta"))
+gender_wage_premium <- readRDS(file.path(data_path, "Data", "gender_wage_premium.rds"))
 
 
-public_sector_emp_temp_last     <- read_dta(file.path(data_path, "Data/public_sector_emp_temp_last.dta"))
+gender_wage_premium_last <- readRDS(file.path(data_path, "Data", "gender_wage_premium_last.rds"))
 
-gender_leadership     <- read_dta(file.path(data_path, "Data/gender_leadership.dta"))
 
-gender_wage_premiumpublic     <- read_dta(file.path(data_path, "Data/gender_wage_premiumpublic.dta"))
+gender_leadership <- readRDS(file.path(data_path, "Data", "gender_leadership.rds"))
+
+
+gender_wage_premiumpublic <- readRDS(file.path(data_path, "Data", "gender_wage_premiumpublic.rds"))
+
 
 
 

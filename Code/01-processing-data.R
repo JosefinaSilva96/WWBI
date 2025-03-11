@@ -2,14 +2,34 @@
 # 01. Data processing
 
 ### Libraries
-
 library(haven)
 library(dplyr)
 library(tidyr)
 library(stringr)
 library(labelled)
-library(readxl)
 library(data.table)
+library(ggplot2)
+library(shinydashboard)
+library(shiny)
+library(shinythemes)
+library(DT)
+library(maps)
+library(mapdata)
+library(leaflet)
+library(rnaturalearth)
+library(sf)
+library(plotly)
+library(officer)
+library(flextable)
+library(viridis)
+library(here)
+library(glue)
+library(colourpicker)
+library(wbstats)
+library(htmlwidgets)
+library(bs4Dash)
+library(countrycode)
+library(bslib)
 library(lubridate)
 library(scales)
 
@@ -305,12 +325,18 @@ public_sector_emp_temp <- public_sector_emp_temp %>%
                                   "Public sector employment, as a share of total employment"= "as a share of total employment"))
 
 
+# Ensure all numeric columns are converted before saving
 public_sector_emp_temp <- public_sector_emp_temp %>%
-  mutate(value_percentage = value * 100)
+  mutate(
+    value = as.numeric(value),  # Convert haven-labelled values to numeric
+    value_percentage = value * 100
+  )
+
+
 
 #Save data set
 
-write_dta(public_sector_emp_temp, file.path(data_path, "Data/public_sector_emp_temp.dta"))
+saveRDS(public_sector_emp_temp, file.path(data_path, "Data", "public_sector_emp_temp.rds"))
 
 
 public_sector_emp <- public_sector_emp %>%
@@ -330,7 +356,8 @@ public_sector_emp <- public_sector_emp %>%
 
 #Save data set
 
-write_dta(public_sector_emp, file.path(data_path, "Data/public_sector_emp.dta"))
+saveRDS(public_sector_emp, file.path(data_path, "Data", "public_sector_emp.rds"))
+
 
 
 
@@ -342,12 +369,19 @@ public_sector_emp_temp_last <- public_sector_emp %>%
   filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
   ungroup()                                      # Ungroup the data
 
+# Ensure all numeric columns are converted before saving
 public_sector_emp_temp_last <- public_sector_emp_temp_last %>%
-  mutate(value_percentage = value * 100)
+  mutate(
+    value = as.numeric(value),  # Convert haven-labelled values to numeric
+    value_percentage = value * 100
+  )
+
+
+
 
 #Save data set
 
-write_dta(public_sector_emp_temp_last, file.path(data_path, "Data/public_sector_emp_temp_last.dta"))
+saveRDS(public_sector_emp_temp_last, file.path(data_path, "Data", "public_sector_emp_temp_last.rds"))
 
 
 
@@ -643,8 +677,22 @@ gender_wage_premium <- gender_wage_premium %>%
     value_percentage = value * 100  # Convert to percentage
   )
 
-# Save data set
-write_dta(gender_wage_premium, file.path(data_path, "Data", "gender_wage_premium.dta"))
+gender_wage_premium <- gender_wage_premium %>%
+  mutate(
+    value_percentage = as.numeric(value_percentage),  # Convert haven-labelled to numeric
+    value_rescaled = rescale(value_percentage, to = c(0, 1))  # Apply rescale safely
+  )
+
+# Convert all haven-labelled numeric columns to standard numeric before saving
+gender_wage_premium <- gender_wage_premium %>%
+  mutate(across(where(is.numeric), as.numeric))
+
+
+#Save data set
+
+saveRDS(gender_wage_premium, file.path(data_path, "Data", "gender_wage_premium.rds"))
+
+
 
 # Keep the last year available for each country
 gender_wage_premium_last <- gender_wage_premium %>%
@@ -657,46 +705,21 @@ gender_wage_premium_last <- gender_wage_premium %>%
 gender_wage_premium_last <- gender_wage_premium_last %>%
   mutate(value_percentage = value * 100)
 
-# Save processed dataset
-write_dta(gender_wage_premium_last, file.path(data_path, "Data", "gender_wage_premium_last.dta"))
+gender_wage_premium_last <- gender_wage_premium_last %>%
+  mutate(
+    value_percentage = as.numeric(value_percentage),  # Convert haven-labelled to numeric
+    value_rescaled = rescale(value_percentage, to = c(0, 1))  # Apply rescale safely
+  )
 
-#Public Sector Employment
+# Convert all haven-labelled numeric columns to standard numeric before saving
+gender_wage_premium_last <- gender_wage_premium_last %>%
+  mutate(across(where(is.numeric), as.numeric))
 
-public_sector_emp_temp <- public_sector_emp_temp %>%
-  select(country_name, indicator_name, year, value, wb_region) %>%
-  mutate(indicator_name = factor(indicator_name)) %>%
-  mutate(indicator_label = recode(
-    indicator_name, 
-    "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
-    "Public sector employment, as a share of paid employment" = "as a share of paid employment", 
-    "Public sector employment, as a share of total employment" = "as a share of total employment"
-  ))
+#Save data set
 
-
-public_sector_emp_temp_last <- public_sector_emp_temp_last %>%
-  select(country_name, indicator_name, year, value, wb_region) %>%
-  mutate(indicator_name = factor(indicator_name)) %>%
-  mutate(indicator_label = recode(
-    indicator_name, 
-    "Public sector employment, as a share of formal employment" = "as a share of formal employment", 
-    "Public sector employment, as a share of paid employment" = "as a share of paid employment", 
-    "Public sector employment, as a share of total employment" = "as a share of total employment"
-  ))
-
-public_sector_emp_temp <- public_sector_emp_temp %>%
-  mutate(value_percentage = value * 100)
-
-public_sector_emp_temp_last <- public_sector_emp_temp_last %>%
-  mutate(value_percentage = value * 100)
-
-#Save data sets
-
-write_dta(public_sector_emp_temp, file.path(data_path, "Data/public_sector_emp_temp.dta"))
-write_dta(public_sector_emp_temp_last, file.path(data_path, "Data/public_sector_emp_temp_last.dta"))
+saveRDS(gender_wage_premium_last, file.path(data_path, "Data", "gender_wage_premium_last.rds"))
 
 
-library(dplyr)
-library(haven)
 
 # Filter the relevant indicators
 gender_leadership <- data_wwbi_long %>%
@@ -738,10 +761,14 @@ gender_leadership <- gender_leadership %>%
     value_rescaled = rescale(value_percentage, to = c(0, 1))  # Apply rescale safely
   )
 
+# Convert all haven-labelled numeric columns to standard numeric before saving
+gender_leadership <- gender_leadership %>%
+  mutate(across(where(is.numeric), as.numeric))
 
 #Save data set
 
-write_dta(gender_leadership, file.path(data_path, "Data/gender_leadership.dta"))
+saveRDS(gender_leadership, file.path(data_path, "Data", "gender_leadership.rds"))
+
 
 
 # Filter the relevant indicators
@@ -812,10 +839,14 @@ gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
     value_rescaled = rescale(value_percentage, to = c(0, 1))  # Apply rescale safely
   )
 
+# Convert all haven-labelled numeric columns to standard numeric before saving
+gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
+  mutate(across(where(is.numeric), as.numeric))
 
 #Save data set
 
-write_dta(gender_wage_premiumpublic, file.path(data_path, "Data/gender_wage_premiumpublic.dta"))
+saveRDS(gender_wage_premiumpublic, file.path(data_path, "Data", "gender_wage_premiumpublic.rds"))
+
 
 
 #end of script
