@@ -2,38 +2,15 @@
 
 # Load libraries ---- 
 
-# Load necessary libraries
-library(haven)  # for reading .dta files
-library(dplyr)  # for data manipulation
-library(tidyr)  # for reshaping data
-library(stringr) # work with strings
-library(labelled) # use labels
-library(gtsummary) # tables
-library(gt) # tables
-library(ggplot2) #graphs
-library(tidyverse) # working with tidy data
-library(modelsummary) # creating summary tables
-library(stargazer) # writing nice tables
-library(RColorBrewer) # color palettes
+library(here)
 
-#Recover environment----
+# Debugging: Print the working directory to check paths
+print(getwd())
 
-#new users need to restore the environment by doing:
-#you only need to do this the first time you interact with the package:
+# Run the scripts correctly
+source(here("Code", "01-processing-data.R"))
+source(here("Code", "02-shiny-dashboard.R"))
 
-#renv::restore()
-
-# Set data path ----
-
-# this is the second root of the project, the first root is the code whose directory 
-# is already being handled by the rstudio project.
-
-# Define the base path dynamically (GitHub version)
-data_path <- getwd()  # Automatically detects the working directory
-
-# Run the R scripts using relative paths
-source(file.path(data_path, "01-processing-data.R"))
-source(file.path(data_path, "02-shiny-dashboard.R"))
-
-
+# Run the app
+shinyApp(ui = ui, server = server)
 
