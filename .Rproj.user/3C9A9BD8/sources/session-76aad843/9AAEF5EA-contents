@@ -58,12 +58,14 @@ glimpse(data_table_gdp)
 
 #Set data path 
 
-# Construct a dynamic path to find the file
-data_path <- file.path(getwd(), "Data", "data_wwbi.dta")
+# Ensure the base data path is set correctly
+data_path <- getwd()  # Automatically detects the working directory
 
-#Load indicators data set 
+# Debugging: Print the paths to check correctness
+print(file.path(data_path, "Data", "data_wwbi.dta"))
 
-data_wwbi <- read_dta(file.path(data_path, "data_wwbi.dta"))
+# Load the data correctly
+data_wwbi <- read_dta(file.path(data_path, "Data", "data_wwbi.dta"))
 
 # Add continent column
 
