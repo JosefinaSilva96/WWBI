@@ -58,7 +58,8 @@ glimpse(data_table_gdp)
 
 #Set data path 
 
-data_path <- "C:/WBG/GitHub/WWBI/Data"
+# Construct a dynamic path to find the file
+data_path <- file.path(getwd(), "Data", "data_wwbi.dta")
 
 #Load indicators data set 
 
