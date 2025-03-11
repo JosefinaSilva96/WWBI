@@ -28,12 +28,15 @@ library(RColorBrewer) # color palettes
 # this is the second root of the project, the first root is the code whose directory 
 # is already being handled by the rstudio project.
 
-data_path <- "C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/Data/Intermediate"
+data_path <- "C:/WBG/GitHub/WWBI"
 
 
 
-#Run the scripts 
+# Run the R scripts ----
 
+source("Code/01-processing-data.R")
+
+source("Code/02-shiny-dashboard.R")
 
 
 
