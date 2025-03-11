@@ -116,13 +116,6 @@ setnames(data_wwbi, "income_group", "income_level")
 data_wwbi <- data_wwbi[!grepl("^P-Value:", data_wwbi$indicator_name), ]
 
 
-# Save the project data 
-
-datapathshiny <- "C:/WBG/GitHub/WWBI/ShinyApp"
-
-write_dta(data_wwbi, file.path(datapathshiny, "/data_wwbi.dta"))
-
-
 #Load gdp data base 
 
 data_gdp <- read_dta(file.path(data_path, "data_gdp.dta"))

@@ -1,11 +1,11 @@
 {
     "id": "E723F6EC",
-    "path": null,
-    "project_path": null,
+    "path": "C:/WBG/GitHub/WWBI/Code/0.5-pre-processing-data.R",
+    "project_path": "Code/0.5-pre-processing-data.R",
     "type": "r_source",
-    "hash": "0",
+    "hash": "685834065",
     "contents": "",
-    "dirty": true,
+    "dirty": false,
     "created": 1741637594164.0,
     "source_on_save": false,
     "relative_order": 5,
@@ -17,11 +17,11 @@
         "scrollLine": "4"
     },
     "folds": "",
-    "lastKnownWriteTime": 2393411505240,
-    "encoding": "",
+    "lastKnownWriteTime": 1741695808,
+    "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1741637596024,
+    "last_content_update": 1741695808542,
     "read_only": false,
     "read_only_alternatives": []
 }
