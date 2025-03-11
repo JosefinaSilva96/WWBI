@@ -11,16 +11,13 @@ library(labelled)
 library(readxl)
 library(data.table)
 library(lubridate)
+library(scales)
 
 ### Loading data ----
 
 # Load the data sets
 
-# Define the correct data path using `here()`
-data_file <- here("Data", "data_wwbi.dta")
-
-# Debugging: Print path before loading
-print(data_file)
+data_path <- "C:/WBG/GitHub/WWBI"
 
 # Load the data correctly
 data_wwbi <- read_dta(file.path(data_path, "Data", "data_wwbi.dta"))
@@ -113,7 +110,7 @@ data_wwbi <- data_wwbi[!grepl("^P-Value:", data_wwbi$indicator_name), ]
 
 #Load gdp data base 
 
-data_gdp <- read_dta(file.path(data_path, "data_gdp.dta"))
+data_gdp <- read_dta(file.path(data_path, "Data/data_gdp.dta"))
 
 # Load world spatial data
 
@@ -128,7 +125,7 @@ colnames(world_spdf)[colnames(world_spdf) == "name"] <- "country_name"
 
 # Save the spatial dataset in the Shiny folder
 
-st_write(world_spdf, file.path(datapath, "Data/world_spatial.gpkg"))
+st_write(world_spdf, file.path(data_path, "Data/world_spatial.gpkg"), , delete_layer = TRUE)
 
 #Countries 
 
@@ -209,21 +206,11 @@ selected_data_long <- selected_data_long %>%
 
 #Save data set
 
-write_dta(selected_data_long, file.path(datapathshiny, "/selected_data_long.dta"))
-
-
-# Reshape the data using pivot_longer gdp data base 
-
-data_gdp <- data_gdp %>%
-  pivot_longer(cols = starts_with("year_"), 
-               names_to = "year", 
-               values_to = "value") %>%
-  mutate(year = as.numeric(gsub("year_", "", year))) %>%  # Clean the 'year' column
-  filter(!is.na(value))  # Remove rows with NA values
+write_dta(selected_data_long, file.path(data_path, "Data/selected_data_long.dta"))
 
 #Save data set
 
-write_dta(data_gdp, file.path(datapath, "Data/data_gdp.dta"))
+write_dta(data_gdp, file.path(data_path, "Data/data_gdp.dta"))
 
 
 # View the reshaped data
@@ -273,7 +260,7 @@ data_wwbi_long <- data_wwbi_long %>% filter(!is.na(country_name))
 
 #Save data set
 
-write_dta(data_wwbi_long, file.path(datapath, "Data/data_wwbi_long.dta"))
+write_dta(data_wwbi_long, file.path(data_path, "Data/data_wwbi_long.dta"))
 
 
 
@@ -283,7 +270,7 @@ wage_bill_publicexp <- data_wwbi_long[data_wwbi_long$indicator_name == "Wage bil
 
 #Save data set
 
-write_dta(wage_bill_publicexp, file.path(datapath, "Data/wage_bill_publicexp.dta"))
+write_dta(wage_bill_publicexp, file.path(data_path, "Data/wage_bill_publicexp.dta"))
 
 
 
@@ -293,7 +280,7 @@ wage_bill_gdp <- data_wwbi_long[data_wwbi_long$indicator_name == "Wage bill as a
 
 #Save data set
 
-write_dta(wage_bill_gdp, file.path(datapath, "Data/wage_bill_gdp.dta"))
+write_dta(wage_bill_gdp, file.path(data_path, "Data/wage_bill_gdp.dta"))
 
 
 
@@ -323,8 +310,11 @@ public_sector_emp_temp <- public_sector_emp_temp %>%
 
 #Save data set
 
-write_dta(public_sector_emp_temp, file.path(datapath, "Data/public_sector_emp_temp.dta"))
+write_dta(public_sector_emp_temp, file.path(data_path, "Data/public_sector_emp_temp.dta"))
 
+
+public_sector_emp <- public_sector_emp %>%
+  mutate(value_percentage = value * 100)
 
 
 public_sector_emp <- public_sector_emp %>%
@@ -338,12 +328,9 @@ public_sector_emp <- public_sector_emp %>%
 
 
 
-public_sector_emp <- public_sector_emp %>%
-  mutate(value_percentage = value * 100)
-
 #Save data set
 
-write_dta(public_sector_emp, file.path(datapath, "Data/public_sector_emp.dta"))
+write_dta(public_sector_emp, file.path(data_path, "Data/public_sector_emp.dta"))
 
 
 
@@ -360,7 +347,7 @@ public_sector_emp_temp_last <- public_sector_emp_temp_last %>%
 
 #Save data set
 
-write_dta(public_sector_emp_temp_last, file.path(datapath, "Data/public_sector_emp_temp_last.dta"))
+write_dta(public_sector_emp_temp_last, file.path(data_path, "Data/public_sector_emp_temp_last.dta"))
 
 
 
@@ -423,7 +410,7 @@ public_sector_workforce <- public_sector_workforce %>%
 
 #Save data set
 
-write_dta(public_sector_workforce, file.path(datapath, "Data/public_sector_workforce.dta"))
+write_dta(public_sector_workforce, file.path(data_path, "Data/public_sector_workforce.dta"))
 
 
 
@@ -452,7 +439,7 @@ public_sector_workforce_first_last <- public_sector_workforce_first_last %>%
 
 #Save data set
 
-write_dta(public_sector_workforce_first_last, file.path(datapath, "Data/public_sector_workforce_first_last.dta"))
+write_dta(public_sector_workforce_first_last, file.path(data_path, "Data/public_sector_workforce_first_last.dta"))
 
 
 
@@ -478,7 +465,7 @@ gender_workforce <- gender_workforce %>%
 
 #Save data set
 
-write_dta(gender_workforce, file.path(datapath, "Data/gender_workforce.dta"))
+write_dta(gender_workforce, file.path(data_path, "Data/gender_workforce.dta"))
 
 
 
@@ -490,7 +477,7 @@ gdp_2015 <- data_gdp %>%
 
 #Save data set
 
-write_dta(gdp_2015, file.path(datapath, "Data/gdp_2015.dta"))
+write_dta(gdp_2015, file.path(data_path, "Data/gdp_2015.dta"))
 
 
 
@@ -501,7 +488,7 @@ data_indicator_wb <- wage_bill_publicexp %>%
 
 #Save data set
 
-write_dta(data_indicator_wb, file.path(datapath, "Data/data_indicator_wb.dta"))
+write_dta(data_indicator_wb, file.path(data_path, "Data/data_indicator_wb.dta"))
 
 
 
@@ -512,7 +499,7 @@ gdp_2015 <- gdp_2015 %>%
 
 #Save data set
 
-write_dta(gdp_2015, file.path(datapath, "Data/gdp_2015.dta"))
+write_dta(gdp_2015, file.path(data_path, "Data/gdp_2015.dta"))
 
 
 
@@ -539,7 +526,7 @@ merged_data <- merged_data %>%
 
 #Save data set
 
-write_dta(merged_data, file.path(datapath, "Data/merged_data.dta"))
+write_dta(merged_data, file.path(data_path, "Data/merged_data.dta"))
 
 
 
@@ -570,7 +557,7 @@ tertiary_education <- tertiary_education %>%
 
 #Save data set
 
-write_dta(tertiary_education, file.path(datapath, "Data/tertiary_education.dta"))
+write_dta(tertiary_education, file.path(data_path, "Data/tertiary_education.dta"))
 
 
 
@@ -593,7 +580,7 @@ public_wage_premium <- public_wage_premium %>%
 
 #Save data set
 
-write_dta(public_wage_premium, file.path(datapath, "Data/public_wage_premium.dta"))
+write_dta(public_wage_premium, file.path(data_path, "Data/public_wage_premium.dta"))
 
 
 #Public sector wage premium by education level (compared to private formal workers)
@@ -632,50 +619,46 @@ public_wage_premium_educ <- public_wage_premium_educ %>%
 
 #Save data set
 
-write_dta(public_wage_premium_educ, file.path(datapath, "Data/public_wage_premium_educ.dta"))
+write_dta(public_wage_premium_educ, file.path(data_path, "Data/public_wage_premium_educ.dta"))
 
 
 
-#Gender Wage premium                                                                                                                                                                                                                                                                   
+# Filter the data for the specific indicator
+gender_wage_premium <- data_wwbi_long %>%
+  filter(indicator_name %in% c(
+    "Public sector wage premium, by gender: Female (compared to all private employees)", 
+    "Public sector wage premium, by gender: Male (compared to all private employees)"
+  )) %>%
+  mutate(value = as.numeric(value))  # Ensure `value` is numeric before calculations
 
-# Filter the data for the specific indicator "Public sector wage premium, by gender: Female (compared to all private employees) and
-# Public sector wage premium, by gender: Male (compared to all private employees)"
-
-gender_wage_premium <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Public sector wage premium, by gender: Female (compared to all private employees)", 
-                                                                           "Public sector wage premium, by gender: Male (compared to all private employees)"), ]
-
+# Process gender wage premium data
 gender_wage_premium <- gender_wage_premium %>%
-  select(year, indicator_name, value, country_name,wb_region) %>%
-  mutate(indicator_name = factor(indicator_name)) %>%
-  # Modify indicator labels for shorter text
-  mutate(indicator_label = recode(indicator_name, 
-                                  "Public sector wage premium, by gender: Female (compared to all private employees)" = "Female", 
-                                  "Public sector wage premium, by gender: Male (compared to all private employees)" = "Male"))
+  select(year, indicator_name, value, country_name, wb_region) %>%
+  mutate(
+    indicator_name = factor(indicator_name),
+    indicator_label = recode(indicator_name, 
+                             "Public sector wage premium, by gender: Female (compared to all private employees)" = "Female", 
+                             "Public sector wage premium, by gender: Male (compared to all private employees)" = "Male"
+    ),
+    value_percentage = value * 100  # Convert to percentage
+  )
 
-gender_wage_premium <- gender_wage_premium %>%
-  mutate(value_percentage = value * 100)
-
-#Save data set
-
-write_dta(gender_wage_premium, file.path(datapath, "Data/gender_wage_premium.dta"))
-
-
+# Save data set
+write_dta(gender_wage_premium, file.path(data_path, "Data", "gender_wage_premium.dta"))
 
 # Keep the last year available for each country
-
 gender_wage_premium_last <- gender_wage_premium %>%
-  filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
-  group_by(country_name, indicator_label, wb_region) %>%                      # Group by country_name (or any other variable)
-  filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
-  ungroup()                                      # Ungroup the data
+  filter(!is.na(value)) %>%
+  group_by(country_name, indicator_label, wb_region) %>%
+  filter(year == max(year[!is.na(value)])) %>%
+  ungroup()
 
+# Convert value to percentage after ensuring numeric conversion
 gender_wage_premium_last <- gender_wage_premium_last %>%
   mutate(value_percentage = value * 100)
 
-#Save data set
-
-write_dta(gender_wage_premium_last, file.path(datapath, "Data/gender_wage_premium_last.dta"))
-
+# Save processed dataset
+write_dta(gender_wage_premium_last, file.path(data_path, "Data", "gender_wage_premium_last.dta"))
 
 #Public Sector Employment
 
@@ -700,114 +683,139 @@ public_sector_emp_temp_last <- public_sector_emp_temp_last %>%
     "Public sector employment, as a share of total employment" = "as a share of total employment"
   ))
 
+public_sector_emp_temp <- public_sector_emp_temp %>%
+  mutate(value_percentage = value * 100)
+
+public_sector_emp_temp_last <- public_sector_emp_temp_last %>%
+  mutate(value_percentage = value * 100)
+
 #Save data sets
 
-write_dta(public_sector_emp_temp, file.path(datapath, "Data/public_sector_emp_temp.dta"))
-write_dta(public_sector_emp_temp_last, file.path(datapath, "Data/public_sector_emp_temp_last.dta"))
+write_dta(public_sector_emp_temp, file.path(data_path, "Data/public_sector_emp_temp.dta"))
+write_dta(public_sector_emp_temp_last, file.path(data_path, "Data/public_sector_emp_temp_last.dta"))
 
 
-#Female Leadership 
+library(dplyr)
+library(haven)
 
-gender_leadership <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Females, as a share of public paid employees by occupational group: Managers", 
-                                                                         "Females, as a share of public paid employees by occupational group: Clerks", 
-                                                                         "Females, as a share of private paid employees by occupational group: Managers", 
-                                                                         "Females, as a share of private paid employees by occupational group: Clerks" ), ]
+# Filter the relevant indicators
+gender_leadership <- data_wwbi_long %>%
+  filter(indicator_name %in% c(
+    "Females, as a share of public paid employees by occupational group: Managers",
+    "Females, as a share of public paid employees by occupational group: Clerks",
+    "Females, as a share of private paid employees by occupational group: Managers",
+    "Females, as a share of private paid employees by occupational group: Clerks"
+  )) 
 
+# Process gender leadership data
 gender_leadership <- gender_leadership %>%
-  select(year, indicator_name, value, country_name,wb_region) %>%
-  mutate(indicator_name = factor(indicator_name)) %>%
-  # Modify indicator labels for shorter text
-  mutate(indicator_label = recode(indicator_name, 
-                                  "Females, as a share of public paid employees by occupational group: Managers" = "Managers-Public", 
-                                  "Females, as a share of public paid employees by occupational group: Clerks" = "Clerks-Public", 
-                                  "Females, as a share of private paid employees by occupational group: Managers" = "Managers-Private",
-                                  "Females, as a share of private paid employees by occupational group: Clerks" = "Clerks-Private"))
-
+  select(year, indicator_name, value, country_name, wb_region) %>%
+  mutate(
+    indicator_name = factor(indicator_name),  # Convert to factor
+    value = as.numeric(value),  # Ensure `value` is numeric
+    indicator_label = recode(indicator_name, 
+                             "Females, as a share of public paid employees by occupational group: Managers" = "Managers-Public", 
+                             "Females, as a share of public paid employees by occupational group: Clerks" = "Clerks-Public", 
+                             "Females, as a share of private paid employees by occupational group: Managers" = "Managers-Private",
+                             "Females, as a share of private paid employees by occupational group: Clerks" = "Clerks-Private"
+    )
+  ) 
 
 # Keep the last year available for each country
+gender_leadership <- gender_leadership %>%
+  filter(!is.na(value)) %>%   # Remove NA values
+  group_by(country_name, indicator_label, wb_region) %>%
+  filter(year == max(year[!is.na(value)])) %>%   # Get the last available year
+  ungroup()
+
+# Convert value to percentage
+gender_leadership <- gender_leadership %>%
+  mutate(value_percentage = value * 100)  
 
 gender_leadership <- gender_leadership %>%
-  filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
-  group_by(country_name, indicator_label, wb_region) %>%                      # Group by country_name (or any other variable)
-  filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
-  ungroup()                                      # Ungroup the data
+  mutate(
+    value_percentage = as.numeric(value_percentage),  # Convert haven-labelled to numeric
+    value_rescaled = rescale(value_percentage, to = c(0, 1))  # Apply rescale safely
+  )
 
-
-
-gender_leadership <- gender_leadership %>%
-  mutate(value_percentage = value * 100)
 
 #Save data set
 
-write_dta(gender_leadership, file.path(datapath, "Data/gender_leadership.dta"))
+write_dta(gender_leadership, file.path(data_path, "Data/gender_leadership.dta"))
 
 
-#Gender Wage premium in the public sector, by industry 
+# Filter the relevant indicators
+gender_wage_premiumpublic <- data_wwbi_long %>%
+  filter(indicator_name %in% c(
+    "Gender wage premium in the public sector, by industry: Public Administration (compared to male paid employees)", 
+    "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)", 
+    "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)"
+  )) %>%
+  mutate(value = as.numeric(value))  # Convert to numeric before calculations
 
-gender_wage_premiumpublic <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Gender wage premium in the public sector, by industry: Public Administration (compared to male paid employees)", 
-                                                                                 "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)", 
-                                                                                 "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)"), ]
-
+# Convert value to percentage
 gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
   mutate(value_percentage = value * 100)
 
+# Calculate "Other" as 100 minus the sum of specified indicators
 gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
   group_by(country_name, year, wb_region) %>%
   mutate(
-    # Calculate the value for 'Other' as 100 minus the sum of specific indicators
     other_value = 100 - sum(value_percentage[indicator_name %in% c(
-      "Gender wage premium in the public sector, by industry: Core Public Administration (compared to male paid employees)",
+      "Gender wage premium in the public sector, by industry: Public Administration (compared to male paid employees)",
       "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)",
       "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)"
     )], na.rm = TRUE)
   ) %>%
   ungroup()
 
-
+# Add "Other" category
 gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
   bind_rows(
     gender_wage_premiumpublic %>%
-      # Filter rows for the specified indicators
       filter(indicator_name %in% c(
-        "Gender wage premium in the public sector, by industry: Core Public Administration (compared to male paid employees)",
+        "Gender wage premium in the public sector, by industry: Public Administration (compared to male paid employees)",
         "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)",
         "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)"
       )) %>%
       group_by(country_name, year, wb_region) %>%
       summarize(
         indicator_name = "Other",  # Set the indicator name to "Other"
-        value_percentage = first(other_value),  # Replace the value with the calculated 'other_value'
-        .groups = "drop"  # Drop the grouping after summarizing
+        value_percentage = first(other_value),  # Replace the value with 'other_value'
+        .groups = "drop"
       ) %>%
       ungroup()
   )
 
+# Modify indicator labels for shorter text
+gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
+  select(year, indicator_name, value, country_name, wb_region, value_percentage) %>%
+  mutate(
+    indicator_name = factor(indicator_name),
+    indicator_label = recode(indicator_name, 
+                             "Gender wage premium in the public sector, by industry: Public Administration (compared to male paid employees)" = "Public Administration", 
+                             "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)" = "Education", 
+                             "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)" = "Health"
+    )
+  )
+
+# Keep the last available year for each country
+gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
+  filter(!is.na(value)) %>%
+  group_by(country_name, indicator_label, wb_region) %>%
+  filter(year == max(year[!is.na(value)])) %>%
+  ungroup()
 
 gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
-  select(year, indicator_name, value, country_name,wb_region,value_percentage) %>%
-  mutate(indicator_name = factor(indicator_name)) %>%
-  # Modify indicator labels for shorter text
-  mutate(indicator_label = recode(indicator_name, 
-                                  "Gender wage premium in the public sector, by industry: Public Administration (compared to male paid employees)" = "Public Administration", 
-                                  "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)" = "Education", 
-                                  "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)" = "Health"))
-
-
-# Keep the last year available for each country
-
-gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
-  filter(!is.na(value)) %>%                      # Keep rows where `value` is not NA
-  group_by(country_name, indicator_label, wb_region) %>%                      # Group by country_name (or any other variable)
-  filter(year == max(year[!is.na(value)])) %>%   # Get the last available year for each country
-  ungroup()                                      # Ungroup the data
-
-
-
+  mutate(
+    value_percentage = as.numeric(value_percentage),  # Convert haven-labelled to numeric
+    value_rescaled = rescale(value_percentage, to = c(0, 1))  # Apply rescale safely
+  )
 
 
 #Save data set
 
-write_dta(gender_wage_premiumpublic, file.path(datapath, "Data/gender_wage_premiumpublic.dta"))
+write_dta(gender_wage_premiumpublic, file.path(data_path, "Data/gender_wage_premiumpublic.dta"))
 
 
 #end of script

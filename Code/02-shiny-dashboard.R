@@ -36,65 +36,64 @@ library(bslib)
 
 ### Load data sets ----
 
-datapathshiny <- "C:/WBG/GitHub/WWBI/ShinyApp"
 
-data_wwbi     <- read_dta(file.path(datapathshiny, "/data_wwbi.dta"))
-
-
-data_gdp     <- read_dta(file.path(datapathshiny, "/data_gdp.dta"))
-
-gdp_2015     <- read_dta(file.path(datapathshiny, "/gdp_2015.dta"))
+data_wwbi     <- read_dta(file.path(data_path, "Data/data_wwbi.dta"))
 
 
-world_spdf <- st_read(file.path(datapathshiny, "/world_spatial.gpkg"))
+data_gdp     <- read_dta(file.path(data_path, "Data/data_gdp.dta"))
+
+gdp_2015     <- read_dta(file.path(data_path, "Data/gdp_2015.dta"))
 
 
-selected_data_long     <- read_dta(file.path(datapathshiny, "/selected_data_long.dta"))
+world_spdf <- st_read(file.path(data_path, "Data/world_spatial.gpkg"))
 
 
-data_wwbi_long     <- read_dta(file.path(datapathshiny, "/data_wwbi_long.dta"))
+selected_data_long     <- read_dta(file.path(data_path, "Data/selected_data_long.dta"))
 
 
-wage_bill_publicexp     <- read_dta(file.path(datapathshiny, "/wage_bill_publicexp.dta"))
+data_wwbi_long     <- read_dta(file.path(data_path, "Data/data_wwbi_long.dta"))
 
 
-wage_bill_gdp     <- read_dta(file.path(datapathshiny, "/wage_bill_gdp.dta"))
-
-public_sector_emp_temp     <- read_dta(file.path(datapathshiny, "/public_sector_emp_temp.dta"))
-
-public_sector_emp     <- read_dta(file.path(datapathshiny, "/public_sector_emp.dta"))
-
-public_sector_emp_temp_last     <- read_dta(file.path(datapathshiny, "/public_sector_emp_temp_last.dta"))
-
-public_sector_workforce.dta     <- read_dta(file.path(datapathshiny, "/public_sector_workforce.dta"))
-
-public_sector_workforce_first_last     <- read_dta(file.path(datapathshiny, "/public_sector_workforce_first_last.dta"))
-
-gender_workforce     <- read_dta(file.path(datapathshiny, "/gender_workforce.dta"))
+wage_bill_publicexp     <- read_dta(file.path(data_path, "Data/wage_bill_publicexp.dta"))
 
 
-data_indicator_wb     <- read_dta(file.path(datapathshiny, "/data_indicator_wb.dta"))
+wage_bill_gdp     <- read_dta(file.path(data_path, "Data/wage_bill_gdp.dta"))
 
-merged_data     <- read_dta(file.path(datapathshiny, "/merged_data.dta"))
+public_sector_emp_temp     <- read_dta(file.path(data_path, "Data/public_sector_emp_temp.dta"))
 
-tertiary_education     <- read_dta(file.path(datapathshiny, "/tertiary_education.dta"))
+public_sector_emp     <- read_dta(file.path(data_path, "Data/public_sector_emp.dta"))
 
-public_wage_premium     <- read_dta(file.path(datapathshiny, "/public_wage_premium.dta"))
+public_sector_emp_temp_last     <- read_dta(file.path(data_path, "Data/public_sector_emp_temp_last.dta"))
 
-public_wage_premium_educ     <- read_dta(file.path(datapathshiny, "/public_wage_premium_educ.dta"))
+public_sector_workforce     <- read_dta(file.path(data_path, "Data/public_sector_workforce.dta"))
 
-gender_wage_premium     <- read_dta(file.path(datapathshiny, "/gender_wage_premium.dta"))
+public_sector_workforce_first_last     <- read_dta(file.path(data_path, "Data/public_sector_workforce_first_last.dta"))
 
-gender_wage_premium_last     <- read_dta(file.path(datapathshiny, "/gender_wage_premium_last.dta"))
-
-public_sector_emp_temp     <- read_dta(file.path(datapathshiny, "/public_sector_emp_temp.dta"))
+gender_workforce     <- read_dta(file.path(data_path, "Data/gender_workforce.dta"))
 
 
-public_sector_emp_temp_last     <- read_dta(file.path(datapathshiny, "/public_sector_emp_temp_last.dta"))
+data_indicator_wb     <- read_dta(file.path(data_path, "Data/data_indicator_wb.dta"))
 
-gender_leadership     <- read_dta(file.path(datapathshiny, "gender_leadership.dta"))
+merged_data     <- read_dta(file.path(data_path, "Data/merged_data.dta"))
 
-gender_wage_premiumpublic     <- read_dta(file.path(datapathshiny, "gender_wage_premiumpublic.dta"))
+tertiary_education     <- read_dta(file.path(data_path, "Data/tertiary_education.dta"))
+
+public_wage_premium     <- read_dta(file.path(data_path, "Data/public_wage_premium.dta"))
+
+public_wage_premium_educ     <- read_dta(file.path(data_path, "Data/public_wage_premium_educ.dta"))
+
+gender_wage_premium     <- read_dta(file.path(data_path, "Data/gender_wage_premium.dta"))
+
+gender_wage_premium_last     <- read_dta(file.path(data_path, "Data/gender_wage_premium_last.dta"))
+
+public_sector_emp_temp     <- read_dta(file.path(data_path, "Data/public_sector_emp_temp.dta"))
+
+
+public_sector_emp_temp_last     <- read_dta(file.path(data_path, "Data/public_sector_emp_temp_last.dta"))
+
+gender_leadership     <- read_dta(file.path(data_path, "Data/gender_leadership.dta"))
+
+gender_wage_premiumpublic     <- read_dta(file.path(data_path, "Data/gender_wage_premiumpublic.dta"))
 
 
 
