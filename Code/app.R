@@ -28,15 +28,12 @@ library(RColorBrewer) # color palettes
 # this is the second root of the project, the first root is the code whose directory 
 # is already being handled by the rstudio project.
 
-data_path <- "C:/WBG/GitHub/WWBI"
+# Define the base path dynamically (GitHub version)
+data_path <- getwd()  # Automatically detects the working directory
 
-
-
-# Run the R scripts ----
-
-source("Code/01-processing-data.R")
-
-source("Code/02-shiny-dashboard.R")
+# Run the R scripts using relative paths
+source(file.path(data_path, "Code", "01-processing-data.R"))
+source(file.path(data_path, "Code", "02-shiny-dashboard.R"))
 
 
 
