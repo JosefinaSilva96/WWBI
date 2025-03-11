@@ -21,11 +21,6 @@ data_wwbi      <- read_dta(file.path(data_path, "/Data/data_wwbi.dta"))
 
 
 
-
-#data <- read_excel("Data/Worldwide Bureaucracy Indicators (WWBI) Version 3.1.xlsx", 
-                   #sheet = "Data") #61004 obs
-
-
 #Load GDP pc IMF for countries
 
 gdp_pc      <- read_dta(file.path(data_path, "/Data/data_gdp.dta"))
@@ -92,7 +87,7 @@ data_wwbi[is.na(wb_region) & country_name == "Micronesia", wb_region := "East As
 
 wb_metadata <- wb_cachelist$countries[, c("iso3c", "income_level")]
 
-# Ensure your dataset has ISO3 country codes
+# Ensure your data set has ISO3 country codes
 
 data_wwbi[, iso3c := countrycode(country_name, origin = "country.name", destination = "iso3c")]
 
