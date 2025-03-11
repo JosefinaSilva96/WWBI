@@ -2,33 +2,27 @@
 
 ### Libraries
 
-library(haven)
-library(dplyr)
-library(tidyr)
-library(stringr)
-library(labelled)
-library(data.table)
-library(ggplot2)
-library(shiny)
-library(shinythemes)
-library(DT)
-library(maps)
-library(mapdata)
-library(leaflet)
-library(rnaturalearth)
-library(sf)
-library(plotly)
-library(officer)
-library(flextable)
-library(viridis)
-library(here)
-library(glue)
-library(colourpicker)
-library(wbstats)
-library(htmlwidgets)
-library(bs4Dash)
-library(countrycode)
-library(bslib)
+# List of required packages
+packages <- c(
+  "haven", "dplyr", "tidyr", "stringr", "labelled", "data.table",
+  "ggplot2", "shiny", "shinythemes", "DT", "maps", "mapdata",
+  "leaflet", "rnaturalearth", "sf", "plotly", "officer", "flextable",
+  "viridis", "here", "glue", "colourpicker", "wbstats", "htmlwidgets",
+  "bs4Dash", "countrycode", "bslib"
+)
+
+# Function to check and install missing packages
+install_if_missing <- function(pkg) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    install.packages(pkg, dependencies = TRUE)
+  }
+}
+
+# Install missing packages
+sapply(packages, install_if_missing)
+
+# Load all libraries
+lapply(packages, library, character.only = TRUE)
 
 
 
