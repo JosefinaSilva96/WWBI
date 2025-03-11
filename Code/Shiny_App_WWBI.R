@@ -7,4 +7,4 @@ if (!requireNamespace("shiny", quietly = TRUE)) install.packages("shiny")
 library(shiny)
 
 # Run the app directly from GitHub
-runGitHub("WWBI", "JosefinaSilva96", subdir = "ShinyApp")
+runGitHub("WWBI", "JosefinaSilva96", subdir = "Code")

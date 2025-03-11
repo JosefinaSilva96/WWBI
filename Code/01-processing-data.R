@@ -223,7 +223,7 @@ data_gdp <- data_gdp %>%
 
 #Save data set
 
-write_dta(data_gdp, file.path(datapathshiny, "/data_gdp.dta"))
+write_dta(data_gdp, file.path(datapath, "Data/data_gdp.dta"))
 
 
 # View the reshaped data
@@ -273,7 +273,7 @@ data_wwbi_long <- data_wwbi_long %>% filter(!is.na(country_name))
 
 #Save data set
 
-write_dta(data_wwbi_long, file.path(datapathshiny, "/data_wwbi_long.dta"))
+write_dta(data_wwbi_long, file.path(datapath, "Data/data_wwbi_long.dta"))
 
 
 
@@ -283,7 +283,7 @@ wage_bill_publicexp <- data_wwbi_long[data_wwbi_long$indicator_name == "Wage bil
 
 #Save data set
 
-write_dta(wage_bill_publicexp, file.path(datapathshiny, "/wage_bill_publicexp.dta"))
+write_dta(wage_bill_publicexp, file.path(datapath, "Data/wage_bill_publicexp.dta"))
 
 
 
@@ -293,7 +293,7 @@ wage_bill_gdp <- data_wwbi_long[data_wwbi_long$indicator_name == "Wage bill as a
 
 #Save data set
 
-write_dta(wage_bill_gdp, file.path(datapathshiny, "/wage_bill_gdp.dta"))
+write_dta(wage_bill_gdp, file.path(datapath, "Data/wage_bill_gdp.dta"))
 
 
 
@@ -323,7 +323,7 @@ public_sector_emp_temp <- public_sector_emp_temp %>%
 
 #Save data set
 
-write_dta(public_sector_emp_temp, file.path(datapathshiny, "/public_sector_emp_temp.dta"))
+write_dta(public_sector_emp_temp, file.path(datapath, "Data/public_sector_emp_temp.dta"))
 
 
 
@@ -343,7 +343,7 @@ public_sector_emp <- public_sector_emp %>%
 
 #Save data set
 
-write_dta(public_sector_emp, file.path(datapathshiny, "/public_sector_emp.dta"))
+write_dta(public_sector_emp, file.path(datapath, "Data/public_sector_emp.dta"))
 
 
 
@@ -360,7 +360,7 @@ public_sector_emp_temp_last <- public_sector_emp_temp_last %>%
 
 #Save data set
 
-write_dta(public_sector_emp_temp_last, file.path(datapathshiny, "/public_sector_emp_temp_last.dta"))
+write_dta(public_sector_emp_temp_last, file.path(datapath, "Data/public_sector_emp_temp_last.dta"))
 
 
 
@@ -423,7 +423,7 @@ public_sector_workforce <- public_sector_workforce %>%
 
 #Save data set
 
-write_dta(public_sector_workforce, file.path(datapathshiny, "/public_sector_workforce.dta"))
+write_dta(public_sector_workforce, file.path(datapath, "Data/public_sector_workforce.dta"))
 
 
 
@@ -452,7 +452,7 @@ public_sector_workforce_first_last <- public_sector_workforce_first_last %>%
 
 #Save data set
 
-write_dta(public_sector_workforce_first_last, file.path(datapathshiny, "/public_sector_workforce_first_last.dta"))
+write_dta(public_sector_workforce_first_last, file.path(datapath, "Data/public_sector_workforce_first_last.dta"))
 
 
 
@@ -478,7 +478,7 @@ gender_workforce <- gender_workforce %>%
 
 #Save data set
 
-write_dta(gender_workforce, file.path(datapathshiny, "/gender_workforce.dta"))
+write_dta(gender_workforce, file.path(datapath, "Data/gender_workforce.dta"))
 
 
 
@@ -490,7 +490,7 @@ gdp_2015 <- data_gdp %>%
 
 #Save data set
 
-write_dta(gdp_2015, file.path(datapathshiny, "/gdp_2015.dta"))
+write_dta(gdp_2015, file.path(datapath, "Data/gdp_2015.dta"))
 
 
 
@@ -501,7 +501,7 @@ data_indicator_wb <- wage_bill_publicexp %>%
 
 #Save data set
 
-write_dta(data_indicator_wb, file.path(datapathshiny, "/data_indicator_wb.dta"))
+write_dta(data_indicator_wb, file.path(datapath, "Data/data_indicator_wb.dta"))
 
 
 
@@ -512,7 +512,7 @@ gdp_2015 <- gdp_2015 %>%
 
 #Save data set
 
-write_dta(gdp_2015, file.path(datapathshiny, "/gdp_2015.dta"))
+write_dta(gdp_2015, file.path(datapath, "Data/gdp_2015.dta"))
 
 
 
@@ -539,7 +539,7 @@ merged_data <- merged_data %>%
 
 #Save data set
 
-write_dta(merged_data, file.path(datapathshiny, "/merged_data.dta"))
+write_dta(merged_data, file.path(datapath, "Data/merged_data.dta"))
 
 
 
@@ -570,7 +570,7 @@ tertiary_education <- tertiary_education %>%
 
 #Save data set
 
-write_dta(tertiary_education, file.path(datapathshiny, "/tertiary_education.dta"))
+write_dta(tertiary_education, file.path(datapath, "Data/tertiary_education.dta"))
 
 
 
@@ -593,7 +593,7 @@ public_wage_premium <- public_wage_premium %>%
 
 #Save data set
 
-write_dta(public_wage_premium, file.path(datapathshiny, "/public_wage_premium.dta"))
+write_dta(public_wage_premium, file.path(datapath, "Data/public_wage_premium.dta"))
 
 
 #Public sector wage premium by education level (compared to private formal workers)
@@ -632,7 +632,7 @@ public_wage_premium_educ <- public_wage_premium_educ %>%
 
 #Save data set
 
-write_dta(public_wage_premium_educ, file.path(datapathshiny, "/public_wage_premium_educ.dta"))
+write_dta(public_wage_premium_educ, file.path(datapath, "Data/public_wage_premium_educ.dta"))
 
 
 
@@ -657,7 +657,7 @@ gender_wage_premium <- gender_wage_premium %>%
 
 #Save data set
 
-write_dta(gender_wage_premium, file.path(datapathshiny, "/gender_wage_premium.dta"))
+write_dta(gender_wage_premium, file.path(datapath, "Data/gender_wage_premium.dta"))
 
 
 
@@ -674,7 +674,7 @@ gender_wage_premium_last <- gender_wage_premium_last %>%
 
 #Save data set
 
-write_dta(gender_wage_premium_last, file.path(datapathshiny, "/gender_wage_premium_last.dta"))
+write_dta(gender_wage_premium_last, file.path(datapath, "Data/gender_wage_premium_last.dta"))
 
 
 #Public Sector Employment
@@ -702,8 +702,8 @@ public_sector_emp_temp_last <- public_sector_emp_temp_last %>%
 
 #Save data sets
 
-write_dta(public_sector_emp_temp, file.path(datapathshiny, "/public_sector_emp_temp.dta"))
-write_dta(public_sector_emp_temp_last, file.path(datapathshiny, "/public_sector_emp_temp_last.dta"))
+write_dta(public_sector_emp_temp, file.path(datapath, "Data/public_sector_emp_temp.dta"))
+write_dta(public_sector_emp_temp_last, file.path(datapath, "Data/public_sector_emp_temp_last.dta"))
 
 
 #Female Leadership 
@@ -739,7 +739,7 @@ gender_leadership <- gender_leadership %>%
 
 #Save data set
 
-write_dta(gender_leadership, file.path(datapathshiny, "/gender_leadership.dta"))
+write_dta(gender_leadership, file.path(datapath, "Data/gender_leadership.dta"))
 
 
 #Gender Wage premium in the public sector, by industry 
@@ -807,7 +807,7 @@ gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
 
 #Save data set
 
-write_dta(gender_wage_premiumpublic, file.path(datapathshiny, "/gender_wage_premiumpublic.dta"))
+write_dta(gender_wage_premiumpublic, file.path(datapath, "Data/gender_wage_premiumpublic.dta"))
 
 
 #end of script
