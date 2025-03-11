@@ -16,11 +16,11 @@ library(lubridate)
 
 # Load the data sets
 
-# Ensure the base data path is set correctly
-data_path <- getwd()  # Automatically detects the working directory
+# Define the correct data path using `here()`
+data_file <- here("Data", "data_wwbi.dta")
 
-# Debugging: Print the paths to check correctness
-print(file.path(data_path, "Data", "data_wwbi.dta"))
+# Debugging: Print path before loading
+print(data_file)
 
 # Load the data correctly
 data_wwbi <- read_dta(file.path(data_path, "Data", "data_wwbi.dta"))
