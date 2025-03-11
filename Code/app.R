@@ -32,8 +32,8 @@ library(RColorBrewer) # color palettes
 data_path <- getwd()  # Automatically detects the working directory
 
 # Run the R scripts using relative paths
-source(file.path(data_path, "Code", "01-processing-data.R"))
-source(file.path(data_path, "Code", "02-shiny-dashboard.R"))
+source(file.path(data_path, "01-processing-data.R"))
+source(file.path(data_path, "02-shiny-dashboard.R"))
 
 
 
