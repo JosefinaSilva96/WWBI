@@ -128,7 +128,7 @@ colnames(world_spdf)[colnames(world_spdf) == "name"] <- "country_name"
 
 # Save the spatial dataset in the Shiny folder
 
-st_write(world_spdf, file.path(datapathshiny, "world_spatial.gpkg"))
+st_write(world_spdf, file.path(datapath, "Data/world_spatial.gpkg"))
 
 #Countries 
 
