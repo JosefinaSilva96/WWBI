@@ -8,7 +8,7 @@ packages <- c(
   "ggplot2", "shiny", "shinythemes", "DT", "maps", "mapdata",
   "leaflet", "rnaturalearth", "sf", "plotly", "officer", "flextable",
   "viridis", "here", "glue", "colourpicker", "wbstats", "htmlwidgets",
-  "bs4Dash", "countrycode", "bslib", "here"
+  "bs4Dash", "countrycode", "bslib"
 )
 
 # Function to check and install missing packages
@@ -32,6 +32,16 @@ lapply(packages, library, character.only = TRUE)
 # Load the data sets
 
 data_path <- file.path(getwd()) 
+
+# Automatically detect the correct root folder (without "Code/")
+if (basename(getwd()) == "Code") {
+  data_path <- dirname(getwd())  # Move one level up if inside "Code/"
+} else {
+  data_path <- getwd()  # Use current directory if already correct
+}
+
+# Debugging: Print the detected data path to check correctness
+print(paste("Using data path:", data_path))
 
 
 data_wwbi     <- read_dta(file.path(data_path, "Data/data_wwbi.dta"))

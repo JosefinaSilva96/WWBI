@@ -2,9 +2,12 @@
 
 # Load libraries ---- 
 
+install.packages("here")
+
 library(here)
 
 # Debugging: Print the working directory to check paths
+
 print(getwd())
 
 # Run the scripts correctly
