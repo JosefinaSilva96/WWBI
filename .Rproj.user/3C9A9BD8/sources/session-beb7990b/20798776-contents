@@ -8,7 +8,7 @@ library(here)
 print(getwd())
 
 # Run the scripts correctly
-source(file.path(getwd(), "02-shiny-dashboard.R"))
+source(here("Code", "02-shiny-dashboard.R"))
 
 # Run the app
 shinyApp(ui = ui, server = server)
