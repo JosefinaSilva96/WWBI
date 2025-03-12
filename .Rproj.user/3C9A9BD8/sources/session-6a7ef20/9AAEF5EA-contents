@@ -866,7 +866,7 @@ pay_compression <- pay_compression %>%
 
 # Modify indicator labels for shorter text
 
-gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
+pay_compression <- pay_compression %>%
   select(year, indicator_name, value, country_name, wb_region, value_percentage) %>%
   mutate(
     indicator_name = factor(indicator_name),
@@ -877,11 +877,17 @@ gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
   )
 
 # Keep the last available year for each country
-gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
+
+pay_compression <- pay_compression %>%
   filter(!is.na(value)) %>%
   group_by(country_name, indicator_label, wb_region) %>%
   filter(year == max(year[!is.na(value)])) %>%
   ungroup()
+
+#Save data base 
+
+saveRDS(pay_compression, file.path(data_path, "Data", "pay_compression.rds"))
+
 
 
 #end of script

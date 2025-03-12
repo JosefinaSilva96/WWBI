@@ -110,6 +110,8 @@ gender_leadership <- readRDS(file.path(data_path, "Data", "gender_leadership.rds
 gender_wage_premiumpublic <- readRDS(file.path(data_path, "Data", "gender_wage_premiumpublic.rds"))
 
 
+pay_compression <- readRDS(file.path(data_path, "Data", "pay_compression.rds"))
+
 
 
 
