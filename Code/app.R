@@ -8,6 +8,7 @@ library(here)
 print(getwd())
 
 # Run the scripts correctly
+
 source(here("Code", "02-shiny-dashboard.R"))
 
 # Run the app
