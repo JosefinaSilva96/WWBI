@@ -864,6 +864,24 @@ pay_compression <- data_wwbi_long %>%
 pay_compression <- pay_compression %>%
   mutate(value_percentage = value * 100)
 
+# Modify indicator labels for shorter text
+
+gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
+  select(year, indicator_name, value, country_name, wb_region, value_percentage) %>%
+  mutate(
+    indicator_name = factor(indicator_name),
+    indicator_label = recode(indicator_name, 
+                             "Pay compression ratio in public sector (ratio of 90th/10th percentile earners)" = "Public Sector", 
+                             "Pay compression ratio in private sector (ratio of 90th/10th percentile earners)" = "Private Sector"
+    )
+  )
+
+# Keep the last available year for each country
+gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
+  filter(!is.na(value)) %>%
+  group_by(country_name, indicator_label, wb_region) %>%
+  filter(year == max(year[!is.na(value)])) %>%
+  ungroup()
 
 
 #end of script
