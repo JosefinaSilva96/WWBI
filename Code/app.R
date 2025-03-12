@@ -5,7 +5,7 @@
 library(here)
 
 # Debugging: Print the working directory to check paths
-print(getwd())
+print(getwd("Data"))
 
 # Run the scripts correctly
 
