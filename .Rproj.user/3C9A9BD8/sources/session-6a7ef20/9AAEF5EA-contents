@@ -847,6 +847,23 @@ gender_wage_premiumpublic <- gender_wage_premiumpublic %>%
 
 saveRDS(gender_wage_premiumpublic, file.path(data_path, "Data", "gender_wage_premiumpublic.rds"))
 
+#Pay Compression 
+
+# Filter the relevant indicators
+
+pay_compression <- data_wwbi_long %>%
+  filter(indicator_name %in% c(
+    "Pay compression ratio in public sector (ratio of 90th/10th percentile earners)", 
+    "Pay compression ratio in private sector (ratio of 90th/10th percentile earners)"
+  )) %>%
+  mutate(value = as.numeric(value))  # Convert to numeric before calculations
+
+
+# Convert value to percentage
+
+pay_compression <- pay_compression %>%
+  mutate(value_percentage = value * 100)
+
 
 
 #end of script
