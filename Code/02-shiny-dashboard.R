@@ -31,7 +31,7 @@ lapply(packages, library, character.only = TRUE)
 
 # Load the data sets
 
-data_path <- here() 
+data_path <- file.path(getwd(), "Data") 
 
 
 data_wwbi     <- read_dta(file.path(data_path, "Data/data_wwbi.dta"))
