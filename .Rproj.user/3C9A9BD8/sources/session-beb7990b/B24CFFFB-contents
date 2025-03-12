@@ -8,7 +8,7 @@ packages <- c(
   "ggplot2", "shiny", "shinythemes", "DT", "maps", "mapdata",
   "leaflet", "rnaturalearth", "sf", "plotly", "officer", "flextable",
   "viridis", "here", "glue", "colourpicker", "wbstats", "htmlwidgets",
-  "bs4Dash", "countrycode", "bslib"
+  "bs4Dash", "countrycode", "bslib", "here"
 )
 
 # Function to check and install missing packages
