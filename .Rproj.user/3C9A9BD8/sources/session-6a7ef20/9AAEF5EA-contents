@@ -416,9 +416,9 @@ public_sector_workforce <- public_sector_workforce %>%
     public_sector_workforce %>%
       # Filter rows for the specified indicators
       filter(indicator_name %in% c(
-        "Education workers, as a share of public total employees",
-        "Health workers, as a share of public total employees",
-        "Public Administration workers, as a share of public total employees"
+        "Education workers, as a share of paid total employees",
+        "Health workers, as a share of paid total employees",
+        "Public Administration workers, as a share of paid total employees"
       )) %>%
       group_by(country_name, year, wb_region) %>%
       summarize(
@@ -431,13 +431,13 @@ public_sector_workforce <- public_sector_workforce %>%
 
 
 public_sector_workforce <- public_sector_workforce %>%
-  mutate(indicator_name = ifelse(indicator_name == "Education workers, as a share of public total employees", "Education", indicator_name))
+  mutate(indicator_name = ifelse(indicator_name == "Education workers, as a share of paid total employees", "Education", indicator_name))
 
 public_sector_workforce <- public_sector_workforce %>%
-  mutate(indicator_name = ifelse(indicator_name == "Health workers, as a share of public total employees", "Health", indicator_name))
+  mutate(indicator_name = ifelse(indicator_name == "Health workers, as a share of paid total employees", "Health", indicator_name))
 
 public_sector_workforce <- public_sector_workforce %>%
-  mutate(indicator_name = ifelse(indicator_name == "Public Administration workers, as a share of public total employees", "Public Administration", indicator_name))
+  mutate(indicator_name = ifelse(indicator_name == "Public Administration workers, as a share of paid total employees", "Public Administration", indicator_name))
 
 public_sector_workforce <- public_sector_workforce %>%
   mutate(indicator_name = ifelse(indicator_name == "Publicd Administration", "Public Administration", indicator_name))
@@ -459,13 +459,13 @@ public_sector_workforce_first_last <- public_sector_workforce %>%
 
 
 public_sector_workforce_first_last <- public_sector_workforce_first_last %>%
-  mutate(indicator_name = ifelse(indicator_name == "Education workers, as a share of public total employees", "Education", indicator_name))
+  mutate(indicator_name = ifelse(indicator_name == "Education workers, as a share of public paid employees", "Education", indicator_name))
 
 public_sector_workforce_first_last <- public_sector_workforce_first_last %>%
-  mutate(indicator_name = ifelse(indicator_name == "Health workers, as a share of public total employees", "Health", indicator_name))
+  mutate(indicator_name = ifelse(indicator_name == "Health workers, as a share of public paid employees", "Health", indicator_name))
 
 public_sector_workforce_first_last <- public_sector_workforce_first_last %>%
-  mutate(indicator_name = ifelse(indicator_name == "Public Administration workers, as a share of public total employees", "Public Administration", indicator_name))
+  mutate(indicator_name = ifelse(indicator_name == "Public Administration workers, as a share of paid total employees", "Public Administration", indicator_name))
 
 
 public_sector_workforce_first_last <- public_sector_workforce_first_last %>%
