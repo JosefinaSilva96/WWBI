@@ -767,9 +767,9 @@ server <- function(input, output, session) {
                       choices = unique(pay_compression$country_name), multiple = TRUE)
         ),
         
-        # Scatter Plot Output
+        # Scatter Plot Output (FIX: Use plotlyOutput instead of plotOutput)
         fluidRow(
-          plotOutput("paycompression_plot", height = "600px")
+          plotlyOutput("paycompression_plot", height = "600px")
         ),
         
         # Note/Explanation
@@ -782,7 +782,7 @@ server <- function(input, output, session) {
         
         # Download Button for Report
         fluidRow(
-          downloadButton("downloadPayCompressionReport", "Download Pay Compression Report")
+          downloadButton("downloadPayCompressionDoc", "Download Pay Compression Report")
         )
       )
     } else if(tab == "download_all") {
@@ -830,7 +830,8 @@ server <- function(input, output, session) {
             "Gender Workforce" = "gender_workforce",
             "Female Occupation Groups" = "femaleoccupation",
             "Wage Premium" = "wagepremium",
-            "Gender Wage Premium Report" = "gender_wage_premium"
+            "Gender Wage Premium Report" = "gender_wage_premium", 
+            "Pay Compression Report" = "pay_compression"
           ),
           selected = c("wagebill", "public_employment") # Default selections
         ),
@@ -3714,22 +3715,49 @@ server <- function(input, output, session) {
 #Pay compression 
   
   output$paycompression_plot <- renderPlotly({
-    # Ensure input is selected
-    req(input$countries_first)
+    req(input$selected_countries)  # Ensure input is selected
     
-    # Filter for selected countries
+    # Debugging: Print indicator labels & column names before filtering
+    print("Available indicator labels:")
+    print(unique(pay_compression$indicator_label))
+    print("Column names before filtering:")
+    print(colnames(pay_compression))
+    
+    # Convert indicator_label to character to avoid factor issues
+    pay_compression <- pay_compression %>%
+      mutate(indicator_label = as.character(indicator_label))  # Convert factor to character
+    
+    # Filter for selected countries & ensure correct indicator labels
     filtered_data <- pay_compression %>%
-      filter(country_name %in% input$countries_first) %>%
+      filter(country_name %in% input$selected_countries) %>%
       filter(indicator_label %in% c("Public Sector", "Private Sector")) %>%
       pivot_wider(names_from = indicator_label, values_from = value) %>%
+      mutate(across(c(`Public Sector`, `Private Sector`), as.numeric)) %>%
       drop_na()
     
-    # Ensure that Public and Private sector columns exist
-    if (!("Public Sector" %in% colnames(filtered_data)) || !("Private Sector" %in% colnames(filtered_data))) {
-      return(NULL)  # Avoid errors if columns are missing
+    # Debugging: Check if filtered_data is empty
+    if (nrow(filtered_data) == 0) {
+      print("No data available after filtering!")
+      return(NULL)
     }
     
-    # Fit a linear trend line
+    # Debugging: Check column names after pivot
+    print("Column names after pivot:")
+    print(colnames(filtered_data))
+    
+    # Ensure that Public and Private Sector columns exist
+    if (!("Public Sector" %in% colnames(filtered_data)) || !("Private Sector" %in% colnames(filtered_data))) {
+      print("Missing expected columns after pivoting!")
+      return(NULL)
+    }
+    
+    # Ensure we have enough data points for regression
+    if (sum(!is.na(filtered_data$`Public Sector`)) < 2 || sum(!is.na(filtered_data$`Private Sector`)) < 2) {
+      print("Not enough non-NA values for regression!")
+      return(NULL)
+    }
+    
+    # Fit a linear trend line safely
     trend_model <- lm(`Public Sector` ~ `Private Sector`, data = filtered_data)
     trend_line <- predict(trend_model, newdata = data.frame(`Private Sector` = filtered_data$`Private Sector`))
     
@@ -3751,8 +3779,8 @@ server <- function(input, output, session) {
         name = "Trendline"
       ) %>%
       add_trace(
-        x = c(min(filtered_data$`Private Sector`, na.rm = TRUE), max(filtered_data$`Private Sector`, na.rm = TRUE)),
-        y = c(min(filtered_data$`Private Sector`, na.rm = TRUE), max(filtered_data$`Private Sector`, na.rm = TRUE)),
+        x = c(min(filtered_data$`Private Sector`, na.rm = TRUE)), 
+        y = c(min(filtered_data$`Private Sector`, na.rm = TRUE)), 
         type = "scatter",
         mode = "lines",
         line = list(color = "gold", width = 2),
