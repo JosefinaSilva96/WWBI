@@ -114,8 +114,6 @@ pay_compression <- readRDS(file.path(data_path, "Data", "pay_compression.rds"))
 
 
 
-
-
 ## Shiny Dashboard ----
 
 # ---------------------------
@@ -3675,6 +3673,119 @@ server <- function(input, output, session) {
     return(doc)
   }
   
+#Pay compression 
+  
+  output$paycompression_plot <- renderPlotly({
+    # Filter and reshape data for plotting
+    filtered_data <- pay_compression %>%
+      filter(country_name %in% input$countries_first) %>%
+      filter(indicator_name %in% c("Pay compression ratio in public sector (ratio of 90th/10th percentile)",
+                                   "Pay compression ratio in private sector (ratio of 90th/10th percentile)")) %>%
+      pivot_wider(names_from = indicator_name, values_from = value) %>%
+      rename(Public_Sector = `Pay compression ratio in public sector (ratio of 90th/10th percentile)`,
+             Private_Sector = `Pay compression ratio in private sector (ratio of 90th/10th percentile)`) %>%
+      drop_na()
+    
+    # Fit a linear trend line
+    trend_model <- lm(Public_Sector ~ Private_Sector, data = filtered_data)
+    trend_line <- predict(trend_model, newdata = data.frame(Private_Sector = filtered_data$Private_Sector))
+    
+    # Generate plot
+    plot_ly(data = filtered_data, 
+            x = ~Private_Sector, 
+            y = ~Public_Sector, 
+            type = 'scatter', 
+            mode = 'markers+text',
+            text = ~country_name,
+            textposition = "top center",
+            marker = list(size = 10, color = "#003366", opacity = 0.7)) %>%
+      add_trace(
+        x = filtered_data$Private_Sector,
+        y = trend_line,
+        type = "scatter",
+        mode = "lines",
+        line = list(color = "gray", dash = "dash"),
+        name = "Trendline"
+      ) %>%
+      add_trace(
+        x = c(min(filtered_data$Private_Sector), max(filtered_data$Private_Sector)),
+        y = c(min(filtered_data$Private_Sector), max(filtered_data$Private_Sector)),
+        type = "scatter",
+        mode = "lines",
+        line = list(color = "gold", width = 2),
+        name = "45-degree line"
+      ) %>%
+      layout(title = "Pay Compression: Public vs. Private Sector",
+             xaxis = list(title = "Private Sector Pay Compression"),
+             yaxis = list(title = "Public Sector Pay Compression"),
+             showlegend = FALSE, 
+             plot_bgcolor = "white",
+             paper_bgcolor = "white")
+  })
+  
+  
+    output$note_dotplot <- renderText({
+      "Note: This graph compares pay compression ratios in the public and private sectors. The 45-degree line represents equal compression in both sectors, while the trendline provides a visual reference for overall patterns across countries."
+    })
+    output$downloadPayCompressionDoc <- downloadHandler(
+      filename = function() { paste0("Pay_Compression_Report_", Sys.Date(), ".docx") },
+      content = function(file) {
+        # Filter data for selected countries and pay compression indicators
+        filtered_data_df <- pay_compression %>%
+          filter(country_name %in% input$countries_first) %>%
+          filter(indicator_name %in% c("Pay compression ratio in public sector (ratio of 90th/10th percentile)",
+                                       "Pay compression ratio in private sector (ratio of 90th/10th percentile)")) %>%
+          pivot_wider(names_from = indicator_name, values_from = value) %>%
+          rename(Public_Sector = `Pay compression ratio in public sector (ratio of 90th/10th percentile)`,
+                 Private_Sector = `Pay compression ratio in private sector (ratio of 90th/10th percentile)`) %>%
+          drop_na()
+        
+        req(nrow(filtered_data_df) > 0) # Ensure there is data before proceeding
+        
+        # Get the first selected country for the report title
+        countries <- if (!is.null(input$countries) & length(input$countries) > 0) input$countries[1] else "Selected Countries"
+        report_title <- paste("Pay Compression Analysis Report -", countries)
+        
+        # Create Word document
+        doc <- read_docx()
+        title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
+        doc <- doc %>% body_add_fpar(fpar(ftext(report_title, prop = title_style)))
+        
+        # Add Introduction
+        doc <- doc %>% body_add_par("Introduction", style = "heading 2") %>% 
+          body_add_par("This report presents an analysis of pay compression ratios in the public and private sectors across selected countries. 
+                    Pay compression is measured as the ratio of wages at the 90th percentile to the 10th percentile, providing insights into 
+                    wage inequality within each sector. The analysis compares these ratios and examines trends across different economies.", 
+                       style = "Normal")
+        
+        # Create scatter plot with trend line
+        plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector, label = country_name)) +
+          geom_point(color = "#003366", size = 3) +
+          geom_text(vjust = -0.5, size = 3) +
+          geom_smooth(method = "lm", color = "gray", linetype = "dashed") + # Trendline
+          geom_abline(slope = 1, intercept = 0, color = "gold", size = 1.2) + # 45-degree reference line
+          labs(title = "Pay Compression: Public vs. Private Sector",
+               x = "Private Sector Pay Compression",
+               y = "Public Sector Pay Compression") +
+          theme_minimal()
+        
+        # Add plot to Word document
+        doc <- doc %>% body_add_gg(value = plot, style = "centered") 
+        
+        # Add explanatory note
+        doc <- doc %>% body_add_par("Note: This graph compares pay compression ratios in the public and private sectors. 
+                                 The 45-degree line represents equal compression in both sectors, while the trendline 
+                                 provides a visual reference for overall patterns across countries.", style = "Normal")
+        
+        # Save document
+        print(doc, target = file)
+      }
+    )
+    
+  #Pay compression section  
+    
+    
+    
   
   generate_conclusion_section <- function(doc) {
     # Add Section Title
