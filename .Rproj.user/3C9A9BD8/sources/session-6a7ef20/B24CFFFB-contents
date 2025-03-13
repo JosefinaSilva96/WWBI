@@ -764,10 +764,12 @@ server <- function(input, output, session) {
         # Country Selection
         fluidRow(
           selectInput("selected_countries", "Select Countries", 
-                      choices = unique(pay_compression$country_name), multiple = TRUE)
+                      choices = unique(pay_compression$country_name), 
+                      multiple = TRUE,
+                      selected = unique(pay_compression$country_name)[1])  # Default country selected
         ),
         
-        # Scatter Plot Output (FIX: Use plotlyOutput instead of plotOutput)
+        # Scatter Plot Output (Fix: Use plotlyOutput instead of plotOutput)
         fluidRow(
           plotlyOutput("paycompression_plot", height = "600px")
         ),
@@ -3717,51 +3719,55 @@ server <- function(input, output, session) {
   output$paycompression_plot <- renderPlotly({
     req(input$selected_countries)  # Ensure input is selected
     
-    # Debugging: Print indicator labels & column names before filtering
-    print("Available indicator labels:")
+    # **Ensure indicator_label is Character (Not Factor)**
+    pay_compression <- pay_compression %>%
+      mutate(indicator_label = as.character(indicator_label),
+             country_name = as.character(country_name))  # Convert country names too
+    
+    # **Debugging: Print Key Information**
+    print("Unique indicator_name values before filtering:")
+    print(unique(pay_compression$indicator_name))
+    print("Unique indicator_label values before filtering:")
     print(unique(pay_compression$indicator_label))
     print("Column names before filtering:")
     print(colnames(pay_compression))
     
-    # Convert indicator_label to character to avoid factor issues
-    pay_compression <- pay_compression %>%
-      mutate(indicator_label = as.character(indicator_label))  # Convert factor to character
-    
-    # Filter for selected countries & ensure correct indicator labels
+    # **Filter for selected countries**
     filtered_data <- pay_compression %>%
       filter(country_name %in% input$selected_countries) %>%
       filter(indicator_label %in% c("Public Sector", "Private Sector")) %>%
       pivot_wider(names_from = indicator_label, values_from = value) %>%
-      mutate(across(c(`Public Sector`, `Private Sector`), as.numeric)) %>%
       drop_na()
     
-    # Debugging: Check if filtered_data is empty
+    # **Debugging: Check if filtering worked**
     if (nrow(filtered_data) == 0) {
-      print("No data available after filtering!")
-      return(NULL)
+      print("🚨 No data available after filtering! Check input selections.")
+      print("Available country_name values:")
+      print(unique(pay_compression$country_name))  # Debug available countries
+      return(NULL)  # Stop execution if no valid data
     }
     
-    # Debugging: Check column names after pivot
+    # **Debugging: Check column names after pivot**
     print("Column names after pivot:")
     print(colnames(filtered_data))
     
-    # Ensure that Public and Private Sector columns exist
+    # **Ensure Public and Private Sector columns exist**
     if (!("Public Sector" %in% colnames(filtered_data)) || !("Private Sector" %in% colnames(filtered_data))) {
-      print("Missing expected columns after pivoting!")
-      return(NULL)
+      print("🚨 Missing expected columns after pivoting!")
+      return(NULL)  # Prevents error if columns are missing
     }
     
-    # Ensure we have enough data points for regression
+    # **Check if we have enough numeric values to run regression**
     if (sum(!is.na(filtered_data$`Public Sector`)) < 2 || sum(!is.na(filtered_data$`Private Sector`)) < 2) {
-      print("Not enough non-NA values for regression!")
-      return(NULL)
+      print("🚨 Not enough non-NA values for regression!")
+      return(NULL)  # Stops execution if insufficient data
     }
     
-    # Fit a linear trend line safely
+    # **Fit a linear trend line safely**
     trend_model <- lm(`Public Sector` ~ `Private Sector`, data = filtered_data)
     trend_line <- predict(trend_model, newdata = data.frame(`Private Sector` = filtered_data$`Private Sector`))
     
-    # Generate plot
+    # **Generate plot**
     plot_ly(data = filtered_data, 
             x = ~`Private Sector`, 
             y = ~`Public Sector`, 
@@ -3793,7 +3799,6 @@ server <- function(input, output, session) {
              plot_bgcolor = "white",
              paper_bgcolor = "white")
   })
-  
   
     output$note_dotplot <- renderText({
       "Note: This graph compares pay compression ratios in the public and private sectors. The 45-degree line represents equal compression in both sectors, while the trendline provides a visual reference for overall patterns across countries."
