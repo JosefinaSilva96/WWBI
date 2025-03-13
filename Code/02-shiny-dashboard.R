@@ -777,7 +777,7 @@ server <- function(input, output, session) {
           div(style = "border: 2px solid white; padding: 10px; 
                   background: linear-gradient(to right, #4A90E2, #D4145A);
                   color: white; font-size: 16px; text-align: center;",
-              textOutput("note_paycompression_plot"))
+              textOutput("note_dotplot"))
         ),
         
         # Download Button for Report
@@ -3714,31 +3714,36 @@ server <- function(input, output, session) {
 #Pay compression 
   
   output$paycompression_plot <- renderPlotly({
-    # Filter and reshape data for plotting
+    # Ensure input is selected
+    req(input$countries_first)
+    
+    # Filter for selected countries
     filtered_data <- pay_compression %>%
       filter(country_name %in% input$countries_first) %>%
-      filter(indicator_name %in% c("Pay compression ratio in public sector (ratio of 90th/10th percentile)",
-                                   "Pay compression ratio in private sector (ratio of 90th/10th percentile)")) %>%
-      pivot_wider(names_from = indicator_name, values_from = value) %>%
-      rename(Public_Sector = `Pay compression ratio in public sector (ratio of 90th/10th percentile)`,
-             Private_Sector = `Pay compression ratio in private sector (ratio of 90th/10th percentile)`) %>%
+      filter(indicator_label %in% c("Public Sector", "Private Sector")) %>%
+      pivot_wider(names_from = indicator_label, values_from = value) %>%
       drop_na()
     
+    # Ensure that Public and Private sector columns exist
+    if (!("Public Sector" %in% colnames(filtered_data)) || !("Private Sector" %in% colnames(filtered_data))) {
+      return(NULL)  # Avoid errors if columns are missing
+    }
+    
     # Fit a linear trend line
-    trend_model <- lm(Public_Sector ~ Private_Sector, data = filtered_data)
-    trend_line <- predict(trend_model, newdata = data.frame(Private_Sector = filtered_data$Private_Sector))
+    trend_model <- lm(`Public Sector` ~ `Private Sector`, data = filtered_data)
+    trend_line <- predict(trend_model, newdata = data.frame(`Private Sector` = filtered_data$`Private Sector`))
     
     # Generate plot
     plot_ly(data = filtered_data, 
-            x = ~Private_Sector, 
-            y = ~Public_Sector, 
+            x = ~`Private Sector`, 
+            y = ~`Public Sector`, 
             type = 'scatter', 
             mode = 'markers+text',
             text = ~country_name,
             textposition = "top center",
             marker = list(size = 10, color = "#003366", opacity = 0.7)) %>%
       add_trace(
-        x = filtered_data$Private_Sector,
+        x = filtered_data$`Private Sector`,
         y = trend_line,
         type = "scatter",
         mode = "lines",
@@ -3746,8 +3751,8 @@ server <- function(input, output, session) {
         name = "Trendline"
       ) %>%
       add_trace(
-        x = c(min(filtered_data$Private_Sector), max(filtered_data$Private_Sector)),
-        y = c(min(filtered_data$Private_Sector), max(filtered_data$Private_Sector)),
+        x = c(min(filtered_data$`Private Sector`, na.rm = TRUE), max(filtered_data$`Private Sector`, na.rm = TRUE)),
+        y = c(min(filtered_data$`Private Sector`, na.rm = TRUE), max(filtered_data$`Private Sector`, na.rm = TRUE)),
         type = "scatter",
         mode = "lines",
         line = list(color = "gold", width = 2),
@@ -3826,14 +3831,11 @@ server <- function(input, output, session) {
       # Filter data for selected countries and relevant indicators
       filtered_data_df <- pay_compression %>%
         filter(country_name %in% selected_countries) %>%
-        filter(indicator_name %in% c("Pay compression ratio in public sector (ratio of 90th/10th percentile)",
-                                     "Pay compression ratio in private sector (ratio of 90th/10th percentile)")) %>%
-        pivot_wider(names_from = indicator_name, values_from = value) %>%
-        rename(Public_Sector = `Pay compression ratio in public sector (ratio of 90th/10th percentile)`,
-               Private_Sector = `Pay compression ratio in private sector (ratio of 90th/10th percentile)`) %>%
+        filter(indicator_label %in% c("Public Sector", "Private Sector")) %>%
+        pivot_wider(names_from = indicator_label, values_from = value) %>%
         drop_na()
       
-      # Ensure the dataset is not empty
+      # Ensure that the dataset is not empty
       if (nrow(filtered_data_df) == 0) {
         doc <- doc %>% body_add_par("No data available for Pay Compression Analysis.", style = "Normal")
         return(doc)
@@ -3846,8 +3848,8 @@ server <- function(input, output, session) {
       country_summary <- filtered_data_df %>%
         group_by(country_name) %>%
         summarise(
-          public_compression = round(mean(Public_Sector, na.rm = TRUE), 1),  
-          private_compression = round(mean(Private_Sector, na.rm = TRUE), 1) 
+          public_compression = round(mean(`Public Sector`, na.rm = TRUE), 1),  
+          private_compression = round(mean(`Private Sector`, na.rm = TRUE), 1) 
         )
       
       # ✅ Find highest and lowest compression rates for both sectors
@@ -3898,7 +3900,7 @@ server <- function(input, output, session) {
         body_add_par("This section analyzes income disparity within the public and private sectors by comparing pay compression ratios.", style = "Normal")
       
       # ✅ Create scatter plot
-      plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector, label = country_name)) +
+      plot <- ggplot(filtered_data_df, aes(x = `Private Sector`, y = `Public Sector`, label = country_name)) +
         geom_point(color = "#003366", size = 3) +
         geom_text(vjust = -0.5, size = 3) +
         geom_smooth(method = "lm", color = "gray", linetype = "dashed") + # Trendline
@@ -3920,6 +3922,7 @@ server <- function(input, output, session) {
       
       return(doc)
     }
+    
     
     
   
