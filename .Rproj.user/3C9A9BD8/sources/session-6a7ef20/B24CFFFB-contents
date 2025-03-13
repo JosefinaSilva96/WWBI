@@ -245,7 +245,8 @@ ui <- bootstrapPage(
       div(class = "nav-section", onclick = "toggleSection('public_sector_wages_section')", "Competitiveness of Public Sector Wages"),
       div(id = "public_sector_wages_section", style = "display: none;",
           div(class = "nav-sub-item", actionLink("nav_wagepremium", "Public Sector Wage Premium")),
-          div(class = "nav-sub-item", actionLink("nav_wagepremium_gender", "Wage Premium Gender Graphs"))
+          div(class = "nav-sub-item", actionLink("nav_wagepremium_gender", "Wage Premium Gender Graphs")), 
+          div(class = "nav-sub-item", actionLink("nav_pay_compression", "Pay Compression Graphs"))
       ),
       
       div(class = "nav-item", actionLink("nav_download_all", "Download All Graphs"))
@@ -284,6 +285,7 @@ server <- function(input, output, session) {
   observeEvent(input$nav_female_leadership, { active_tab("female_leadership") })
   observeEvent(input$nav_wagepremium,       { active_tab("wagepremium") })
   observeEvent(input$nav_gender_wage_premium, { active_tab("gender_wage_premium") })
+  observeEvent(input$nav_pay_compression, { active_tab("pay_compression") })
   observeEvent(input$nav_download_all,      { active_tab("download_all") })
   
   # 2. Render the main dynamic UI based on active_tab
@@ -745,6 +747,42 @@ server <- function(input, output, session) {
         ),
         fluidRow(
           downloadButton("downloadGenderWagePremium", "Download Gender Wage Premium Report")
+        )
+      )
+    } else if(tab == "pay_compression") {
+      tagList(
+        h3("Pay Compression in the Public and Private Sectors"),
+        
+        # Section Description
+        fluidRow(
+          div(style = "border: 2px solid white; padding: 10px; 
+                  background: linear-gradient(to right, #4A90E2, #D4145A);
+                  color: white; font-size: 16px; text-align: center;",
+              "This visualization explores pay compression in the public and private sectors across selected countries.")
+        ),
+        
+        # Country Selection
+        fluidRow(
+          selectInput("selected_countries", "Select Countries", 
+                      choices = unique(pay_compression$country_name), multiple = TRUE)
+        ),
+        
+        # Scatter Plot Output
+        fluidRow(
+          plotOutput("paycompression_plot", height = "600px")
+        ),
+        
+        # Note/Explanation
+        fluidRow(
+          div(style = "border: 2px solid white; padding: 10px; 
+                  background: linear-gradient(to right, #4A90E2, #D4145A);
+                  color: white; font-size: 16px; text-align: center;",
+              textOutput("note_paycompression_plot"))
+        ),
+        
+        # Download Button for Report
+        fluidRow(
+          downloadButton("downloadPayCompressionReport", "Download Pay Compression Report")
         )
       )
     } else if(tab == "download_all") {
@@ -3784,6 +3822,104 @@ server <- function(input, output, session) {
     
   #Pay compression section  
     
+    generate_pay_compression_section <- function(doc, selected_countries) {
+      # Filter data for selected countries and relevant indicators
+      filtered_data_df <- pay_compression %>%
+        filter(country_name %in% selected_countries) %>%
+        filter(indicator_name %in% c("Pay compression ratio in public sector (ratio of 90th/10th percentile)",
+                                     "Pay compression ratio in private sector (ratio of 90th/10th percentile)")) %>%
+        pivot_wider(names_from = indicator_name, values_from = value) %>%
+        rename(Public_Sector = `Pay compression ratio in public sector (ratio of 90th/10th percentile)`,
+               Private_Sector = `Pay compression ratio in private sector (ratio of 90th/10th percentile)`) %>%
+        drop_na()
+      
+      # Ensure the dataset is not empty
+      if (nrow(filtered_data_df) == 0) {
+        doc <- doc %>% body_add_par("No data available for Pay Compression Analysis.", style = "Normal")
+        return(doc)
+      }
+      
+      # ✅ Extract the first selected country
+      first_country <- selected_countries[1]
+      
+      # ✅ Compute summary statistics for all selected countries
+      country_summary <- filtered_data_df %>%
+        group_by(country_name) %>%
+        summarise(
+          public_compression = round(mean(Public_Sector, na.rm = TRUE), 1),  
+          private_compression = round(mean(Private_Sector, na.rm = TRUE), 1) 
+        )
+      
+      # ✅ Find highest and lowest compression rates for both sectors
+      highest_public <- country_summary %>% filter(public_compression == max(public_compression, na.rm = TRUE)) %>% pull(country_name)
+      lowest_public <- country_summary %>% filter(public_compression == min(public_compression, na.rm = TRUE)) %>% pull(country_name)
+      
+      highest_private <- country_summary %>% filter(private_compression == max(private_compression, na.rm = TRUE)) %>% pull(country_name)
+      lowest_private <- country_summary %>% filter(private_compression == min(private_compression, na.rm = TRUE)) %>% pull(country_name)
+      
+      # ✅ Extract values for the first selected country
+      first_country_values <- country_summary %>% filter(country_name == first_country)
+      
+      first_public_compression <- first_country_values %>% pull(public_compression) %>% coalesce(NA)
+      first_private_compression <- first_country_values %>% pull(private_compression) %>% coalesce(NA)
+      
+      # ✅ Compute averages for the remaining selected countries
+      other_countries_avg <- country_summary %>%
+        filter(country_name != first_country) %>%
+        summarise(
+          avg_public_compression = round(mean(public_compression, na.rm = TRUE), 1),
+          avg_private_compression = round(mean(private_compression, na.rm = TRUE), 1)
+        )
+      
+      # ✅ Determine if first country has a high or low compression rate
+      rank_public <- rank(-country_summary$public_compression, ties.method = "min")[country_summary$country_name == first_country]
+      rank_private <- rank(-country_summary$private_compression, ties.method = "min")[country_summary$country_name == first_country]
+      
+      public_position <- ifelse(rank_public == 1, "the highest", ifelse(rank_public == nrow(country_summary), "the lowest", "in the middle range"))
+      private_position <- ifelse(rank_private == 1, "the highest", ifelse(rank_private == nrow(country_summary), "the lowest", "in the middle range"))
+      
+      # ✅ Construct interpretation text with ranking and comparisons
+      interpretation_text <- paste0(
+        "This figure compares pay compression ratios (90th/10th percentile) in the public and private sectors.\n\n",
+        "For ", first_country, ", the pay compression ratio is ", first_public_compression, 
+        " in the public sector and ", first_private_compression, " in the private sector.\n\n",
+        "Among the selected countries, ", highest_public, " has the highest public sector pay compression, while ",
+        lowest_public, " has the lowest public sector pay compression.\n\n",
+        "In the private sector, ", highest_private, " has the highest pay compression, whereas ",
+        lowest_private, " has the lowest.\n\n",
+        first_country, " is ranked ", public_position, " in public sector compression and ",
+        private_position, " in private sector compression compared to other selected countries.\n\n",
+        "A higher compression ratio indicates greater income disparity within the sector. The trendline provides an overall pattern, and the 45-degree reference line represents equality between public and private sector compression."
+      )
+      
+      # ✅ Add section header and introduction
+      doc <- doc %>% 
+        body_add_par("Pay Compression in the Public and Private Sectors", style = "heading 2") %>%
+        body_add_par("This section analyzes income disparity within the public and private sectors by comparing pay compression ratios.", style = "Normal")
+      
+      # ✅ Create scatter plot
+      plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector, label = country_name)) +
+        geom_point(color = "#003366", size = 3) +
+        geom_text(vjust = -0.5, size = 3) +
+        geom_smooth(method = "lm", color = "gray", linetype = "dashed") + # Trendline
+        geom_abline(slope = 1, intercept = 0, color = "gold", size = 1.2) + # 45-degree reference line
+        labs(title = "Pay Compression: Public vs. Private Sector",
+             x = "Private Sector Pay Compression",
+             y = "Public Sector Pay Compression") +
+        theme_minimal()
+      
+      # ✅ Save plot as image
+      img_path <- tempfile(fileext = ".png")
+      ggsave(filename = img_path, plot = plot, width = 8, height = 6, dpi = 300)
+      
+      # ✅ Add image and interpretation text to Word document
+      doc <- doc %>% 
+        body_add_img(src = img_path, width = 6, height = 4) %>%
+        body_add_par("Note: The 45-degree line represents equal pay compression in both sectors, while the trendline provides a visual reference for overall patterns across countries.", style = "Normal") %>%
+        body_add_par(interpretation_text, style = "Normal")
+      
+      return(doc)
+    }
     
     
   
@@ -3865,6 +4001,9 @@ server <- function(input, output, session) {
         if ("gender_wage_premium" %in% selected_sections) {
           doc <- generate_gender_wage_premium_section(doc)
         }
+        if ("pay_compression" %in% selected_sections) {
+          doc <- generate_pay_compression_section (doc)
+        }
       }
       
       # ✅ Save the customized report
@@ -3922,6 +4061,8 @@ server <- function(input, output, session) {
       
       doc <- generate_wage_premium_report_section(doc) #Public Sector Wage Premium Report
       doc <- generate_gender_wage_premium_section(doc)    # Wage Premium by industry Analysis
+      doc <- generate_pay_compression_section (doc) #Pay Compression section
+      
       
       # ✅ Add Conclusion Section at the End
       doc <- generate_conclusion_section(doc)  
