@@ -3717,6 +3717,19 @@ server <- function(input, output, session) {
 #Pay compression 
   
   output$paycompression_plot <- renderPlotly({
+    # Ensure data is reactive
+    pay_compression_data <- reactive({
+      pay_compression %>%
+        mutate(indicator_label = as.character(indicator_label),
+               country_name = as.character(country_name))
+    })
+    
+    # Ensure countries are populated correctly
+    observe({
+      updateSelectInput(session, "selected_countries", 
+                        choices = unique(pay_compression$country_name), 
+                        selected = unique(pay_compression$country_name)[1])
+    })
     req(input$selected_countries)  # Ensure input is selected
     
     # **Ensure indicator_label is Character (Not Factor)**
@@ -4181,7 +4194,146 @@ shinyApp(ui = ui, server = server)
 
 # the end##############################################
 
+ui <- fluidPage(
+  titlePanel("Pay Compression in the Public and Private Sectors"),
+  
+  sidebarLayout(
+    sidebarPanel(
+      h3("Select Countries"),
+      selectInput("selected_countries", "Select Countries", 
+                  choices = NULL,  # Initially NULL, will be updated dynamically
+                  multiple = TRUE)
+    ),
+    
+    mainPanel(
+      h3("Pay Compression in the Public and Private Sectors"),
+      
+      # Section Description
+      fluidRow(
+        div(style = "border: 2px solid white; padding: 10px; 
+                background: linear-gradient(to right, #4A90E2, #D4145A);
+                color: white; font-size: 16px; text-align: center;",
+            "This visualization explores pay compression in the public and private sectors across selected countries.")
+      ),
+      
+      # Scatter Plot Output (Fix: Use plotlyOutput instead of plotOutput)
+      fluidRow(
+        plotlyOutput("paycompression_plot", height = "600px")
+      ),
+      
+      # Note/Explanation
+      fluidRow(
+        div(style = "border: 2px solid white; padding: 10px; 
+                background: linear-gradient(to right, #4A90E2, #D4145A);
+                color: white; font-size: 16px; text-align: center;",
+            textOutput("note_dotplot"))
+      ),
+      
+      # Download Button for Report
+      fluidRow(
+        downloadButton("downloadPayCompressionDoc", "Download Pay Compression Report")
+      )
+    )
+  )
+)
 
     
+server <- function(input, output, session) {
+  
+  output$paycompression_plot <- renderPlotly({
+    req(input$selected_countries)  # Ensure input is selected
+    
+    # **Ensure indicator_label is Character and Trim Spaces**
+    pay_compression <- pay_compression %>%
+      mutate(
+        indicator_label = trimws(as.character(indicator_label)),
+        country_name = trimws(as.character(country_name))  # Convert and clean
+      )  
+    
+    # **Debugging: Print Key Information**
+    print("🚀 Debugging Pay Compression Plot")
+    print("Selected Countries:")
+    print(input$selected_countries)
+    
+    print("Available Countries in Data:")
+    print(unique(pay_compression$country_name))
+    
+    print("Unique indicator_label values before filtering:")
+    print(unique(pay_compression$indicator_label))
+    
+    print("Column names before filtering:")
+    print(colnames(pay_compression))
+    
+    # **Filter for selected countries**
+    filtered_data <- pay_compression %>%
+      filter(country_name %in% input$selected_countries) %>%
+      filter(indicator_label %in% c("Public Sector", "Private Sector")) %>%
+      pivot_wider(names_from = indicator_label, values_from = value) %>%
+      drop_na()
+    
+    # **Debugging: Check if filtering worked**
+    if (nrow(filtered_data) == 0) {
+      print("🚨 No data available after filtering! Check input selections.")
+      print("Available country_name values in dataset:")
+      print(unique(pay_compression$country_name))
+      return(NULL)  # Stop execution if no valid data
+    }
+    
+    # **Check column names after pivot**
+    print("Column names after pivot:")
+    print(colnames(filtered_data))
+    
+    # **Ensure Public and Private Sector columns exist**
+    if (!("Public Sector" %in% colnames(filtered_data)) || !("Private Sector" %in% colnames(filtered_data))) {
+      print("🚨 Missing expected columns after pivoting!")
+      return(NULL)  # Prevents error if columns are missing
+    }
+    
+    # **Check if we have enough numeric values to run regression**
+    if (sum(!is.na(filtered_data$`Public Sector`)) < 2 || sum(!is.na(filtered_data$`Private Sector`)) < 2) {
+      print("🚨 Not enough non-NA values for regression!")
+      return(NULL)  # Stops execution if insufficient data
+    }
+    
+    # **Fit a linear trend line safely**
+    trend_model <- lm(`Public Sector` ~ `Private Sector`, data = filtered_data)
+    trend_line <- predict(trend_model, newdata = data.frame(`Private Sector` = filtered_data$`Private Sector`))
+    
+    # **Generate plot**
+    plot_ly(data = filtered_data, 
+            x = ~`Private Sector`, 
+            y = ~`Public Sector`, 
+            type = 'scatter', 
+            mode = 'markers+text',
+            text = ~country_name,
+            textposition = "top center",
+            marker = list(size = 10, color = "#003366", opacity = 0.7)) %>%
+      add_trace(
+        x = filtered_data$`Private Sector`,
+        y = trend_line,
+        type = "scatter",
+        mode = "lines",
+        line = list(color = "gray", dash = "dash"),
+        name = "Trendline"
+      ) %>%
+      add_trace(
+        x = c(min(filtered_data$`Private Sector`, na.rm = TRUE)), 
+        y = c(min(filtered_data$`Private Sector`, na.rm = TRUE)), 
+        type = "scatter",
+        mode = "lines",
+        line = list(color = "gold", width = 2),
+        name = "45-degree line"
+      ) %>%
+      layout(
+        title = "Pay Compression: Public vs. Private Sector",
+        xaxis = list(title = "Private Sector Pay Compression"),
+        yaxis = list(title = "Public Sector Pay Compression"),
+        showlegend = FALSE, 
+        plot_bgcolor = "white",
+        paper_bgcolor = "white"
+      )
+  })
+}
+
 
    

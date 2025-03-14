@@ -3717,6 +3717,19 @@ server <- function(input, output, session) {
 #Pay compression 
   
   output$paycompression_plot <- renderPlotly({
+    # Ensure data is reactive
+    pay_compression_data <- reactive({
+      pay_compression %>%
+        mutate(indicator_label = as.character(indicator_label),
+               country_name = as.character(country_name))
+    })
+    
+    # Ensure countries are populated correctly
+    observe({
+      updateSelectInput(session, "selected_countries", 
+                        choices = unique(pay_compression$country_name), 
+                        selected = unique(pay_compression$country_name)[1])
+    })
     req(input$selected_countries)  # Ensure input is selected
     
     # **Ensure indicator_label is Character (Not Factor)**
@@ -4182,6 +4195,6 @@ shinyApp(ui = ui, server = server)
 # the end##############################################
 
 
-    
+
 
    
