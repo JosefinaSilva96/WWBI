@@ -112,6 +112,8 @@ gender_wage_premiumpublic <- readRDS(file.path(data_path, "Data", "gender_wage_p
 
 pay_compression <- readRDS(file.path(data_path, "Data", "pay_compression.rds"))
 
+pay_compression_wide <- readRDS(file.path(data_path, "Data", "pay_compression_wide.rds"))
+
 
 
 ## Shiny Dashboard ----
@@ -3834,15 +3836,14 @@ server <- function(input, output, session) {
     
     generate_pay_compression_section <- function(doc, selected_countries) {
       
+      # ✅ Ensure selected countries exist
+      req(length(selected_countries) > 0)  # Prevents error if empty
       # ✅ Filter for selected countries
       filtered_data_df <- pay_compression_wide %>%
         filter(country_name %in% selected_countries)
       
-      # ✅ Ensure that the dataset is not empty
-      if (nrow(filtered_data_df) == 0) {
-        doc <- doc %>% body_add_par("No data available for Pay Compression Analysis.", style = "Normal")
-        return(doc)
-      }
+      # ✅ Ensure dataset is not empty
+      req(nrow(filtered_data_df) > 0)  # Instead of using an `if` condition
       
       # ✅ Extract first selected country
       first_country <- selected_countries[1]
