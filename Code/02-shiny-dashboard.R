@@ -3715,102 +3715,61 @@ server <- function(input, output, session) {
   }
   
 #Pay compression 
-  
   output$paycompression_plot <- renderPlotly({
-    # Ensure data is reactive
-    pay_compression_data <- reactive({
-      pay_compression %>%
-        mutate(indicator_label = as.character(indicator_label),
-               country_name = as.character(country_name))
-    })
+    req(input$selected_countries)  # Ensure at least one country is selected
     
-    # Ensure countries are populated correctly
-    observe({
-      updateSelectInput(session, "selected_countries", 
-                        choices = unique(pay_compression$country_name), 
-                        selected = unique(pay_compression$country_name)[1])
-    })
-    req(input$selected_countries)  # Ensure input is selected
+    # **Filter for Selected Countries**
+    filtered_data_df <- pay_compression_wide %>%
+      filter(country_name %in% input$selected_countries)
     
-    # **Ensure indicator_label is Character (Not Factor)**
-    pay_compression <- pay_compression %>%
-      mutate(indicator_label = as.character(indicator_label),
-             country_name = as.character(country_name))  # Convert country names too
-    
-    # **Debugging: Print Key Information**
-    print("Unique indicator_name values before filtering:")
-    print(unique(pay_compression$indicator_name))
-    print("Unique indicator_label values before filtering:")
-    print(unique(pay_compression$indicator_label))
-    print("Column names before filtering:")
-    print(colnames(pay_compression))
-    
-    # **Filter for selected countries**
-    filtered_data <- pay_compression %>%
-      filter(country_name %in% input$selected_countries) %>%
-      filter(indicator_label %in% c("Public Sector", "Private Sector")) %>%
-      pivot_wider(names_from = indicator_label, values_from = value) %>%
-      drop_na()
-    
-    # **Debugging: Check if filtering worked**
-    if (nrow(filtered_data) == 0) {
+    # **Check if Data is Empty**
+    if (nrow(filtered_data_df) == 0) {
       print("🚨 No data available after filtering! Check input selections.")
-      print("Available country_name values:")
-      print(unique(pay_compression$country_name))  # Debug available countries
-      return(NULL)  # Stop execution if no valid data
+      return(NULL)
     }
     
-    # **Debugging: Check column names after pivot**
-    print("Column names after pivot:")
-    print(colnames(filtered_data))
-    
-    # **Ensure Public and Private Sector columns exist**
-    if (!("Public Sector" %in% colnames(filtered_data)) || !("Private Sector" %in% colnames(filtered_data))) {
-      print("🚨 Missing expected columns after pivoting!")
-      return(NULL)  # Prevents error if columns are missing
+    # **Ensure Required Columns Exist**
+    if (!all(c("Public_Sector", "Private_Sector") %in% colnames(filtered_data_df))) {
+      print("🚨 Missing required columns after filtering!")
+      return(NULL)
     }
     
-    # **Check if we have enough numeric values to run regression**
-    if (sum(!is.na(filtered_data$`Public Sector`)) < 2 || sum(!is.na(filtered_data$`Private Sector`)) < 2) {
-      print("🚨 Not enough non-NA values for regression!")
-      return(NULL)  # Stops execution if insufficient data
-    }
+    # **Color Coding: Highlight the First Selected Country**
+    filtered_data_df <- filtered_data_df %>%
+      mutate(color = ifelse(country_name == input$selected_countries[1], "#B3242B", "#003366"))
     
-    # **Fit a linear trend line safely**
-    trend_model <- lm(`Public Sector` ~ `Private Sector`, data = filtered_data)
-    trend_line <- predict(trend_model, newdata = data.frame(`Private Sector` = filtered_data$`Private Sector`))
+    # **Fit a Trendline (Regression)**
+    trendline_model <- lm(Public_Sector ~ Private_Sector, data = filtered_data_df)
+    trendline_values <- predict(trendline_model, newdata = filtered_data_df)
     
-    # **Generate plot**
-    plot_ly(data = filtered_data, 
-            x = ~`Private Sector`, 
-            y = ~`Public Sector`, 
-            type = 'scatter', 
-            mode = 'markers+text',
-            text = ~country_name,
-            textposition = "top center",
-            marker = list(size = 10, color = "#003366", opacity = 0.7)) %>%
+    # **Create Scatter Plot with Trendline**
+    plot_ly() %>%
       add_trace(
-        x = filtered_data$`Private Sector`,
-        y = trend_line,
+        data = filtered_data_df,
+        x = ~Private_Sector,
+        y = ~Public_Sector,
+        type = "scatter",
+        mode = "markers+text",
+        text = ~country_name,
+        textposition = "top center",
+        marker = list(size = 10, color = ~color, opacity = 0.7)
+      ) %>%
+      add_trace(
+        x = filtered_data_df$Private_Sector,
+        y = trendline_values,
         type = "scatter",
         mode = "lines",
         line = list(color = "gray", dash = "dash"),
         name = "Trendline"
       ) %>%
-      add_trace(
-        x = c(min(filtered_data$`Private Sector`, na.rm = TRUE)), 
-        y = c(min(filtered_data$`Private Sector`, na.rm = TRUE)), 
-        type = "scatter",
-        mode = "lines",
-        line = list(color = "gold", width = 2),
-        name = "45-degree line"
-      ) %>%
-      layout(title = "Pay Compression: Public vs. Private Sector",
-             xaxis = list(title = "Private Sector Pay Compression"),
-             yaxis = list(title = "Public Sector Pay Compression"),
-             showlegend = FALSE, 
-             plot_bgcolor = "white",
-             paper_bgcolor = "white")
+      layout(
+        title = "Pay Compression: Public vs. Private Sector (Latest Year)",
+        xaxis = list(title = "Private Sector Pay Compression"),
+        yaxis = list(title = "Public Sector Pay Compression"),
+        showlegend = TRUE,
+        plot_bgcolor = "white",
+        paper_bgcolor = "white"
+      )
   })
   
     output$note_dotplot <- renderText({
@@ -3818,55 +3777,55 @@ server <- function(input, output, session) {
     })
     output$downloadPayCompressionDoc <- downloadHandler(
       filename = function() { paste0("Pay_Compression_Report_", Sys.Date(), ".docx") },
+      
       content = function(file) {
-        # Filter data for selected countries and pay compression indicators
-        filtered_data_df <- pay_compression %>%
-          filter(country_name %in% input$countries_first) %>%
-          filter(indicator_name %in% c("Pay compression ratio in public sector (ratio of 90th/10th percentile)",
-                                       "Pay compression ratio in private sector (ratio of 90th/10th percentile)")) %>%
-          pivot_wider(names_from = indicator_name, values_from = value) %>%
-          rename(Public_Sector = `Pay compression ratio in public sector (ratio of 90th/10th percentile)`,
-                 Private_Sector = `Pay compression ratio in private sector (ratio of 90th/10th percentile)`) %>%
-          drop_na()
+        # **Filter data for selected countries**
+        filtered_data_df <- pay_compression_wide %>%
+          filter(country_name %in% input$selected_countries)
         
-        req(nrow(filtered_data_df) > 0) # Ensure there is data before proceeding
+        req(nrow(filtered_data_df) > 0) # **Ensure there is data before proceeding**
         
-        # Get the first selected country for the report title
-        countries <- if (!is.null(input$countries) & length(input$countries) > 0) input$countries[1] else "Selected Countries"
+        # **Get the first selected country for the report title**
+        countries <- if (!is.null(input$selected_countries) & length(input$selected_countries) > 0) {
+          paste(input$selected_countries, collapse = ", ")
+        } else {
+          "Selected Countries"
+        }
+        
         report_title <- paste("Pay Compression Analysis Report -", countries)
         
-        # Create Word document
+        # **Create Word document**
         doc <- read_docx()
         title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
         doc <- doc %>% body_add_fpar(fpar(ftext(report_title, prop = title_style)))
         
-        # Add Introduction
+        # **Add Introduction**
         doc <- doc %>% body_add_par("Introduction", style = "heading 2") %>% 
           body_add_par("This report presents an analysis of pay compression ratios in the public and private sectors across selected countries. 
                     Pay compression is measured as the ratio of wages at the 90th percentile to the 10th percentile, providing insights into 
                     wage inequality within each sector. The analysis compares these ratios and examines trends across different economies.", 
                        style = "Normal")
         
-        # Create scatter plot with trend line
+        # **Create scatter plot with trend line**
         plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector, label = country_name)) +
-          geom_point(color = "#003366", size = 3) +
-          geom_text(vjust = -0.5, size = 3) +
+          geom_point(color = "#003366", size = 3) +      # Main scatter points
+          geom_text(vjust = -0.5, size = 3) +            # Country labels
           geom_smooth(method = "lm", color = "gray", linetype = "dashed") + # Trendline
-          geom_abline(slope = 1, intercept = 0, color = "gold", size = 1.2) + # 45-degree reference line
+          geom_abline(intercept = 0, slope = 1, color = "gold", size = 1.2) + # 45-degree reference line
           labs(title = "Pay Compression: Public vs. Private Sector",
                x = "Private Sector Pay Compression",
                y = "Public Sector Pay Compression") +
           theme_minimal()
         
-        # Add plot to Word document
+        # **Add plot to Word document**
         doc <- doc %>% body_add_gg(value = plot, style = "centered") 
         
-        # Add explanatory note
+        # **Add explanatory note**
         doc <- doc %>% body_add_par("Note: This graph compares pay compression ratios in the public and private sectors. 
                                  The 45-degree line represents equal compression in both sectors, while the trendline 
                                  provides a visual reference for overall patterns across countries.", style = "Normal")
         
-        # Save document
+        # **Save document**
         print(doc, target = file)
       }
     )
@@ -3874,31 +3833,29 @@ server <- function(input, output, session) {
   #Pay compression section  
     
     generate_pay_compression_section <- function(doc, selected_countries) {
-      # Filter data for selected countries and relevant indicators
-      filtered_data_df <- pay_compression %>%
-        filter(country_name %in% selected_countries) %>%
-        filter(indicator_label %in% c("Public Sector", "Private Sector")) %>%
-        pivot_wider(names_from = indicator_label, values_from = value) %>%
-        drop_na()
       
-      # Ensure that the dataset is not empty
+      # ✅ Filter for selected countries
+      filtered_data_df <- pay_compression_wide %>%
+        filter(country_name %in% selected_countries)
+      
+      # ✅ Ensure that the dataset is not empty
       if (nrow(filtered_data_df) == 0) {
         doc <- doc %>% body_add_par("No data available for Pay Compression Analysis.", style = "Normal")
         return(doc)
       }
       
-      # ✅ Extract the first selected country
+      # ✅ Extract first selected country
       first_country <- selected_countries[1]
       
       # ✅ Compute summary statistics for all selected countries
       country_summary <- filtered_data_df %>%
         group_by(country_name) %>%
         summarise(
-          public_compression = round(mean(`Public Sector`, na.rm = TRUE), 1),  
-          private_compression = round(mean(`Private Sector`, na.rm = TRUE), 1) 
+          public_compression = round(mean(Public_Sector, na.rm = TRUE), 1),  
+          private_compression = round(mean(Private_Sector, na.rm = TRUE), 1) 
         )
       
-      # ✅ Find highest and lowest compression rates for both sectors
+      # ✅ Identify highest and lowest compression rates
       highest_public <- country_summary %>% filter(public_compression == max(public_compression, na.rm = TRUE)) %>% pull(country_name)
       lowest_public <- country_summary %>% filter(public_compression == min(public_compression, na.rm = TRUE)) %>% pull(country_name)
       
@@ -3907,11 +3864,10 @@ server <- function(input, output, session) {
       
       # ✅ Extract values for the first selected country
       first_country_values <- country_summary %>% filter(country_name == first_country)
-      
       first_public_compression <- first_country_values %>% pull(public_compression) %>% coalesce(NA)
       first_private_compression <- first_country_values %>% pull(private_compression) %>% coalesce(NA)
       
-      # ✅ Compute averages for the remaining selected countries
+      # ✅ Compute averages for remaining selected countries
       other_countries_avg <- country_summary %>%
         filter(country_name != first_country) %>%
         summarise(
@@ -3919,14 +3875,14 @@ server <- function(input, output, session) {
           avg_private_compression = round(mean(private_compression, na.rm = TRUE), 1)
         )
       
-      # ✅ Determine if first country has a high or low compression rate
+      # ✅ Determine ranking position of first country
       rank_public <- rank(-country_summary$public_compression, ties.method = "min")[country_summary$country_name == first_country]
       rank_private <- rank(-country_summary$private_compression, ties.method = "min")[country_summary$country_name == first_country]
       
       public_position <- ifelse(rank_public == 1, "the highest", ifelse(rank_public == nrow(country_summary), "the lowest", "in the middle range"))
       private_position <- ifelse(rank_private == 1, "the highest", ifelse(rank_private == nrow(country_summary), "the lowest", "in the middle range"))
       
-      # ✅ Construct interpretation text with ranking and comparisons
+      # ✅ Construct interpretation text
       interpretation_text <- paste0(
         "This figure compares pay compression ratios (90th/10th percentile) in the public and private sectors.\n\n",
         "For ", first_country, ", the pay compression ratio is ", first_public_compression, 
@@ -3946,7 +3902,7 @@ server <- function(input, output, session) {
         body_add_par("This section analyzes income disparity within the public and private sectors by comparing pay compression ratios.", style = "Normal")
       
       # ✅ Create scatter plot
-      plot <- ggplot(filtered_data_df, aes(x = `Private Sector`, y = `Public Sector`, label = country_name)) +
+      plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector, label = country_name)) +
         geom_point(color = "#003366", size = 3) +
         geom_text(vjust = -0.5, size = 3) +
         geom_smooth(method = "lm", color = "gray", linetype = "dashed") + # Trendline
@@ -3968,9 +3924,7 @@ server <- function(input, output, session) {
       
       return(doc)
     }
-    
-    
-    
+      
   
   generate_conclusion_section <- function(doc) {
     # Add Section Title
@@ -4194,146 +4148,4 @@ shinyApp(ui = ui, server = server)
 
 # the end##############################################
 
-ui <- fluidPage(
-  titlePanel("Pay Compression in the Public and Private Sectors"),
-  
-  sidebarLayout(
-    sidebarPanel(
-      h3("Select Countries"),
-      selectInput("selected_countries", "Select Countries", 
-                  choices = NULL,  # Initially NULL, will be updated dynamically
-                  multiple = TRUE)
-    ),
-    
-    mainPanel(
-      h3("Pay Compression in the Public and Private Sectors"),
-      
-      # Section Description
-      fluidRow(
-        div(style = "border: 2px solid white; padding: 10px; 
-                background: linear-gradient(to right, #4A90E2, #D4145A);
-                color: white; font-size: 16px; text-align: center;",
-            "This visualization explores pay compression in the public and private sectors across selected countries.")
-      ),
-      
-      # Scatter Plot Output (Fix: Use plotlyOutput instead of plotOutput)
-      fluidRow(
-        plotlyOutput("paycompression_plot", height = "600px")
-      ),
-      
-      # Note/Explanation
-      fluidRow(
-        div(style = "border: 2px solid white; padding: 10px; 
-                background: linear-gradient(to right, #4A90E2, #D4145A);
-                color: white; font-size: 16px; text-align: center;",
-            textOutput("note_dotplot"))
-      ),
-      
-      # Download Button for Report
-      fluidRow(
-        downloadButton("downloadPayCompressionDoc", "Download Pay Compression Report")
-      )
-    )
-  )
-)
 
-    
-server <- function(input, output, session) {
-  
-  output$paycompression_plot <- renderPlotly({
-    req(input$selected_countries)  # Ensure input is selected
-    
-    # **Ensure indicator_label is Character and Trim Spaces**
-    pay_compression <- pay_compression %>%
-      mutate(
-        indicator_label = trimws(as.character(indicator_label)),
-        country_name = trimws(as.character(country_name))  # Convert and clean
-      )  
-    
-    # **Debugging: Print Key Information**
-    print("🚀 Debugging Pay Compression Plot")
-    print("Selected Countries:")
-    print(input$selected_countries)
-    
-    print("Available Countries in Data:")
-    print(unique(pay_compression$country_name))
-    
-    print("Unique indicator_label values before filtering:")
-    print(unique(pay_compression$indicator_label))
-    
-    print("Column names before filtering:")
-    print(colnames(pay_compression))
-    
-    # **Filter for selected countries**
-    filtered_data <- pay_compression %>%
-      filter(country_name %in% input$selected_countries) %>%
-      filter(indicator_label %in% c("Public Sector", "Private Sector")) %>%
-      pivot_wider(names_from = indicator_label, values_from = value) %>%
-      drop_na()
-    
-    # **Debugging: Check if filtering worked**
-    if (nrow(filtered_data) == 0) {
-      print("🚨 No data available after filtering! Check input selections.")
-      print("Available country_name values in dataset:")
-      print(unique(pay_compression$country_name))
-      return(NULL)  # Stop execution if no valid data
-    }
-    
-    # **Check column names after pivot**
-    print("Column names after pivot:")
-    print(colnames(filtered_data))
-    
-    # **Ensure Public and Private Sector columns exist**
-    if (!("Public Sector" %in% colnames(filtered_data)) || !("Private Sector" %in% colnames(filtered_data))) {
-      print("🚨 Missing expected columns after pivoting!")
-      return(NULL)  # Prevents error if columns are missing
-    }
-    
-    # **Check if we have enough numeric values to run regression**
-    if (sum(!is.na(filtered_data$`Public Sector`)) < 2 || sum(!is.na(filtered_data$`Private Sector`)) < 2) {
-      print("🚨 Not enough non-NA values for regression!")
-      return(NULL)  # Stops execution if insufficient data
-    }
-    
-    # **Fit a linear trend line safely**
-    trend_model <- lm(`Public Sector` ~ `Private Sector`, data = filtered_data)
-    trend_line <- predict(trend_model, newdata = data.frame(`Private Sector` = filtered_data$`Private Sector`))
-    
-    # **Generate plot**
-    plot_ly(data = filtered_data, 
-            x = ~`Private Sector`, 
-            y = ~`Public Sector`, 
-            type = 'scatter', 
-            mode = 'markers+text',
-            text = ~country_name,
-            textposition = "top center",
-            marker = list(size = 10, color = "#003366", opacity = 0.7)) %>%
-      add_trace(
-        x = filtered_data$`Private Sector`,
-        y = trend_line,
-        type = "scatter",
-        mode = "lines",
-        line = list(color = "gray", dash = "dash"),
-        name = "Trendline"
-      ) %>%
-      add_trace(
-        x = c(min(filtered_data$`Private Sector`, na.rm = TRUE)), 
-        y = c(min(filtered_data$`Private Sector`, na.rm = TRUE)), 
-        type = "scatter",
-        mode = "lines",
-        line = list(color = "gold", width = 2),
-        name = "45-degree line"
-      ) %>%
-      layout(
-        title = "Pay Compression: Public vs. Private Sector",
-        xaxis = list(title = "Private Sector Pay Compression"),
-        yaxis = list(title = "Public Sector Pay Compression"),
-        showlegend = FALSE, 
-        plot_bgcolor = "white",
-        paper_bgcolor = "white"
-      )
-  })
-}
-
-
-   

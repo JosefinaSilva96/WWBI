@@ -864,25 +864,25 @@ pay_compression <- data_wwbi_long %>%
 pay_compression <- pay_compression %>%
   mutate(value_percentage = value * 100)
 
-# Modify indicator labels for shorter text
-
-pay_compression <- pay_compression %>%
-  select(year, indicator_name, value, country_name, wb_region, value_percentage) %>%
-  mutate(
-    indicator_name = factor(indicator_name),
-    indicator_label = recode(indicator_name, 
-                             "Pay compression ratio in public sector (ratio of 90th/10th percentile earners)" = "Public Sector", 
-                             "Pay compression ratio in private sector (ratio of 90th/10th percentile earners)" = "Private Sector"
-    )
-  )
 
 # Keep the last available year for each country
 
 pay_compression <- pay_compression %>%
   filter(!is.na(value)) %>%
-  group_by(country_name, indicator_label, wb_region) %>%
+  group_by(country_name, wb_region) %>%
   filter(year == max(year[!is.na(value)])) %>%
   ungroup()
+
+
+pay_compression_wide <- pay_compression %>%
+  select(country_name, indicator_name, value) %>%  # Keep only relevant columns
+  pivot_wider(names_from = indicator_name, values_from = value)  # Convert long format to wide
+
+#Rename columnns
+
+colnames(pay_compression_wide)[colnames(pay_compression_wide) == "Pay compression ratio in public sector (ratio of 90th/10th percentile earners)"] <- "Public_Sector"
+colnames(pay_compression_wide)[colnames(pay_compression_wide) == "Pay compression ratio in private sector (ratio of 90th/10th percentile earners)"] <- "Private_Sector"
+
 
 #Save data base 
 
