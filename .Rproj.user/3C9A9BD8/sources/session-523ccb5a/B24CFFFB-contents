@@ -3823,8 +3823,7 @@ server <- function(input, output, session) {
         
         # **Add explanatory note**
         doc <- doc %>% body_add_par("Note: This graph compares pay compression ratios in the public and private sectors. 
-                                 The 45-degree line represents equal compression in both sectors, while the trendline 
-                                 provides a visual reference for overall patterns across countries.", style = "Normal")
+                                  The trendline provides a visual reference for overall patterns across countries.", style = "Normal")
         
         # **Save document**
         print(doc, target = file)
