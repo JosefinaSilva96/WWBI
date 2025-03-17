@@ -3925,7 +3925,7 @@ server <- function(input, output, session) {
       # ✅ Add image and interpretation text to Word document
       doc <- doc %>% 
         body_add_img(src = img_path, width = 6, height = 4) %>%
-        body_add_par("Note: The 45-degree line represents equal pay compression in both sectors, while the trendline provides a visual reference for overall patterns across countries.", style = "Normal") %>%
+        body_add_par("Note: The trendline provides a visual reference for overall patterns across countries.", style = "Normal") %>%
         body_add_par(interpretation_text, style = "Normal")
       
       return(doc)
