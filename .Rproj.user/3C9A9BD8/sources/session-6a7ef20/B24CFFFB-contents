@@ -3720,20 +3720,16 @@ server <- function(input, output, session) {
   output$paycompression_plot <- renderPlotly({
     req(input$selected_countries)  # Ensure at least one country is selected
     
-    # **Filter for Selected Countries**
-    filtered_data_df <- pay_compression_wide %>%
-      filter(country_name %in% input$selected_countries)
-    
-    # **Check if Data is Empty**
-    if (nrow(filtered_data_df) == 0) {
-      print("🚨 No data available after filtering! Check input selections.")
-      return(NULL)
+    # ✅ Ensure at least one country is selected and valid
+    if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
+      doc <- doc %>% body_add_par("No countries selected for analysis.", style = "Normal")
+      return(doc)
     }
     
-    # **Ensure Required Columns Exist**
-    if (!all(c("Public_Sector", "Private_Sector") %in% colnames(filtered_data_df))) {
-      print("🚨 Missing required columns after filtering!")
-      return(NULL)
+    first_country <- selected_countries[1]
+    if (is.na(first_country) || first_country == "") {
+      doc <- doc %>% body_add_par("Invalid country selection.", style = "Normal")
+      return(doc)
     }
     
     # **Color Coding: Highlight the First Selected Country**
@@ -3835,6 +3831,14 @@ server <- function(input, output, session) {
   #Pay compression section  
     
     generate_pay_compression_section <- function(doc) {
+      # Add Section Title
+      doc <- doc %>% body_add_par("Pay Compression in the Public and Private Sectors", style = "heading 1")
+      
+      # Add Introduction
+      doc <- doc %>% body_add_par(
+        "This section presents an analysis of pay compression across selected countries.", 
+        style = "Normal"
+      )
       
       # **Filter for Selected Countries**
       filtered_data_df <- pay_compression_wide %>%
@@ -3895,11 +3899,7 @@ server <- function(input, output, session) {
         "A higher compression ratio indicates greater income disparity within the sector. The trendline provides an overall pattern, and the 45-degree reference line represents equality between public and private sector compression."
       )
       
-      # ✅ Add section header and introduction
-      doc <- doc %>% 
-        body_add_par("Pay Compression in the Public and Private Sectors", style = "heading 2") %>%
-        body_add_par("This section analyzes income disparity within the public and private sectors by comparing pay compression ratios.", style = "Normal")
-      
+     
       # ✅ Create scatter plot
       plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector, label = country_name)) +
         geom_point(color = "#003366", size = 3) +
