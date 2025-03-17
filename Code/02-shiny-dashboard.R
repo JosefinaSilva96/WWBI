@@ -3834,13 +3834,11 @@ server <- function(input, output, session) {
     
   #Pay compression section  
     
-    generate_pay_compression_section <- function(doc, selected_countries) {
+    generate_pay_compression_section <- function(doc) {
       
-      # ✅ Ensure selected countries exist
-      req(length(selected_countries) > 0)  # Prevents error if empty
-      # ✅ Filter for selected countries
+      # **Filter for Selected Countries**
       filtered_data_df <- pay_compression_wide %>%
-        filter(country_name %in% selected_countries)
+        filter(country_name %in% input$selected_countries)
       
       # ✅ Ensure dataset is not empty
       req(nrow(filtered_data_df) > 0)  # Instead of using an `if` condition
