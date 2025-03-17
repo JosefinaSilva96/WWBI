@@ -3720,16 +3720,20 @@ server <- function(input, output, session) {
   output$paycompression_plot <- renderPlotly({
     req(input$selected_countries)  # Ensure at least one country is selected
     
-    # ✅ Ensure at least one country is selected and valid
-    if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
-      doc <- doc %>% body_add_par("No countries selected for analysis.", style = "Normal")
-      return(doc)
+    # **Filter for Selected Countries**
+    filtered_data_df <- pay_compression_wide %>%
+      filter(country_name %in% input$selected_countries)
+    
+    # **Check if Data is Empty**
+    if (nrow(filtered_data_df) == 0) {
+      print("🚨 No data available after filtering! Check input selections.")
+      return(NULL)
     }
     
-    first_country <- selected_countries[1]
-    if (is.na(first_country) || first_country == "") {
-      doc <- doc %>% body_add_par("Invalid country selection.", style = "Normal")
-      return(doc)
+    # **Ensure Required Columns Exist**
+    if (!all(c("Public_Sector", "Private_Sector") %in% colnames(filtered_data_df))) {
+      print("🚨 Missing required columns after filtering!")
+      return(NULL)
     }
     
     # **Color Coding: Highlight the First Selected Country**
@@ -3771,7 +3775,7 @@ server <- function(input, output, session) {
   })
   
     output$note_dotplot <- renderText({
-      "Note: This graph compares pay compression ratios in the public and private sectors. The 45-degree line represents equal compression in both sectors, while the trendline provides a visual reference for overall patterns across countries."
+      "Note: This graph compares pay compression ratios in the public and private sectors. The trendline provides a visual reference for overall patterns across countries."
     })
     output$downloadPayCompressionDoc <- downloadHandler(
       filename = function() { paste0("Pay_Compression_Report_", Sys.Date(), ".docx") },
@@ -3809,7 +3813,6 @@ server <- function(input, output, session) {
           geom_point(color = "#003366", size = 3) +      # Main scatter points
           geom_text(vjust = -0.5, size = 3) +            # Country labels
           geom_smooth(method = "lm", color = "gray", linetype = "dashed") + # Trendline
-          geom_abline(intercept = 0, slope = 1, color = "gold", size = 1.2) + # 45-degree reference line
           labs(title = "Pay Compression: Public vs. Private Sector",
                x = "Private Sector Pay Compression",
                y = "Public Sector Pay Compression") +
@@ -3831,25 +3834,32 @@ server <- function(input, output, session) {
   #Pay compression section  
     
     generate_pay_compression_section <- function(doc) {
-      # Add Section Title
-      doc <- doc %>% body_add_par("Pay Compression in the Public and Private Sectors", style = "heading 1")
+      doc <- doc %>% body_add_par("Pay Compression in the Private and Public Sector", style = "heading 1")
       
       # Add Introduction
       doc <- doc %>% body_add_par(
-        "This section presents an analysis of pay compression across selected countries.", 
+        "This section presents an analysis of the pay compression for the private and public sector 
+       across selected countries.", 
         style = "Normal"
       )
+      # ✅ Ensure at least one country is selected and not NA
+      if (is.null(input$selected_countries) || length(na.omit(input$selected_countries)) == 0) {
+        doc <- doc %>% body_add_par("No countries selected for analysis.", style = "Normal")
+        return(doc)
+      }
       
-      # **Filter for Selected Countries**
+      first_country <- input$selected_countries[1]
+      if (is.na(first_country)) {
+        doc <- doc %>% body_add_par("Invalid country selection.", style = "Normal")
+        return(doc)
+      }
+      # **Filter data for selected countries**
       filtered_data_df <- pay_compression_wide %>%
         filter(country_name %in% input$selected_countries)
       
-      # ✅ Ensure dataset is not empty
-      req(nrow(filtered_data_df) > 0)  # Instead of using an `if` condition
-      
-      # ✅ Extract first selected country
-      first_country <- selected_countries[1]
-      
+      req(nrow(filtered_data_df) > 0) # **Ensure there is data before proceeding**
+    
+
       # ✅ Compute summary statistics for all selected countries
       country_summary <- filtered_data_df %>%
         group_by(country_name) %>%
@@ -3899,13 +3909,11 @@ server <- function(input, output, session) {
         "A higher compression ratio indicates greater income disparity within the sector. The trendline provides an overall pattern, and the 45-degree reference line represents equality between public and private sector compression."
       )
       
-     
       # ✅ Create scatter plot
       plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector, label = country_name)) +
         geom_point(color = "#003366", size = 3) +
         geom_text(vjust = -0.5, size = 3) +
         geom_smooth(method = "lm", color = "gray", linetype = "dashed") + # Trendline
-        geom_abline(slope = 1, intercept = 0, color = "gold", size = 1.2) + # 45-degree reference line
         labs(title = "Pay Compression: Public vs. Private Sector",
              x = "Private Sector Pay Compression",
              y = "Public Sector Pay Compression") +
