@@ -3841,23 +3841,20 @@ server <- function(input, output, session) {
        across selected countries.", 
         style = "Normal"
       )
-      # ✅ Ensure at least one country is selected and not NA
-      if (is.null(input$selected_countries) || length(na.omit(input$selected_countries)) == 0) {
-        doc <- doc %>% body_add_par("No countries selected for analysis.", style = "Normal")
-        return(doc)
+      content = function(file) {
+        # **Filter data for selected countries**
+        filtered_data_df <- pay_compression_wide %>%
+          filter(country_name %in% input$selected_countries)
+        
+        req(nrow(filtered_data_df) > 0) # **Ensure there is data before proceeding**
+        
+        # **Get the first selected country for the report title**
+        first_country <- if (!is.null(input$selected_countries) & length(input$selected_countries) > 0) {
+          paste(input$selected_countries, collapse = ", ")
+        } else {
+          "Selected Countries"
+        }
       }
-      
-      first_country <- input$selected_countries[1]
-      if (is.na(first_country)) {
-        doc <- doc %>% body_add_par("Invalid country selection.", style = "Normal")
-        return(doc)
-      }
-      # **Filter data for selected countries**
-      filtered_data_df <- pay_compression_wide %>%
-        filter(country_name %in% input$selected_countries)
-      
-      req(nrow(filtered_data_df) > 0) # **Ensure there is data before proceeding**
-    
 
       # ✅ Compute summary statistics for all selected countries
       country_summary <- filtered_data_df %>%
@@ -3909,14 +3906,16 @@ server <- function(input, output, session) {
       )
       
       # ✅ Create scatter plot
+      # **Create scatter plot with trend line**
       plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector, label = country_name)) +
-        geom_point(color = "#003366", size = 3) +
-        geom_text(vjust = -0.5, size = 3) +
+        geom_point(color = "#003366", size = 3) +      # Main scatter points
+        geom_text(vjust = -0.5, size = 3) +            # Country labels
         geom_smooth(method = "lm", color = "gray", linetype = "dashed") + # Trendline
         labs(title = "Pay Compression: Public vs. Private Sector",
              x = "Private Sector Pay Compression",
              y = "Public Sector Pay Compression") +
         theme_minimal()
+      
       
       # ✅ Save plot as image
       img_path <- tempfile(fileext = ".png")

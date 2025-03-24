@@ -886,7 +886,7 @@ colnames(pay_compression_wide)[colnames(pay_compression_wide) == "Pay compressio
 
 #Save data base 
 
-saveRDS(pay_compression, file.path(data_path, "Data", "pay_compression_wide.rds"))
+saveRDS(pay_compression_wide, file.path(data_path, "Data", "pay_compression_wide.rds"))
 
 
 
