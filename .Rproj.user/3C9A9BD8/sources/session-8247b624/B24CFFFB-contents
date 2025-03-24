@@ -3832,31 +3832,27 @@ server <- function(input, output, session) {
     
   #Pay compression section  
     
-    generate_pay_compression_section <- function(doc) {
+    generate_pay_compression_section <- function(doc, selected_countries) {
       doc <- doc %>% body_add_par("Pay Compression in the Private and Public Sector", style = "heading 1")
       
-      # Add Introduction
       doc <- doc %>% body_add_par(
         "This section presents an analysis of the pay compression for the private and public sector 
-       across selected countries.", 
+     across selected countries.", 
         style = "Normal"
       )
-      content = function(file) {
-        # **Filter data for selected countries**
-        filtered_data_df <- pay_compression_wide %>%
-          filter(country_name %in% input$selected_countries)
-        
-        req(nrow(filtered_data_df) > 0) # **Ensure there is data before proceeding**
-        
-        # **Get the first selected country for the report title**
-        first_country <- if (!is.null(input$selected_countries) & length(input$selected_countries) > 0) {
-          paste(input$selected_countries, collapse = ", ")
-        } else {
-          "Selected Countries"
-        }
+      
+      if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
+        doc <- doc %>% body_add_par("No countries selected for analysis.", style = "Normal")
+        return(doc)
       }
-
-      # ✅ Compute summary statistics for all selected countries
+      
+      first_country <- selected_countries[1]
+      
+      filtered_data_df <- pay_compression_wide %>%
+        filter(country_name %in% selected_countries)
+      
+      req(nrow(filtered_data_df) > 0)
+      
       country_summary <- filtered_data_df %>%
         group_by(country_name) %>%
         summarise(
@@ -3864,19 +3860,20 @@ server <- function(input, output, session) {
           private_compression = round(mean(Private_Sector, na.rm = TRUE), 1) 
         )
       
-      # ✅ Identify highest and lowest compression rates
-      highest_public <- country_summary %>% filter(public_compression == max(public_compression, na.rm = TRUE)) %>% pull(country_name)
-      lowest_public <- country_summary %>% filter(public_compression == min(public_compression, na.rm = TRUE)) %>% pull(country_name)
+      highest_public <- country_summary %>%
+        filter(public_compression == max(public_compression, na.rm = TRUE)) %>% pull(country_name)
+      lowest_public <- country_summary %>%
+        filter(public_compression == min(public_compression, na.rm = TRUE)) %>% pull(country_name)
       
-      highest_private <- country_summary %>% filter(private_compression == max(private_compression, na.rm = TRUE)) %>% pull(country_name)
-      lowest_private <- country_summary %>% filter(private_compression == min(private_compression, na.rm = TRUE)) %>% pull(country_name)
+      highest_private <- country_summary %>%
+        filter(private_compression == max(private_compression, na.rm = TRUE)) %>% pull(country_name)
+      lowest_private <- country_summary %>%
+        filter(private_compression == min(private_compression, na.rm = TRUE)) %>% pull(country_name)
       
-      # ✅ Extract values for the first selected country
       first_country_values <- country_summary %>% filter(country_name == first_country)
       first_public_compression <- first_country_values %>% pull(public_compression) %>% coalesce(NA)
       first_private_compression <- first_country_values %>% pull(private_compression) %>% coalesce(NA)
       
-      # ✅ Compute averages for remaining selected countries
       other_countries_avg <- country_summary %>%
         filter(country_name != first_country) %>%
         summarise(
@@ -3884,14 +3881,12 @@ server <- function(input, output, session) {
           avg_private_compression = round(mean(private_compression, na.rm = TRUE), 1)
         )
       
-      # ✅ Determine ranking position of first country
       rank_public <- rank(-country_summary$public_compression, ties.method = "min")[country_summary$country_name == first_country]
       rank_private <- rank(-country_summary$private_compression, ties.method = "min")[country_summary$country_name == first_country]
       
       public_position <- ifelse(rank_public == 1, "the highest", ifelse(rank_public == nrow(country_summary), "the lowest", "in the middle range"))
       private_position <- ifelse(rank_private == 1, "the highest", ifelse(rank_private == nrow(country_summary), "the lowest", "in the middle range"))
       
-      # ✅ Construct interpretation text
       interpretation_text <- paste0(
         "This figure compares pay compression ratios (90th/10th percentile) in the public and private sectors.\n\n",
         "For ", first_country, ", the pay compression ratio is ", first_public_compression, 
@@ -3905,23 +3900,18 @@ server <- function(input, output, session) {
         "A higher compression ratio indicates greater income disparity within the sector. The trendline provides an overall pattern, and the 45-degree reference line represents equality between public and private sector compression."
       )
       
-      # ✅ Create scatter plot
-      # **Create scatter plot with trend line**
-      plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector, label = country_name)) +
-        geom_point(color = "#003366", size = 3) +      # Main scatter points
-        geom_text(vjust = -0.5, size = 3) +            # Country labels
-        geom_smooth(method = "lm", color = "gray", linetype = "dashed") + # Trendline
+      plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector)) +
+        geom_point(color = "#003366", size = 3) +
+        geom_text(aes(label = country_name), vjust = -0.5, size = 3) +
+        geom_smooth(method = "lm", color = "gray", linetype = "dashed") +
         labs(title = "Pay Compression: Public vs. Private Sector",
              x = "Private Sector Pay Compression",
              y = "Public Sector Pay Compression") +
         theme_minimal()
       
-      
-      # ✅ Save plot as image
       img_path <- tempfile(fileext = ".png")
       ggsave(filename = img_path, plot = plot, width = 8, height = 6, dpi = 300)
       
-      # ✅ Add image and interpretation text to Word document
       doc <- doc %>% 
         body_add_img(src = img_path, width = 6, height = 4) %>%
         body_add_par("Note: The trendline provides a visual reference for overall patterns across countries.", style = "Normal") %>%
@@ -3929,7 +3919,7 @@ server <- function(input, output, session) {
       
       return(doc)
     }
-      
+    
   
   generate_conclusion_section <- function(doc) {
     # Add Section Title
