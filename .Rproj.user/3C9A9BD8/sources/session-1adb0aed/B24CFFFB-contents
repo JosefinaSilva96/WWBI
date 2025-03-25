@@ -3881,11 +3881,25 @@ server <- function(input, output, session) {
           avg_private_compression = round(mean(private_compression, na.rm = TRUE), 1)
         )
       
-      rank_public <- rank(-country_summary$public_compression, ties.method = "min")[country_summary$country_name == first_country]
-      rank_private <- rank(-country_summary$private_compression, ties.method = "min")[country_summary$country_name == first_country]
-      
-      public_position <- ifelse(rank_public == 1, "the highest", ifelse(rank_public == nrow(country_summary), "the lowest", "in the middle range"))
-      private_position <- ifelse(rank_private == 1, "the highest", ifelse(rank_private == nrow(country_summary), "the lowest", "in the middle range"))
+      if (first_country %in% country_summary$country_name) {
+        rank_public <- rank(-country_summary$public_compression, ties.method = "min")[country_summary$country_name == first_country]
+        rank_private <- rank(-country_summary$private_compression, ties.method = "min")[country_summary$country_name == first_country]
+        
+        public_position <- dplyr::case_when(
+          rank_public == 1 ~ "the highest",
+          rank_public == nrow(country_summary) ~ "the lowest",
+          TRUE ~ "in the middle range"
+        )
+        
+        private_position <- dplyr::case_when(
+          rank_private == 1 ~ "the highest",
+          rank_private == nrow(country_summary) ~ "the lowest",
+          TRUE ~ "in the middle range"
+        )
+      } else {
+        public_position <- "unranked"
+        private_position <- "unranked"
+      }
       
       interpretation_text <- paste0(
         "This figure compares pay compression ratios (90th/10th percentile) in the public and private sectors.\n\n",
@@ -4000,7 +4014,8 @@ server <- function(input, output, session) {
           doc <- generate_gender_wage_premium_section(doc)
         }
         if ("pay_compression" %in% selected_sections) {
-          doc <- generate_pay_compression_section (doc)
+          doc <- generate_pay_compression_section(doc, selected_countries = input$selected_countries)
+          
         }
       }
       
