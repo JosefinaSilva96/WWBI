@@ -765,10 +765,12 @@ server <- function(input, output, session) {
         
         # Country Selection
         fluidRow(
-          selectInput("selected_countries", "Select Countries", 
-                      choices = unique(pay_compression$country_name), 
-                      multiple = TRUE,
-                      selected = unique(pay_compression$country_name)[1])  # Default country selected
+          selectInput(
+            inputId = "countries_first",
+            label = "Select countries",
+            choices = unique(pay_compression_wide$country_name),
+            multiple = TRUE
+          )# Default country selected
         ),
         
         # Scatter Plot Output (Fix: Use plotlyOutput instead of plotOutput)
@@ -3718,33 +3720,27 @@ server <- function(input, output, session) {
   
 #Pay compression 
   output$paycompression_plot <- renderPlotly({
-    req(input$selected_countries)  # Ensure at least one country is selected
+    req(input$countries_first)  # Ensure at least one country is selected
     
-    # **Filter for Selected Countries**
     filtered_data_df <- pay_compression_wide %>%
-      filter(country_name %in% input$selected_countries)
+      filter(country_name %in% input$countries_first)
     
-    # **Check if Data is Empty**
     if (nrow(filtered_data_df) == 0) {
       print("🚨 No data available after filtering! Check input selections.")
       return(NULL)
     }
     
-    # **Ensure Required Columns Exist**
     if (!all(c("Public_Sector", "Private_Sector") %in% colnames(filtered_data_df))) {
       print("🚨 Missing required columns after filtering!")
       return(NULL)
     }
     
-    # **Color Coding: Highlight the First Selected Country**
     filtered_data_df <- filtered_data_df %>%
-      mutate(color = ifelse(country_name == input$selected_countries[1], "#B3242B", "#003366"))
+      mutate(color = ifelse(country_name == input$countries_first[1], "#B3242B", "#003366"))
     
-    # **Fit a Trendline (Regression)**
     trendline_model <- lm(Public_Sector ~ Private_Sector, data = filtered_data_df)
     trendline_values <- predict(trendline_model, newdata = filtered_data_df)
     
-    # **Create Scatter Plot with Trendline**
     plot_ly() %>%
       add_trace(
         data = filtered_data_df,
@@ -3774,6 +3770,7 @@ server <- function(input, output, session) {
       )
   })
   
+  
     output$note_dotplot <- renderText({
       "Note: This graph compares pay compression ratios in the public and private sectors. The trendline provides a visual reference for overall patterns across countries."
     })
@@ -3783,13 +3780,13 @@ server <- function(input, output, session) {
       content = function(file) {
         # **Filter data for selected countries**
         filtered_data_df <- pay_compression_wide %>%
-          filter(country_name %in% input$selected_countries)
+          filter(country_name %in% input$countries_first)
         
         req(nrow(filtered_data_df) > 0) # **Ensure there is data before proceeding**
         
         # **Get the first selected country for the report title**
-        countries <- if (!is.null(input$selected_countries) & length(input$selected_countries) > 0) {
-          paste(input$selected_countries, collapse = ", ")
+        countries <- if (!is.null(input$countries_first) & length(input$countries_first) > 0) {
+          paste(input$countries_first, collapse = ", ")
         } else {
           "Selected Countries"
         }
@@ -4014,7 +4011,7 @@ server <- function(input, output, session) {
           doc <- generate_gender_wage_premium_section(doc)
         }
         if ("pay_compression" %in% selected_sections) {
-          doc <- generate_pay_compression_section(doc, selected_countries = input$selected_countries)
+          doc <- generate_pay_compression_section(doc, selected_countries = selected_countries)
           
         }
       }
