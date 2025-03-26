@@ -4014,7 +4014,7 @@ server <- function(input, output, session) {
           doc <- generate_gender_wage_premium_section(doc)
         }
         if ("pay_compression" %in% selected_sections) {
-          doc <- generate_pay_compression_section(doc, selected_countries = input$selected_countries)
+          doc <- generate_pay_compression_section(doc, selected_countries = selected_countries)
           
         }
       }
@@ -4074,7 +4074,7 @@ server <- function(input, output, session) {
       
       doc <- generate_wage_premium_report_section(doc) #Public Sector Wage Premium Report
       doc <- generate_gender_wage_premium_section(doc)    # Wage Premium by industry Analysis
-      doc <- generate_pay_compression_section (doc) #Pay Compression section
+      doc <- generate_pay_compression_section(doc, selected_countries = selected_countries) #Pay Compression section
       
       
       # ✅ Add Conclusion Section at the End
@@ -4156,6 +4156,6 @@ server <- function(input, output, session) {
 shinyApp(ui = ui, server = server)
 
 
-# the end ##############################################
+# the end##############################################
 
 
