@@ -5,23 +5,16 @@ format: html
 editor: visual
 ---
 
-## Quarto
+## Introduction
 
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+The Worldwide Bureaucracy Indicators (WWBI) database is a unique cross-national dataset on public sector employment and wages that aims to fill an information gap, thereby helping researchers, development practitioners, and policymakers gain a better understanding of the personnel dimensions of state capability, the footprint of the public sector within the overall labor market, and the fiscal implications of the public sector wage bill. The dataset is derived from administrative data and household surveys, thereby complementing existing, expert perception-based approaches.
 
-## Running Code
+The WWBI dashboard provides and overview of the indicators and the user can interact with the different indicators and countries and then download a report in a word document.
 
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+## Data Availability
 
-```{r}
-1 + 1
-```
+The data availability for this dashboard was extracted from: [https://datacatalog.worldbank.org/int/search/dataset/0038132/worldwide-bureaucracy-indicatorshttps://datacatalog.worldbank.org/int/search/dataset/0038132/worldwide-bureaucracy-indicators](https://datacatalog.worldbank.org/int/search/dataset/0038132/worldwide-bureaucracy-indicators "WWBI database")
 
-You can add options to executable code like this
+## Instructions for Replicators
 
-```{r}
-#| echo: false
-2 * 2
-```
-
-The `echo: false` option disables the printing of code (only output is displayed).
+1.  
