@@ -1,27 +1,28 @@
 {
-    "id": "9AAEF5EA",
-    "path": "C:/WBG/GitHub/WWBI/Code/01-processing-data.R",
-    "project_path": "Code/01-processing-data.R",
+    "id": "B24CFFFB",
+    "path": "C:/WBG/GitHub/WWBI/Code/02-shiny-dashboard.R",
+    "project_path": "Code/02-shiny-dashboard.R",
     "type": "r_source",
     "hash": "0",
     "contents": "",
     "dirty": false,
-    "created": 1730900567733.0,
+    "created": 1730900591519.0,
     "source_on_save": false,
-    "relative_order": 2,
+    "relative_order": 3,
     "properties": {
         "tempName": "Untitled1",
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "892,0",
-        "scrollLine": "875"
+        "cursorPosition": "4155,0",
+        "scrollLine": "0",
+        "docOutlineVisible": "0"
     },
     "folds": "",
-    "lastKnownWriteTime": 1742830223,
+    "lastKnownWriteTime": 1742998400,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1742830223751,
+    "last_content_update": 1742998400736,
     "read_only": false,
     "read_only_alternatives": []
 }
