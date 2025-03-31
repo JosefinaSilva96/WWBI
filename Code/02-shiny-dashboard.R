@@ -3719,6 +3719,7 @@ server <- function(input, output, session) {
   }
   
 #Pay compression 
+  
   output$paycompression_plot <- renderPlotly({
     req(input$countries_first)  # Ensure at least one country is selected
     
