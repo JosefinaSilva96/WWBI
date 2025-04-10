@@ -224,17 +224,17 @@ ui <- bootstrapPage(
       div(class = "nav-item", actionLink("nav_publications", "Publications")),
       
       # Collapsible Section - The Macro Fundamentals
-      div(class = "nav-section", onclick = "toggleSection('macro_section')", "The Macro Fundamentals"),
+      div(class = "nav-section", onclick = "toggleSection('macro_section')", "The Macro Fundamentals of the Public Sector"),
       div(id = "macro_section", style = "display: none;",
           div(class = "nav-sub-item", actionLink("nav_wagebill", "Wage Bill Graphs")),
           div(class = "nav-sub-item", actionLink("nav_wagebill_gdp", "Wage Bill & GDP Graphs"))
       ),
       
       # Collapsible Section - The Size of the Public Sector
-      div(class = "nav-section", onclick = "toggleSection('public_sector_section')", "The Size of the Public Sector"),
+      div(class = "nav-section", onclick = "toggleSection('public_sector_section')", "The size and characteristics of the public sector"),
       div(id = "public_sector_section", style = "display: none;",
-          div(class = "nav-sub-item", actionLink("nav_public_workforce", "Public Sector Workforce Graphs")), 
-          div(class = "nav-sub-item", actionLink("nav_public_graphs", "Public Sector Employment"))
+          div(class = "nav-sub-item", actionLink("nav_public_graphs", "Public Sector Employment"),
+          div(class = "nav-sub-item", actionLink("nav_public_workforce", "Public Sector Workforce Graphs"))
       ),
       
       # Collapsible Section - Characteristics of Public Sector Workforce
@@ -377,7 +377,7 @@ server <- function(input, output, session) {
                              multiple = TRUE)
           ),
           column(4,
-                 radioButtons("graph_choice", "Graph Type:",
+                 radioButtons("graph_choice", "Choose a measure of wage bill:",
                               choices = c("Wage Bill as % of Public Expenditure" = "Public",
                                           "Wage Bill as % of GDP" = "GDP"),
                               selected = "Public")
@@ -409,7 +409,7 @@ server <- function(input, output, session) {
           div(style = "border: 2px solid white; padding: 10px; 
                       background: linear-gradient(to right, #4A90E2, #D4145A);
                       color: white; font-size: 16px; text-align: center;",
-              "This visualization explores the relationship between wage bill and GDP per capita (log scale).")
+              "This graph shows the relationship between the size of the wage bill and GDP per capita.")
         ),
         fluidRow(
           column(4,
