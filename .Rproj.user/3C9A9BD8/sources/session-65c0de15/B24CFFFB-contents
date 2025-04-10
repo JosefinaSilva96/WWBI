@@ -214,7 +214,7 @@ ui <- bootstrapPage(
     # Sidebar
     div(
       id = "sidebar",
-      div(class = "nav-item", actionLink("nav_dashboard", "Dashboard")),
+      div(class = "nav-item", actionLink("nav_dashboard", "Overview")),
       div(class = "nav-item", actionLink("nav_instructions", "Instructions")),
       div(class = "nav-item", actionLink("nav_metadata", "Metadata")),
       div(class = "nav-item", actionLink("nav_publications", "Publications")),
@@ -257,7 +257,7 @@ ui <- bootstrapPage(
     # Main content area
     div(
       class = "flex-grow-1 p-4",
-      h2("WWB Indicators"),
+      h2("Worldwide Bureaucracy Indicators "),
       uiOutput("main_content")
     )
   )
@@ -296,7 +296,7 @@ server <- function(input, output, session) {
     
     if(tab == "dashboard") {
       tagList(
-        h3("Dashboard"),
+        h3("Overview"),
         fluidRow(
           div(style = "border: 2px solid white; padding: 15px; border-radius: 10px; 
                       background: linear-gradient(to right, #4A90E2, #D4145A);
@@ -4146,10 +4146,11 @@ server <- function(input, output, session) {
   })
   
   output$lastUpdatedBox <- renderInfoBox({
-    infoBox("Last Updated", "2022", icon = icon("clock"), color = "purple")
+    infoBox("Last Updated", "2025", icon = icon("clock"), color = "purple")
   })
   
 }
+
 
 shinyApp(ui = ui, server = server)
 
