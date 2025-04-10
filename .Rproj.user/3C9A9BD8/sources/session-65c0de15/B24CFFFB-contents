@@ -336,7 +336,7 @@ server <- function(input, output, session) {
         ),
         fluidRow(
           column(4, div(class = "custom-infobox", infoBox("Temporal Coverage (Years)", "22", icon = icon("calendar")))),
-          column(4, div(class = "custom-infobox", infoBox("Last Updated", "2022", icon = icon("clock"))))
+          column(4, div(class = "custom-infobox", infoBox("Last Updated", "2025", icon = icon("clock"))))
         ),
         fluidRow(
           div(style = "border: 1px solid white; padding: 10px;",
