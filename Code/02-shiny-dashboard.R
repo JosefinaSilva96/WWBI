@@ -8,7 +8,7 @@ packages <- c(
   "ggplot2", "shiny", "shinythemes", "DT", "maps", "mapdata",
   "leaflet", "rnaturalearth", "sf", "plotly", "officer", "flextable",
   "viridis", "here", "glue", "colourpicker", "wbstats", "htmlwidgets",
-  "bs4Dash", "countrycode", "bslib"
+  "bs4Dash", "countrycode", "bslib", "countrycode"
 )
 
 # Function to check and install missing packages
@@ -42,6 +42,10 @@ if (basename(getwd()) == "Code") {
 
 # Debugging: Print the detected data path to check correctness
 print(paste("Using data path:", data_path))
+
+
+world_spdf$name <- countrycode(as.character(world_spdf$admin), origin = "country.name", destination = "country.name")
+
 
 
 data_wwbi     <- read_dta(file.path(data_path, "Data/data_wwbi.dta"))
@@ -4080,58 +4084,72 @@ server <- function(input, output, session) {
   )
   
   
+  
+  # ---------------------
+  # Clean base map with legend
   output$worldMap <- renderLeaflet({
     leaflet(world_spdf) %>%
       addTiles() %>%
       setView(lng = 0, lat = 20, zoom = 2) %>%
       addLegend(
         position = "bottomright", 
-        pal = colorFactor(c("gray", "green"), domain = c(0, 1)),  # ✅ fixed
-        values = c(0, 1),
+        colors = c("gray", "#6DA96F"),
         labels = c("No Data", "Reported"),
         title = "Indicator Availability",
         opacity = 1
       )
   })
   
-  filtered_data_for_map  <- reactive({
+  # Create reactive that flags countries that have ANY data for the selected indicator
+  filtered_data_for_map <- reactive({
     req(input$indicatorSelect)
     
-    # Create a column that checks if the indicator has data in any year
     data_wwbi %>%
       filter(indicator_name == input$indicatorSelect) %>%
-      mutate(any_data = apply(select(., starts_with("year_")), 1, function(x) any(!is.na(x)))) %>%
+      mutate(
+        any_data = apply(select(., starts_with("year_")), 1, function(x) any(!is.na(x)))
+      ) %>%
       filter(any_data) %>%
-      transmute(country_name, indicator_name, value_percentage = 1)  # Use 1 to represent "has data"
+      transmute(country_name, indicator_name, has_data = 1)  # use 'has_data' instead of value_percentage
   })
   
+  # Update the map
   observe({
-    req(input$indicatorSelect, input$yearSelect)
-    reported_countries <- filtered_data_for_map()
-    if(is.null(reported_countries) || nrow(reported_countries) == 0) return()
-    world_data_merged <- world_spdf %>%
-      left_join(reported_countries, by = c("name" = "country_name"))
-    color_pal <- colorFactor(c("gray", "green"), domain = c(0, 1))
+    req(input$indicatorSelect)
     
-    leafletProxy("worldMap") %>% clearShapes() %>% 
-      addPolygons(data = world_data_merged,
-                  fillColor = ~ifelse(is.na(value_percentage), "gray", color_pal(value_percentage)),
-                  fillOpacity = 0.7,
-                  color = "white",
-                  weight = 1,
-                  highlightOptions = highlightOptions(color = "#FFD700", weight = 2, fillOpacity = 0.9),
-                  label = ~paste0("Country: ", name, "<br>",
-                                  ifelse(!is.na(value_percentage), "Reported", "No Data")),
-                  popup = ~paste("Country:", name,
-                                 "<br>Indicator:", indicator_name,
-                                 "<br>", ifelse(!is.na(value_percentage), "Reported", "No Data Available"))
-                  
+    reported_countries <- filtered_data_for_map()
+    
+    if (nrow(reported_countries) == 0) return()
+    
+    # Match the country names to the shapefile column
+    world_data_merged <- world_spdf %>%
+      left_join(reported_countries, by = c("name_long" = "country_name"))
+    
+    # Use a factor color palette based on 0 (missing) and 1 (has data)
+    color_pal <- colorFactor(palette = c("gray", "#6DA96F"), domain = c(0, 1))
+    
+    leafletProxy("worldMap") %>% clearShapes() %>%
+      addPolygons(
+        data = world_data_merged,
+        fillColor = ~color_pal(ifelse(is.na(has_data), 0, has_data)),
+        fillOpacity = 0.7,
+        color = "white",
+        weight = 1,
+        highlightOptions = highlightOptions(color = "#FFD700", weight = 2, fillOpacity = 0.9),
+        label = ~paste0("Country: ", name_long, "<br>", 
+                        ifelse(!is.na(has_data), "Reported", "No Data")),
+        popup = ~paste(
+          "Country:", name_long, "<br>",
+          "Indicator:", ifelse(!is.na(indicator_name), indicator_name, "None"), "<br>",
+          ifelse(!is.na(has_data), "Reported", "No Data Available")
+        )
       )
     
     output$countryCount <- renderText({
       paste("Total Countries with Data:", nrow(reported_countries))
     })
   })
+  
   
   # Change infoBox colors to "purple" to match the quartz theme
   
