@@ -233,8 +233,8 @@ ui <- bootstrapPage(
       # Collapsible Section - The Size of the Public Sector
       div(class = "nav-section", onclick = "toggleSection('public_sector_section')", "The size and characteristics of the public sector"),
       div(id = "public_sector_section", style = "display: none;",
-          div(class = "nav-sub-item", actionLink("nav_public_graphs", "Public Sector Employment"),
-          div(class = "nav-sub-item", actionLink("nav_public_workforce", "Public Sector Workforce Graphs"))
+          div(class = "nav-sub-item", actionLink("nav_public_graphs", "Public Sector Employment")),
+          div(class = "nav-sub-item", actionLink("nav_public_workforce", "Distribution of Public Sector Employment"))
       ),
       
       # Collapsible Section - Characteristics of Public Sector Workforce
@@ -437,12 +437,12 @@ server <- function(input, output, session) {
       
     } else if(tab == "public_workforce") {
       tagList(
-        h3("Public Sector Workforce Graphs"),
+        h3("Distribution of Public Sector Employment"),
         fluidRow(
           div(style = "border: 2px solid white; padding: 10px; 
                       background: linear-gradient(to right, #4A90E2, #D4145A);
                       color: white; font-size: 16px; text-align: center;",
-              "This visualization explores the relationship between wage bill and GDP per capita (log scale).")
+              "This visualization shows the distribution of the public sector workforce across the three main industries (public administration, health and education).")
         ),
         fluidRow(
           selectInput("countries_workforce", "Select Countries for Workforce Graph",
