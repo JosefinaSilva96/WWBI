@@ -451,7 +451,7 @@ server <- function(input, output, session) {
           column(4, div(class = "custom-infobox", infoBox("Last Updated", "2025", icon = icon("clock"))))
         ),
         fluidRow(
-          div(style = "border: 1px solid white; padding: 10px;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               "This map shows which countries have reported data for the selected indicator.")
         ),
         fluidRow(
@@ -472,9 +472,7 @@ server <- function(input, output, session) {
       tagList(
         h3("Wage Bill Graphs"),
         fluidRow(
-          div(style = "border: 2px solid white; padding: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               "This visualization explores the wage bill over time for selected countries.")
         ),
         fluidRow(
@@ -495,14 +493,7 @@ server <- function(input, output, session) {
           plotlyOutput("plotwagebill", height = "500px")
         ),
         fluidRow(
-          div(style = "border: 2px solid white; 
-              padding: 10px; 
-              background: linear-gradient(to right, #4A90E2, #D4145A);
-              color: white; 
-              font-size: 14px; 
-              text-align: center; 
-              border-radius: 5px;
-              margin-top: 10px;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               textOutput("note_wagebill"))
         ),
         fluidRow(
@@ -514,9 +505,7 @@ server <- function(input, output, session) {
       tagList(
         h3("Wage Bill & GDP Graphs"),
         fluidRow(
-          div(style = "border: 2px solid white; padding: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               "This graph shows the relationship between the size of the wage bill and GDP per capita.")
         ),
         fluidRow(
@@ -535,9 +524,7 @@ server <- function(input, output, session) {
           plotlyOutput("dot_plot", height = "500px"), 
         ), 
         fluidRow(
-          div(style = "border: 2px solid white; padding: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               textOutput("note_dotplot")
           )
         )
@@ -547,9 +534,7 @@ server <- function(input, output, session) {
       tagList(
         h3("Distribution of Public Sector Employment"),
         fluidRow(
-          div(style = "border: 2px solid white; padding: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               "This visualization shows the distribution of the public sector workforce across the three main industries (public administration, health and education).")
         ),
         fluidRow(
@@ -560,9 +545,7 @@ server <- function(input, output, session) {
           plotlyOutput("stackedBarGraph", height = "600px")
         ),
         fluidRow(
-          div(style = "border: 2px solid white; padding: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               textOutput("note_stackedBarGraph"))
         ),
         fluidRow(
@@ -573,9 +556,7 @@ server <- function(input, output, session) {
           plotlyOutput("horizontalStackedBar", height = "600px")
         ),
         fluidRow(
-          div(style = "border: 2px solid white; padding: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               textOutput("note_horizontalStackedBar"))
         ),
         fluidRow(
@@ -591,9 +572,7 @@ server <- function(input, output, session) {
         h3("Workers with Tertiary Education"),
         fluidRow(
           fluidRow(
-            div(style = "border: 2px solid white; padding: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+            div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
                 "This visualization shows the proportion of workers with tertiary education in the public and private sectors.")
           ),
           selectInput("selected_countries", "Select Countries", 
@@ -603,9 +582,7 @@ server <- function(input, output, session) {
           plotlyOutput("barPlot", height = "600px")
         ),
         fluidRow(
-          div(style = "border: 2px solid white; padding: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               textOutput("note_tertiaryEducation"))
         ),
         fluidRow(
@@ -616,9 +593,7 @@ server <- function(input, output, session) {
         tagList(
           h3("Female Leadership Occupations and Sector"),
           fluidRow(
-            div(style = "border: 2px solid white; padding: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+            div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
                 "This visualization shows the share of females in various occupational groups (Managers/Clerks) in the public and private sectors across selected countries.")
           ),
           fluidRow(
@@ -629,9 +604,7 @@ server <- function(input, output, session) {
             plotlyOutput("barPlotwomen", height = "600px")
           ),
           fluidRow(
-            div(style = "border: 2px solid white; padding: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+            div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
                 textOutput("note_barPlotwomen"))
           ),
           fluidRow(
@@ -644,9 +617,7 @@ server <- function(input, output, session) {
         
         # Description Box
         fluidRow(
-          div(style = "border: 2px solid white; padding: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               "This visualization explores the public sector wage premium by gender across selected countries and its trend over time.")
         ),
         
@@ -662,9 +633,7 @@ server <- function(input, output, session) {
           plotlyOutput("firstGraphGenderWagePremium", height = "600px")
         ),
         fluidRow(
-          div(style = "border: 2px solid white; padding: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               textOutput("note_firstGraphGenderWagePremium"))
         ),
         # Single-Country Selection for Second Graph
@@ -679,9 +648,7 @@ server <- function(input, output, session) {
           plotlyOutput("secondGraphGenderWagePremium", height = "600px")
         ),
         fluidRow(
-          div(style = "border: 2px solid white; padding: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               textOutput("note_secondGraphGenderWagePremium"))
         ),
         
@@ -702,9 +669,7 @@ server <- function(input, output, session) {
           plotlyOutput("dotPlot", height = "500px")
         ),
         fluidRow(
-          div(style = "border: 2px solid white; padding: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               textOutput("note_wage_premium"))
         ),
         fluidRow(
@@ -717,9 +682,7 @@ server <- function(input, output, session) {
         
         # Description Box
         fluidRow(
-          div(style = "border: 2px solid white; padding: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               "This visualization explores the public sector wage premium by education level, compared to private formal workers.")
         ),
         
@@ -735,9 +698,7 @@ server <- function(input, output, session) {
           plotlyOutput("education_wage_premium_plot", height = "600px")
         ),
         fluidRow(
-          div(style = "border: 2px solid white; padding: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               textOutput("note_education_wage_premium"))
         ),
         # Download Button
@@ -751,9 +712,7 @@ server <- function(input, output, session) {
         
         # Description Box
         fluidRow(
-          div(style = "border: 2px solid white; padding: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               "Note: This indicator represents the size of public sector employment in the labor market for the most recent year available in each country.")
         ),
         
@@ -768,9 +727,7 @@ server <- function(input, output, session) {
           plotlyOutput("firstGraphpublic", height = "600px")
         ),
         fluidRow(
-          div(style = "border: 2px solid white; padding: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               textOutput("note_firstGraphpublic"))
         ),
         # Single-Country Selection for Line Graph
@@ -784,9 +741,7 @@ server <- function(input, output, session) {
           plotlyOutput("secondGraphpublic", height = "600px")
         ),
         fluidRow(
-          div(style = "border: 2px solid white; padding: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               textOutput("note_secondGraphpublic"))
         ),
         # Download Button
@@ -798,9 +753,7 @@ server <- function(input, output, session) {
       tagList(
         h3("Female share of employment"),
         fluidRow(
-          div(style = "border: 2px solid white; padding: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               "This visualization explores female employment in the public and private sectors across selected countries.")
         ),
         fluidRow(
@@ -815,9 +768,7 @@ server <- function(input, output, session) {
                       choices = unique(gender_workforce$country_name), multiple = FALSE)
         ),
         fluidRow(
-          div(style = "border: 2px solid white; padding: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               textOutput("note_firstGraphGenderWorkforce"))
         ),
         fluidRow(
@@ -827,9 +778,7 @@ server <- function(input, output, session) {
           downloadButton("downloadGraphsWordGender", "Download Female share of employment Report")
         ), 
         fluidRow(
-          div(style = "border: 2px solid white; padding: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               textOutput("note_secondGraphGenderWorkforce"))
         )
       )
@@ -837,9 +786,7 @@ server <- function(input, output, session) {
       tagList(
         h3("Gender Wage Premium in Public Sector by Industry"),
         fluidRow(
-          div(style = "border: 2px solid white; padding: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               "This visualization explores the gender wage premium in the public sector by industry across selected countries.")
         ),
         fluidRow(
@@ -850,9 +797,7 @@ server <- function(input, output, session) {
           plotOutput("gender_wage_barplot", height = "600px")
         ),
         fluidRow(
-          div(style = "border: 2px solid white; padding: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               textOutput("note_gender_wage_barplot"))
         ),
         fluidRow(
@@ -865,9 +810,7 @@ server <- function(input, output, session) {
         
         # Section Description
         fluidRow(
-          div(style = "border: 2px solid white; padding: 10px; 
-                  background: linear-gradient(to right, #4A90E2, #D4145A);
-                  color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               "This visualization explores pay compression in the public and private sectors across selected countries.")
         ),
         
@@ -888,9 +831,7 @@ server <- function(input, output, session) {
         
         # Note/Explanation
         fluidRow(
-          div(style = "border: 2px solid white; padding: 10px; 
-                  background: linear-gradient(to right, #4A90E2, #D4145A);
-                  color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               textOutput("note_dotplot"))
         ),
         
@@ -907,9 +848,7 @@ server <- function(input, output, session) {
         
         # Description box
         fluidRow(
-          div(style = "border: 2px solid white; padding: 15px; border-radius: 10px; 
-              background: linear-gradient(to right, #4A90E2, #D4145A);
-                                          color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               p("You can download a comprehensive report with all graphs or select specific graphs to include in your report.",
                 style = "font-size: 16px; color: #333;"))
         ),
