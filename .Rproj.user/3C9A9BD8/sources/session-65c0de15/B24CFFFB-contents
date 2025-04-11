@@ -299,6 +299,14 @@ server <- function(input, output, session) {
     
     if(tab == "dashboard") {
       tagList(
+        fluidRow(
+          column(6, align = "center",
+                 tags$img(src = "wbg_dec_logo.png", height = "80px")
+          ),
+          column(6, align = "center",
+                 tags$img(src = "wbg_institutions_logo.png", height = "80px")
+          )
+        ),
         h3("Overview"),
         fluidRow(
           div(style = "border: 2px solid white; padding: 15px; border-radius: 10px; 
