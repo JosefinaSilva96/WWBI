@@ -127,144 +127,171 @@ pay_compression_wide <- readRDS(file.path(data_path, "Data", "pay_compression_wi
 # ---------------------------
 
 ui <- bootstrapPage(
-  theme = bs_theme(version = 5, bootswatch = 'quartz'),
+  theme = bs_theme(version = 5, bootswatch = 'sandstone'),
   
-  # Custom CSS for the sidebar
   tags$style(HTML("
-    #sidebar {
-      height: 100vh;
-      background: linear-gradient(to bottom, #56ccf2, #2f80ed);
-      padding: 20px;
-      color: white;
-    }
-    
-    /* General Sidebar Button Styling */
-    .nav-item, .nav-sub-item {
-      display: block;
-      margin: 10px 0;
-      padding: 12px 15px;
-      font-size: 18px;
-      font-weight: bold;
-      text-align: left;
-      text-decoration: none;
-      color: white;
-      border-radius: 25px; /* Rounded corners */
-      background: transparent;
-      transition: all 0.3s ease-in-out;
-    }
-    
-    /* Pink Active Button */
-    .nav-item.active, .nav-sub-item.active {
-      background-color: #eb2f96 !important; /* Pink color */
-      color: white !important;
-    }
-    
-    /* Hover Effect */
-    .nav-item:hover, .nav-sub-item:hover {
-      cursor: pointer;
-      background-color: rgba(255, 255, 255, 0.2);
-      color: white;
-    }
+  /* General page background and text color */
+  body, .container-fluid, .main-container, .content-wrapper, .flex-grow-1 {
+    background-color: #356088 !important;
+    color: white !important;
+  }
 
-    /* Section Styling */
-    .nav-section {
-      font-size: 20px;
-      font-weight: bold;
-      margin-top: 15px;
-      color: white;
-      padding-left: 10px;
-      cursor: pointer;
-    }
+  /* Typography and panels */
+  h1, h2, h3, h4, h5, h6, p, .well, .card, .panel, .info-box, .custom-info-box, .box {
+    color: white !important;
+    background-color: transparent !important;
+    border: none !important;
+  }
 
-    /* Hidden collapsible sections */
-    #macro_section, 
-    #public_sector_section, 
-    #public_sector_workforce_section, 
-    #public_sector_wages_section {
-      padding-left: 15px;
-      display: none;
-    }
-    /* Custom Info Box Styling */
-    .custom-info-box {
-      background: linear-gradient(to right, #56ccf2, #eb2f96);
-      color: white;
-      font-size: 16px;
-      font-weight: bold;
-      text-align: center;
-      padding: 15px;
-      border-radius: 10px;
-      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-      margin: 10px 0;
-      border: 1px solid white;
-    }
+  /* Panels and wells with a border */
+  .well, .panel {
+    background-color: #356088 !important;
+    border: 1px solid #6fa8dc !important;
+    border-radius: 8px;
+  }
+
+  /* Buttons */
+  .btn, .btn-primary {
+    background-color: #6fa8dc !important;
+    border: none !important;
+  }
+
+  .btn:hover {
+    background-color: #4a90c2 !important;
+  }
+
+  /* Link styling */
+  a, a:hover {
+    color: #ffffff !important;
+    text-decoration: underline;
+  }
+
+  /* Sidebar styles */
+  #sidebar {
+    height: 100vh;
+     width: 280px; /* Increased width */
+     min-width: 280px;
+    background-color: #2b4c66; /* Adjusted to match main background */
+    padding: 20px;
+    color: white;
+    overflow-y: auto;
+  }
+
+  .nav-item {
+    display: block;
+    margin: 10px 0;
+    padding: 10px 15px;
+    font-size: 17px;
+    font-weight: bold;
+    color: white;
+    background-color: transparent;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+
+  .nav-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+  }
+
+  .nav-sub-item {
+    margin-left: 10px;
+    margin-bottom: 6px;
+    padding: 6px 12px;
+    font-size: 15px;
+    font-weight: normal;
+    color: white;
+    text-decoration: none;
+    display: block;
+    border-radius: 4px;
+  }
+
+  .nav-sub-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+  }
+
+  .nav-item.active, .nav-sub-item.active {
+    background-color: #6fa8dc !important;
+    color: white !important;
+  }
+
+  .nav-section {
+    font-size: 18px;
+    font-weight: bold;
+    margin-top: 25px;
+    margin-bottom: 10px;
+    color: white;
+    padding-left: 5px;
+  }
+
+  #macro_section, 
+  #public_sector_section, 
+  #public_sector_workforce_section, 
+  #public_sector_wages_section,
+  #equity_public_sector_section {
+    padding-left: 15px;
+    display: none;
+  }
 ")),
   
-  # JavaScript to Toggle Sections
+  # JavaScript to toggle sections
   tags$script(HTML("
     function toggleSection(sectionId) {
       var section = document.getElementById(sectionId);
-      if (section.style.display === 'none') {
-        section.style.display = 'block';
-      } else {
-        section.style.display = 'none';
-      }
+      section.style.display = section.style.display === 'none' ? 'block' : 'none';
     }
   ")),
   
-  # Layout with sidebar and main content
-  div(
-    class = "d-flex",
-    
-    # Sidebar
-    div(
-      id = "sidebar",
-      div(class = "nav-item", actionLink("nav_dashboard", "Overview")),
-      div(class = "nav-item", actionLink("nav_instructions", "Instructions")),
-      div(class = "nav-item", actionLink("nav_metadata", "Metadata")),
-      
-      
-      # Collapsible Section - The Macro Fundamentals
-      div(class = "nav-section", onclick = "toggleSection('macro_section')", "The Macro Fundamentals of the Public Sector"),
-      div(id = "macro_section", style = "display: none;",
-          div(class = "nav-sub-item", actionLink("nav_wagebill", "Wage Bill Graphs")),
-          div(class = "nav-sub-item", actionLink("nav_wagebill_gdp", "Wage Bill & GDP Graphs"))
+  # Layout
+  div(class = "d-flex",
+      # Sidebar
+      div(
+        id = "sidebar",
+        div(class = "nav-item", actionLink("nav_dashboard", "Overview")),
+        div(class = "nav-item", actionLink("nav_instructions", "Instructions")),
+        div(class = "nav-item", actionLink("nav_metadata", "Metadata")),
+        
+        div(class = "nav-section", onclick = "toggleSection('macro_section')", "Macro Fundamentals"),
+        div(id = "macro_section",
+            div(class = "nav-sub-item", actionLink("nav_wagebill", "Wage Bill Graphs")),
+            div(class = "nav-sub-item", actionLink("nav_wagebill_gdp", "Wage Bill & GDP Graphs"))
+        ),
+        
+        div(class = "nav-section", onclick = "toggleSection('public_sector_section')", "Size of the Public Sector"),
+        div(id = "public_sector_section",
+            div(class = "nav-sub-item", actionLink("nav_public_graphs", "Public Employment")),
+            div(class = "nav-sub-item", actionLink("nav_public_workforce", "Employment Distribution")),
+            div(class = "nav-sub-item", actionLink("nav_education", "Tertiary Education"))
+        ),
+        
+        div(class = "nav-section", onclick = "toggleSection('public_sector_wages_section')", "Public Sector Wages"),
+        div(id = "public_sector_wages_section",
+            div(class = "nav-sub-item", actionLink("nav_wagepremium", "Wage Premium")),
+            div(class = "nav-sub-item", actionLink("nav_public_educ", "Wage Premium by Education")),
+            div(class = "nav-sub-item", actionLink("nav_pay_compression", "Pay Compression"))
+        ),
+        
+        div(class = "nav-section", onclick = "toggleSection('equity_public_sector_section')", "Equity in Public Sector"),
+        div(id = "equity_public_sector_section",
+            div(class = "nav-sub-item", actionLink("nav_gender_workforce", "Female Employment")),
+            div(class = "nav-sub-item", actionLink("nav_female_leadership", "Female Leadership")),
+            div(class = "nav-sub-item", actionLink("nav_wagepremium_gender", "Wage Premium by Gender")),
+            div(class = "nav-sub-item", actionLink("nav_gender_wage_premium", "Gender Wage Premium by Industry"))
+        ),
+        
+        div(class = "nav-item", actionLink("nav_download_all", "📥 Download All Graphs"))
       ),
       
-      # Collapsible Section - The Size of the Public Sector
-      div(class = "nav-section", onclick = "toggleSection('public_sector_section')", "The size and characteristics of the public sector"),
-      div(id = "public_sector_section", style = "display: none;",
-          div(class = "nav-sub-item", actionLink("nav_public_graphs", "Public Sector Employment")),
-          div(class = "nav-sub-item", actionLink("nav_public_workforce", "Distribution of Public Sector Employment")),
-          div(class = "nav-sub-item", actionLink("nav_education", "Workers with Tertiary Education")),
-      ),
-      
-      # Collapsible Section - Competitiveness of Public Sector Wages
-      div(class = "nav-section", onclick = "toggleSection('public_sector_wages_section')", "Competitiveness of Public Sector Wages"),
-      div(id = "public_sector_wages_section", style = "display: none;",
-          div(class = "nav-sub-item", actionLink("nav_wagepremium", "Public Sector Wage Premium")),
-          div(class = "nav-sub-item", actionLink("nav_public_educ", "Public Sector Wage Premium by Education Level")),
-          div(class = "nav-sub-item", actionLink("nav_pay_compression", "Pay Compression Ratios"))
-      ),
-      # Collapsible Section - Equity in the Public Sector
-      div(class = "nav-section", onclick = "toggleSection('equity_public_sector_section')", "Equity in the Public Sector"),
-      div(id = "equity_public_sector_section", style = "display: none;",
-          div(class = "nav-sub-item", actionLink("nav_gender_workforce", "Female Share of Employment")), 
-          div(class = "nav-sub-item", actionLink("nav_female_leadership", "Female  Leadership Occupations")),
-          div(class = "nav-sub-item", actionLink("nav_wagepremium_gender", "Public Sector Wage Premium by Gender")), 
-          div(class = "nav-sub-item", actionLink("nav_gender_wage_premium", "Gender Wage premium in Public Sector by Industry")),
-      ),
-      
-      div(class = "nav-item", actionLink("nav_download_all", "Download All Graphs"))
-    ),
-    
-    # Main content area
-    div(
-      class = "flex-grow-1 p-4",
-      h2("Worldwide Bureaucracy Indicators "),
-      uiOutput("main_content")
-    )
+      # Main content area
+      div(class = "flex-grow-1 p-4",
+          h2("Worldwide Bureaucracy Indicators"),
+          uiOutput("main_content")
+      )
   )
 )
+
 
 
 # SERVER
@@ -309,28 +336,20 @@ server <- function(input, output, session) {
         ),
         h3("Overview"),
         fluidRow(
-          div(style = "border: 2px solid white; padding: 15px; border-radius: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               "The Worldwide Bureaucracy Indicators (WWBI) database is a unique cross-national dataset on public sector employment and wages that aims to fill an information gap, thereby helping researchers, development practitioners, and policymakers gain a better understanding of the personnel dimensions of state capability, the footprint of the public sector within the overall labor market, and the fiscal implications of the public sector wage bill. The dataset is derived from administrative data and household surveys, thereby complementing existing, expert perception-based approaches.")
         ), 
         fluidRow(
-          div(style = "border: 2px solid white; padding: 15px; border-radius: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               "Contact Information: Zahid Hasnain-zhasnain@worldbank.org and
                                     Daniel Rogger-drogger@worldbank.org")
         ), 
         fluidRow(
-          div(style = "border: 2px solid white; padding: 15px; border-radius: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               "We kindly ask all users of the dashboard to cite it as follows: Source: Worldwide Bureaucracy Indicators (WWBI) Dashboard – World Bank.")
         ), 
         fluidRow(
-          div(style = "border: 2px solid white; padding: 15px; border-radius: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
+          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               "Disclaimer:The findings, interpretations, and conclusions presented in this dashboard are those of the World Bank staff and do not necessarily reflect the views of the World Bank, its affiliated organizations, the Executive Directors of the World Bank, or the governments they represent.
               The boundaries, colors, denominations, and other information shown on this dashboard do not imply any judgment on the part of the World Bank concerning the legal status of any territory, or the endorsement or acceptance of such boundaries. The terms “country” or “economy,” as used in this dashboard, are used for statistical convenience and do not imply political independence.")
         ), 
@@ -4318,6 +4337,5 @@ server <- function(input, output, session) {
 shinyApp(ui = ui, server = server)
 
 
+
 # the end##############################################
-
-

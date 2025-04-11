@@ -127,171 +127,144 @@ pay_compression_wide <- readRDS(file.path(data_path, "Data", "pay_compression_wi
 # ---------------------------
 
 ui <- bootstrapPage(
-  theme = bs_theme(version = 5, bootswatch = 'sandstone'),
+  theme = bs_theme(version = 5, bootswatch = 'quartz'),
   
+  # Custom CSS for the sidebar
   tags$style(HTML("
-  /* General page background and text color */
-  body, .container-fluid, .main-container, .content-wrapper, .flex-grow-1 {
-    background-color: #356088 !important;
-    color: white !important;
-  }
+    #sidebar {
+      height: 100vh;
+      background: linear-gradient(to bottom, #56ccf2, #2f80ed);
+      padding: 20px;
+      color: white;
+    }
+    
+    /* General Sidebar Button Styling */
+    .nav-item, .nav-sub-item {
+      display: block;
+      margin: 10px 0;
+      padding: 12px 15px;
+      font-size: 18px;
+      font-weight: bold;
+      text-align: left;
+      text-decoration: none;
+      color: white;
+      border-radius: 25px; /* Rounded corners */
+      background: transparent;
+      transition: all 0.3s ease-in-out;
+    }
+    
+    /* Pink Active Button */
+    .nav-item.active, .nav-sub-item.active {
+      background-color: #eb2f96 !important; /* Pink color */
+      color: white !important;
+    }
+    
+    /* Hover Effect */
+    .nav-item:hover, .nav-sub-item:hover {
+      cursor: pointer;
+      background-color: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
 
-  /* Typography and panels */
-  h1, h2, h3, h4, h5, h6, p, .well, .card, .panel, .info-box, .custom-info-box, .box {
-    color: white !important;
-    background-color: transparent !important;
-    border: none !important;
-  }
+    /* Section Styling */
+    .nav-section {
+      font-size: 20px;
+      font-weight: bold;
+      margin-top: 15px;
+      color: white;
+      padding-left: 10px;
+      cursor: pointer;
+    }
 
-  /* Panels and wells with a border */
-  .well, .panel {
-    background-color: #356088 !important;
-    border: 1px solid #6fa8dc !important;
-    border-radius: 8px;
-  }
-
-  /* Buttons */
-  .btn, .btn-primary {
-    background-color: #6fa8dc !important;
-    border: none !important;
-  }
-
-  .btn:hover {
-    background-color: #4a90c2 !important;
-  }
-
-  /* Link styling */
-  a, a:hover {
-    color: #ffffff !important;
-    text-decoration: underline;
-  }
-
-  /* Sidebar styles */
-  #sidebar {
-    height: 100vh;
-     width: 280px; /* Increased width */
-     min-width: 280px;
-    background-color: #2b4c66; /* Adjusted to match main background */
-    padding: 20px;
-    color: white;
-    overflow-y: auto;
-  }
-
-  .nav-item {
-    display: block;
-    margin: 10px 0;
-    padding: 10px 15px;
-    font-size: 17px;
-    font-weight: bold;
-    color: white;
-    background-color: transparent;
-    border-radius: 6px;
-    text-decoration: none;
-    transition: background 0.2s;
-  }
-
-  .nav-item:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    cursor: pointer;
-  }
-
-  .nav-sub-item {
-    margin-left: 10px;
-    margin-bottom: 6px;
-    padding: 6px 12px;
-    font-size: 15px;
-    font-weight: normal;
-    color: white;
-    text-decoration: none;
-    display: block;
-    border-radius: 4px;
-  }
-
-  .nav-sub-item:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    cursor: pointer;
-  }
-
-  .nav-item.active, .nav-sub-item.active {
-    background-color: #6fa8dc !important;
-    color: white !important;
-  }
-
-  .nav-section {
-    font-size: 18px;
-    font-weight: bold;
-    margin-top: 25px;
-    margin-bottom: 10px;
-    color: white;
-    padding-left: 5px;
-  }
-
-  #macro_section, 
-  #public_sector_section, 
-  #public_sector_workforce_section, 
-  #public_sector_wages_section,
-  #equity_public_sector_section {
-    padding-left: 15px;
-    display: none;
-  }
+    /* Hidden collapsible sections */
+    #macro_section, 
+    #public_sector_section, 
+    #public_sector_workforce_section, 
+    #public_sector_wages_section {
+      padding-left: 15px;
+      display: none;
+    }
+    /* Custom Info Box Styling */
+    .custom-info-box {
+      background: linear-gradient(to right, #56ccf2, #eb2f96);
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      text-align: center;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+      margin: 10px 0;
+      border: 1px solid white;
+    }
 ")),
   
-  # JavaScript to toggle sections
+  # JavaScript to Toggle Sections
   tags$script(HTML("
     function toggleSection(sectionId) {
       var section = document.getElementById(sectionId);
-      section.style.display = section.style.display === 'none' ? 'block' : 'none';
+      if (section.style.display === 'none') {
+        section.style.display = 'block';
+      } else {
+        section.style.display = 'none';
+      }
     }
   ")),
   
-  # Layout
-  div(class = "d-flex",
-      # Sidebar
-      div(
-        id = "sidebar",
-        div(class = "nav-item", actionLink("nav_dashboard", "Overview")),
-        div(class = "nav-item", actionLink("nav_instructions", "Instructions")),
-        div(class = "nav-item", actionLink("nav_metadata", "Metadata")),
-        
-        div(class = "nav-section", onclick = "toggleSection('macro_section')", "Macro Fundamentals"),
-        div(id = "macro_section",
-            div(class = "nav-sub-item", actionLink("nav_wagebill", "Wage Bill Graphs")),
-            div(class = "nav-sub-item", actionLink("nav_wagebill_gdp", "Wage Bill & GDP Graphs"))
-        ),
-        
-        div(class = "nav-section", onclick = "toggleSection('public_sector_section')", "Size of the Public Sector"),
-        div(id = "public_sector_section",
-            div(class = "nav-sub-item", actionLink("nav_public_graphs", "Public Employment")),
-            div(class = "nav-sub-item", actionLink("nav_public_workforce", "Employment Distribution")),
-            div(class = "nav-sub-item", actionLink("nav_education", "Tertiary Education"))
-        ),
-        
-        div(class = "nav-section", onclick = "toggleSection('public_sector_wages_section')", "Public Sector Wages"),
-        div(id = "public_sector_wages_section",
-            div(class = "nav-sub-item", actionLink("nav_wagepremium", "Wage Premium")),
-            div(class = "nav-sub-item", actionLink("nav_public_educ", "Wage Premium by Education")),
-            div(class = "nav-sub-item", actionLink("nav_pay_compression", "Pay Compression"))
-        ),
-        
-        div(class = "nav-section", onclick = "toggleSection('equity_public_sector_section')", "Equity in Public Sector"),
-        div(id = "equity_public_sector_section",
-            div(class = "nav-sub-item", actionLink("nav_gender_workforce", "Female Employment")),
-            div(class = "nav-sub-item", actionLink("nav_female_leadership", "Female Leadership")),
-            div(class = "nav-sub-item", actionLink("nav_wagepremium_gender", "Wage Premium by Gender")),
-            div(class = "nav-sub-item", actionLink("nav_gender_wage_premium", "Gender Wage Premium by Industry"))
-        ),
-        
-        div(class = "nav-item", actionLink("nav_download_all", "📥 Download All Graphs"))
+  # Layout with sidebar and main content
+  div(
+    class = "d-flex",
+    
+    # Sidebar
+    div(
+      id = "sidebar",
+      div(class = "nav-item", actionLink("nav_dashboard", "Overview")),
+      div(class = "nav-item", actionLink("nav_instructions", "Instructions")),
+      div(class = "nav-item", actionLink("nav_metadata", "Metadata")),
+      
+      
+      # Collapsible Section - The Macro Fundamentals
+      div(class = "nav-section", onclick = "toggleSection('macro_section')", "The Macro Fundamentals of the Public Sector"),
+      div(id = "macro_section", style = "display: none;",
+          div(class = "nav-sub-item", actionLink("nav_wagebill", "Wage Bill Graphs")),
+          div(class = "nav-sub-item", actionLink("nav_wagebill_gdp", "Wage Bill & GDP Graphs"))
       ),
       
-      # Main content area
-      div(class = "flex-grow-1 p-4",
-          h2("Worldwide Bureaucracy Indicators"),
-          uiOutput("main_content")
-      )
+      # Collapsible Section - The Size of the Public Sector
+      div(class = "nav-section", onclick = "toggleSection('public_sector_section')", "The size and characteristics of the public sector"),
+      div(id = "public_sector_section", style = "display: none;",
+          div(class = "nav-sub-item", actionLink("nav_public_graphs", "Public Sector Employment")),
+          div(class = "nav-sub-item", actionLink("nav_public_workforce", "Distribution of Public Sector Employment")),
+          div(class = "nav-sub-item", actionLink("nav_education", "Workers with Tertiary Education")),
+      ),
+      
+      # Collapsible Section - Competitiveness of Public Sector Wages
+      div(class = "nav-section", onclick = "toggleSection('public_sector_wages_section')", "Competitiveness of Public Sector Wages"),
+      div(id = "public_sector_wages_section", style = "display: none;",
+          div(class = "nav-sub-item", actionLink("nav_wagepremium", "Public Sector Wage Premium")),
+          div(class = "nav-sub-item", actionLink("nav_public_educ", "Public Sector Wage Premium by Education Level")),
+          div(class = "nav-sub-item", actionLink("nav_pay_compression", "Pay Compression Ratios"))
+      ),
+      # Collapsible Section - Equity in the Public Sector
+      div(class = "nav-section", onclick = "toggleSection('equity_public_sector_section')", "Equity in the Public Sector"),
+      div(id = "equity_public_sector_section", style = "display: none;",
+          div(class = "nav-sub-item", actionLink("nav_gender_workforce", "Female Share of Employment")), 
+          div(class = "nav-sub-item", actionLink("nav_female_leadership", "Female  Leadership Occupations")),
+          div(class = "nav-sub-item", actionLink("nav_wagepremium_gender", "Public Sector Wage Premium by Gender")), 
+          div(class = "nav-sub-item", actionLink("nav_gender_wage_premium", "Gender Wage premium in Public Sector by Industry")),
+      ),
+      
+      div(class = "nav-item", actionLink("nav_download_all", "Download All Graphs"))
+    ),
+    
+    # Main content area
+    div(
+      class = "flex-grow-1 p-4",
+      h2("Worldwide Bureaucracy Indicators "),
+      uiOutput("main_content")
+    )
   )
 )
-
 
 
 # SERVER
@@ -336,20 +309,28 @@ server <- function(input, output, session) {
         ),
         h3("Overview"),
         fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
+          div(style = "border: 2px solid white; padding: 15px; border-radius: 10px; 
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
               "The Worldwide Bureaucracy Indicators (WWBI) database is a unique cross-national dataset on public sector employment and wages that aims to fill an information gap, thereby helping researchers, development practitioners, and policymakers gain a better understanding of the personnel dimensions of state capability, the footprint of the public sector within the overall labor market, and the fiscal implications of the public sector wage bill. The dataset is derived from administrative data and household surveys, thereby complementing existing, expert perception-based approaches.")
         ), 
         fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
+          div(style = "border: 2px solid white; padding: 15px; border-radius: 10px; 
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
               "Contact Information: Zahid Hasnain-zhasnain@worldbank.org and
                                     Daniel Rogger-drogger@worldbank.org")
         ), 
         fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
+          div(style = "border: 2px solid white; padding: 15px; border-radius: 10px; 
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
               "We kindly ask all users of the dashboard to cite it as follows: Source: Worldwide Bureaucracy Indicators (WWBI) Dashboard – World Bank.")
         ), 
         fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
+          div(style = "border: 2px solid white; padding: 15px; border-radius: 10px; 
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
               "Disclaimer:The findings, interpretations, and conclusions presented in this dashboard are those of the World Bank staff and do not necessarily reflect the views of the World Bank, its affiliated organizations, the Executive Directors of the World Bank, or the governments they represent.
               The boundaries, colors, denominations, and other information shown on this dashboard do not imply any judgment on the part of the World Bank concerning the legal status of any territory, or the endorsement or acceptance of such boundaries. The terms “country” or “economy,” as used in this dashboard, are used for statistical convenience and do not imply political independence.")
         ), 
@@ -371,14 +352,14 @@ server <- function(input, output, session) {
                      tags$li(
                        downloadLink("pub3", "Public Sector Employment and Compensation: An Assessment Framework"),
                        br(), tags$small("Report")), 
-                       tags$li(
-                         downloadLink("pub4", "Worldwide Bureaucracy Indicators"),
-                         br(), tags$small("Report")
-                       )
+                     tags$li(
+                       downloadLink("pub4", "Worldwide Bureaucracy Indicators"),
+                       br(), tags$small("Report")
                      )
                    )
                  )
           )
+        )
       )
     } else if (tab == "instructions") {
       tagList(
@@ -613,31 +594,31 @@ server <- function(input, output, session) {
         )
       )
     } else if(tab == "female_leadership") {
-        tagList(
-          h3("Female Leadership Occupations and Sector"),
-          fluidRow(
-            div(style = "border: 2px solid white; padding: 10px; 
+      tagList(
+        h3("Female Leadership Occupations and Sector"),
+        fluidRow(
+          div(style = "border: 2px solid white; padding: 10px; 
                       background: linear-gradient(to right, #4A90E2, #D4145A);
                       color: white; font-size: 16px; text-align: center;",
-                "This visualization shows the share of females in various occupational groups (Managers/Clerks) in the public and private sectors across selected countries.")
-          ),
-          fluidRow(
-            selectInput("selected_countries", "Select Countries", 
-                        choices = unique(gender_leadership$country_name), multiple = TRUE)
-          ),
-          fluidRow(
-            plotlyOutput("barPlotwomen", height = "600px")
-          ),
-          fluidRow(
-            div(style = "border: 2px solid white; padding: 10px; 
+              "This visualization shows the share of females in various occupational groups (Managers/Clerks) in the public and private sectors across selected countries.")
+        ),
+        fluidRow(
+          selectInput("selected_countries", "Select Countries", 
+                      choices = unique(gender_leadership$country_name), multiple = TRUE)
+        ),
+        fluidRow(
+          plotlyOutput("barPlotwomen", height = "600px")
+        ),
+        fluidRow(
+          div(style = "border: 2px solid white; padding: 10px; 
                       background: linear-gradient(to right, #4A90E2, #D4145A);
                       color: white; font-size: 16px; text-align: center;",
-                textOutput("note_barPlotwomen"))
-          ),
-          fluidRow(
-            downloadButton("downloadGraphsWordfemale", "Download Female Leadership Occupations Report")
-          )
+              textOutput("note_barPlotwomen"))
+        ),
+        fluidRow(
+          downloadButton("downloadGraphsWordfemale", "Download Female Leadership Occupations Report")
         )
+      )
     } else if(tab == "wagepremium_gender") {
       tagList(
         h3("Public Sector Wage Premium by Gender"),
@@ -962,18 +943,18 @@ server <- function(input, output, session) {
       )
     }
   }
-)
-
+  )
+  
   # ---------------------------
   
-    output$download_pdf <- downloadHandler(
-      filename = "Codebook and Explanatory Note.pdf",
-      content = function(file) {
-        file.copy(file.path(data_path, "Files", "WWBI Codebook v3.1.pdf"), file)
-      }
-    )
-
-#Publications 
+  output$download_pdf <- downloadHandler(
+    filename = "Codebook and Explanatory Note.pdf",
+    content = function(file) {
+      file.copy(file.path(data_path, "Files", "WWBI Codebook v3.1.pdf"), file)
+    }
+  )
+  
+  #Publications 
   output$pub1 <- downloadHandler(
     filename = function() {
       "Innovating-Bureaucracy-for-a-More-Capable-Government.pdf"
@@ -1270,7 +1251,7 @@ server <- function(input, output, session) {
       summarise(last_year = max(year, na.rm = TRUE)) %>%
       pull(last_year)
     
-
+    
     
     # --- Add Both Graphs Based on User Selection ---
     
@@ -1391,7 +1372,7 @@ server <- function(input, output, session) {
     }
     
     # Construct dynamic interpretation text
-
+    
     gdp_interpretation_text <- paste0(
       "Figure 1.1 illustrates the Wage bill as a percentage of GDP for the selected countries, showing ", relationship_text, 
       " between a country’s level of economic development and the size of its public sector in the ", first_region, " region. ",
@@ -2056,7 +2037,7 @@ server <- function(input, output, session) {
   output$note_wage_premium <- renderText({
     "Note: This indicator represents the public sector wage premium compared to all private sector employees. A positive value indicates that public sector workers earn more than their private-sector counterparts, on average."
   })
-
+  
   # Download the Report as a Word Document
   output$downloadWagePremiumReport <- downloadHandler(
     filename = function() { paste0("Public_Sector_Wage_Premium_", Sys.Date(), ".docx") },
@@ -2697,7 +2678,7 @@ server <- function(input, output, session) {
   }
   
   
-
+  
   #Public Sector Graphs 
   
   # First Graph - Multi-Country Dot Plot
@@ -2909,8 +2890,8 @@ server <- function(input, output, session) {
     return(doc)
   }
   
-
-#Gender Wage premium 
+  
+  #Gender Wage premium 
   
   # First Graph - Multi-Country Dot Plot for Wage Premium by Gender
   output$firstGraphGenderWagePremium <- renderPlotly({
@@ -3244,7 +3225,7 @@ server <- function(input, output, session) {
       doc <- doc %>% body_add_par("Female Employment by Sector Over Time", style = "heading 2")
       doc <- doc %>% body_add_img(src = img_path2, width = 6, height = 4)
       
-   
+      
       # Save the Document
       print(doc, target = file)
     }
@@ -3370,7 +3351,7 @@ server <- function(input, output, session) {
     return(doc)
   }
   
-
+  
   # Women Leadership 
   
   output$barPlotwomen <- renderPlotly({
@@ -3876,7 +3857,7 @@ server <- function(input, output, session) {
     return(doc)
   }
   
-#Pay compression 
+  #Pay compression 
   
   output$paycompression_plot <- renderPlotly({
     req(input$countries_first)  # Ensure at least one country is selected
@@ -3930,166 +3911,166 @@ server <- function(input, output, session) {
   })
   
   
-    output$note_dotplot <- renderText({
-      "Note: This graph compares pay compression ratios in the public and private sectors. The trendline provides a visual reference for overall patterns across countries."
-    })
-    output$downloadPayCompressionDoc <- downloadHandler(
-      filename = function() { paste0("Pay_Compression_Ratios_Report_", Sys.Date(), ".docx") },
+  output$note_dotplot <- renderText({
+    "Note: This graph compares pay compression ratios in the public and private sectors. The trendline provides a visual reference for overall patterns across countries."
+  })
+  output$downloadPayCompressionDoc <- downloadHandler(
+    filename = function() { paste0("Pay_Compression_Ratios_Report_", Sys.Date(), ".docx") },
+    
+    content = function(file) {
+      # **Filter data for selected countries**
+      filtered_data_df <- pay_compression_wide %>%
+        filter(country_name %in% input$countries_first)
       
-      content = function(file) {
-        # **Filter data for selected countries**
-        filtered_data_df <- pay_compression_wide %>%
-          filter(country_name %in% input$countries_first)
-        
-        req(nrow(filtered_data_df) > 0) # **Ensure there is data before proceeding**
-        
-        # **Get the first selected country for the report title**
-        countries <- if (!is.null(input$countries_first) & length(input$countries_first) > 0) {
-          paste(input$countries_first, collapse = ", ")
-        } else {
-          "Selected Countries"
-        }
-        
-        report_title <- paste("Pay Compression Ratios Analysis Report -", countries)
-        
-        # **Create Word document**
-        doc <- read_docx()
-        title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
-        doc <- doc %>% body_add_fpar(fpar(ftext(report_title, prop = title_style)))
-        
-        # **Add Introduction**
-        doc <- doc %>% body_add_par("Introduction", style = "heading 2") %>% 
-          body_add_par("This report presents an analysis of pay compression ratios in the public and private sectors across selected countries. 
+      req(nrow(filtered_data_df) > 0) # **Ensure there is data before proceeding**
+      
+      # **Get the first selected country for the report title**
+      countries <- if (!is.null(input$countries_first) & length(input$countries_first) > 0) {
+        paste(input$countries_first, collapse = ", ")
+      } else {
+        "Selected Countries"
+      }
+      
+      report_title <- paste("Pay Compression Ratios Analysis Report -", countries)
+      
+      # **Create Word document**
+      doc <- read_docx()
+      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
+      doc <- doc %>% body_add_fpar(fpar(ftext(report_title, prop = title_style)))
+      
+      # **Add Introduction**
+      doc <- doc %>% body_add_par("Introduction", style = "heading 2") %>% 
+        body_add_par("This report presents an analysis of pay compression ratios in the public and private sectors across selected countries. 
                     Pay compression is measured as the ratio of wages at the 90th percentile to the 10th percentile, providing insights into 
                     wage inequality within each sector. The analysis compares these ratios and examines trends across different economies.", 
-                       style = "Normal")
-        
-        # **Create scatter plot with trend line**
-        plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector, label = country_name)) +
-          geom_point(color = "#003366", size = 3) +      # Main scatter points
-          geom_text(vjust = -0.5, size = 3) +            # Country labels
-          geom_smooth(method = "lm", color = "gray", linetype = "dashed") + # Trendline
-          labs(title = "Pay Compression: Public vs. Private Sector",
-               x = "Private Sector Pay Compression",
-               y = "Public Sector Pay Compression") +
-          theme_minimal()
-        
-        # **Add plot to Word document**
-        doc <- doc %>% body_add_gg(value = plot, style = "centered") 
-        
-        # **Add explanatory note**
-        doc <- doc %>% body_add_par("Note: This graph compares pay compression ratios in the public and private sectors. 
-                                  The trendline provides a visual reference for overall patterns across countries.", style = "Normal")
-        
-        # **Save document**
-        print(doc, target = file)
-      }
-    )
-    
-  #Pay compression section  
-    
-    generate_pay_compression_section <- function(doc, selected_countries) {
-      doc <- doc %>% body_add_par("Pay Compression in the Private and Public Sector", style = "heading 1")
+                     style = "Normal")
       
-      doc <- doc %>% body_add_par(
-        "This section presents an analysis of the pay compression for the private and public sector 
-     across selected countries.", 
-        style = "Normal"
-      )
-      
-      if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
-        doc <- doc %>% body_add_par("No countries selected for analysis.", style = "Normal")
-        return(doc)
-      }
-      
-      first_country <- selected_countries[1]
-      
-      filtered_data_df <- pay_compression_wide %>%
-        filter(country_name %in% selected_countries)
-      
-      req(nrow(filtered_data_df) > 0)
-      
-      country_summary <- filtered_data_df %>%
-        group_by(country_name) %>%
-        summarise(
-          public_compression = round(mean(Public_Sector, na.rm = TRUE), 1),  
-          private_compression = round(mean(Private_Sector, na.rm = TRUE), 1) 
-        )
-      
-      highest_public <- country_summary %>%
-        filter(public_compression == max(public_compression, na.rm = TRUE)) %>% pull(country_name)
-      lowest_public <- country_summary %>%
-        filter(public_compression == min(public_compression, na.rm = TRUE)) %>% pull(country_name)
-      
-      highest_private <- country_summary %>%
-        filter(private_compression == max(private_compression, na.rm = TRUE)) %>% pull(country_name)
-      lowest_private <- country_summary %>%
-        filter(private_compression == min(private_compression, na.rm = TRUE)) %>% pull(country_name)
-      
-      first_country_values <- country_summary %>% filter(country_name == first_country)
-      first_public_compression <- first_country_values %>% pull(public_compression) %>% coalesce(NA)
-      first_private_compression <- first_country_values %>% pull(private_compression) %>% coalesce(NA)
-      
-      other_countries_avg <- country_summary %>%
-        filter(country_name != first_country) %>%
-        summarise(
-          avg_public_compression = round(mean(public_compression, na.rm = TRUE), 1),
-          avg_private_compression = round(mean(private_compression, na.rm = TRUE), 1)
-        )
-      
-      if (first_country %in% country_summary$country_name) {
-        rank_public <- rank(-country_summary$public_compression, ties.method = "min")[country_summary$country_name == first_country]
-        rank_private <- rank(-country_summary$private_compression, ties.method = "min")[country_summary$country_name == first_country]
-        
-        public_position <- dplyr::case_when(
-          rank_public == 1 ~ "the highest",
-          rank_public == nrow(country_summary) ~ "the lowest",
-          TRUE ~ "in the middle range"
-        )
-        
-        private_position <- dplyr::case_when(
-          rank_private == 1 ~ "the highest",
-          rank_private == nrow(country_summary) ~ "the lowest",
-          TRUE ~ "in the middle range"
-        )
-      } else {
-        public_position <- "unranked"
-        private_position <- "unranked"
-      }
-      
-      interpretation_text <- paste0(
-        "This figure compares pay compression ratios (90th/10th percentile) in the public and private sectors.\n\n",
-        "For ", first_country, ", the pay compression ratio is ", first_public_compression, 
-        " in the public sector and ", first_private_compression, " in the private sector.\n\n",
-        "Among the selected countries, ", highest_public, " has the highest public sector pay compression, while ",
-        lowest_public, " has the lowest public sector pay compression.\n\n",
-        "In the private sector, ", highest_private, " has the highest pay compression, whereas ",
-        lowest_private, " has the lowest.\n\n",
-        first_country, " is ranked ", public_position, " in public sector compression and ",
-        private_position, " in private sector compression compared to other selected countries.\n\n",
-        "A higher compression ratio indicates greater income disparity within the sector. The trendline provides an overall pattern, and the 45-degree reference line represents equality between public and private sector compression."
-      )
-      
-      plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector)) +
-        geom_point(color = "#003366", size = 3) +
-        geom_text(aes(label = country_name), vjust = -0.5, size = 3) +
-        geom_smooth(method = "lm", color = "gray", linetype = "dashed") +
+      # **Create scatter plot with trend line**
+      plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector, label = country_name)) +
+        geom_point(color = "#003366", size = 3) +      # Main scatter points
+        geom_text(vjust = -0.5, size = 3) +            # Country labels
+        geom_smooth(method = "lm", color = "gray", linetype = "dashed") + # Trendline
         labs(title = "Pay Compression: Public vs. Private Sector",
              x = "Private Sector Pay Compression",
              y = "Public Sector Pay Compression") +
         theme_minimal()
       
-      img_path <- tempfile(fileext = ".png")
-      ggsave(filename = img_path, plot = plot, width = 8, height = 6, dpi = 300)
+      # **Add plot to Word document**
+      doc <- doc %>% body_add_gg(value = plot, style = "centered") 
       
-      doc <- doc %>% 
-        body_add_img(src = img_path, width = 6, height = 4) %>%
-        body_add_par("Note: The trendline provides a visual reference for overall patterns across countries.", style = "Normal") %>%
-        body_add_par(interpretation_text, style = "Normal")
+      # **Add explanatory note**
+      doc <- doc %>% body_add_par("Note: This graph compares pay compression ratios in the public and private sectors. 
+                                  The trendline provides a visual reference for overall patterns across countries.", style = "Normal")
       
+      # **Save document**
+      print(doc, target = file)
+    }
+  )
+  
+  #Pay compression section  
+  
+  generate_pay_compression_section <- function(doc, selected_countries) {
+    doc <- doc %>% body_add_par("Pay Compression in the Private and Public Sector", style = "heading 1")
+    
+    doc <- doc %>% body_add_par(
+      "This section presents an analysis of the pay compression for the private and public sector 
+     across selected countries.", 
+      style = "Normal"
+    )
+    
+    if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
+      doc <- doc %>% body_add_par("No countries selected for analysis.", style = "Normal")
       return(doc)
     }
     
+    first_country <- selected_countries[1]
+    
+    filtered_data_df <- pay_compression_wide %>%
+      filter(country_name %in% selected_countries)
+    
+    req(nrow(filtered_data_df) > 0)
+    
+    country_summary <- filtered_data_df %>%
+      group_by(country_name) %>%
+      summarise(
+        public_compression = round(mean(Public_Sector, na.rm = TRUE), 1),  
+        private_compression = round(mean(Private_Sector, na.rm = TRUE), 1) 
+      )
+    
+    highest_public <- country_summary %>%
+      filter(public_compression == max(public_compression, na.rm = TRUE)) %>% pull(country_name)
+    lowest_public <- country_summary %>%
+      filter(public_compression == min(public_compression, na.rm = TRUE)) %>% pull(country_name)
+    
+    highest_private <- country_summary %>%
+      filter(private_compression == max(private_compression, na.rm = TRUE)) %>% pull(country_name)
+    lowest_private <- country_summary %>%
+      filter(private_compression == min(private_compression, na.rm = TRUE)) %>% pull(country_name)
+    
+    first_country_values <- country_summary %>% filter(country_name == first_country)
+    first_public_compression <- first_country_values %>% pull(public_compression) %>% coalesce(NA)
+    first_private_compression <- first_country_values %>% pull(private_compression) %>% coalesce(NA)
+    
+    other_countries_avg <- country_summary %>%
+      filter(country_name != first_country) %>%
+      summarise(
+        avg_public_compression = round(mean(public_compression, na.rm = TRUE), 1),
+        avg_private_compression = round(mean(private_compression, na.rm = TRUE), 1)
+      )
+    
+    if (first_country %in% country_summary$country_name) {
+      rank_public <- rank(-country_summary$public_compression, ties.method = "min")[country_summary$country_name == first_country]
+      rank_private <- rank(-country_summary$private_compression, ties.method = "min")[country_summary$country_name == first_country]
+      
+      public_position <- dplyr::case_when(
+        rank_public == 1 ~ "the highest",
+        rank_public == nrow(country_summary) ~ "the lowest",
+        TRUE ~ "in the middle range"
+      )
+      
+      private_position <- dplyr::case_when(
+        rank_private == 1 ~ "the highest",
+        rank_private == nrow(country_summary) ~ "the lowest",
+        TRUE ~ "in the middle range"
+      )
+    } else {
+      public_position <- "unranked"
+      private_position <- "unranked"
+    }
+    
+    interpretation_text <- paste0(
+      "This figure compares pay compression ratios (90th/10th percentile) in the public and private sectors.\n\n",
+      "For ", first_country, ", the pay compression ratio is ", first_public_compression, 
+      " in the public sector and ", first_private_compression, " in the private sector.\n\n",
+      "Among the selected countries, ", highest_public, " has the highest public sector pay compression, while ",
+      lowest_public, " has the lowest public sector pay compression.\n\n",
+      "In the private sector, ", highest_private, " has the highest pay compression, whereas ",
+      lowest_private, " has the lowest.\n\n",
+      first_country, " is ranked ", public_position, " in public sector compression and ",
+      private_position, " in private sector compression compared to other selected countries.\n\n",
+      "A higher compression ratio indicates greater income disparity within the sector. The trendline provides an overall pattern, and the 45-degree reference line represents equality between public and private sector compression."
+    )
+    
+    plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector)) +
+      geom_point(color = "#003366", size = 3) +
+      geom_text(aes(label = country_name), vjust = -0.5, size = 3) +
+      geom_smooth(method = "lm", color = "gray", linetype = "dashed") +
+      labs(title = "Pay Compression: Public vs. Private Sector",
+           x = "Private Sector Pay Compression",
+           y = "Public Sector Pay Compression") +
+      theme_minimal()
+    
+    img_path <- tempfile(fileext = ".png")
+    ggsave(filename = img_path, plot = plot, width = 8, height = 6, dpi = 300)
+    
+    doc <- doc %>% 
+      body_add_img(src = img_path, width = 6, height = 4) %>%
+      body_add_par("Note: The trendline provides a visual reference for overall patterns across countries.", style = "Normal") %>%
+      body_add_par(interpretation_text, style = "Normal")
+    
+    return(doc)
+  }
+  
   
   generate_conclusion_section <- function(doc) {
     # Add Section Title
@@ -4182,16 +4163,16 @@ server <- function(input, output, session) {
   
   
   #Download one single report
- 
+  
   output$downloadAllGraphsDoc <- downloadHandler(
     filename = function() { 
       paste0("Wage_bill_and_public_employment_analysis_", Sys.Date(), ".docx") 
     },
     content = function(file) {
-          
+      
       # Get the selected countries dynamically
-          selected_countries <- input$countries_first  
-  
+      selected_countries <- input$countries_first  
+      
       # Initialize Word document
       doc <- read_docx() 
       
@@ -4337,5 +4318,5 @@ server <- function(input, output, session) {
 shinyApp(ui = ui, server = server)
 
 
-
 # the end##############################################
+
