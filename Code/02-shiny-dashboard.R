@@ -253,13 +253,13 @@ ui <- bootstrapPage(
         div(class = "nav-item", actionLink("nav_instructions", "Instructions")),
         div(class = "nav-item", actionLink("nav_metadata", "Metadata")),
         
-        div(class = "nav-section", onclick = "toggleSection('macro_section')", "Macro Fundamentals"),
+        div(class = "nav-section", onclick = "toggleSection('macro_section')", "Macro Fundamentals of the Public SEctor"),
         div(id = "macro_section",
             div(class = "nav-sub-item", actionLink("nav_wagebill", "Wage Bill Graphs")),
             div(class = "nav-sub-item", actionLink("nav_wagebill_gdp", "Wage Bill & GDP Graphs"))
         ),
         
-        div(class = "nav-section", onclick = "toggleSection('public_sector_section')", "Size of the Public Sector"),
+        div(class = "nav-section", onclick = "toggleSection('public_sector_section')", "The Size and Characteristics of the Public Sector"),
         div(id = "public_sector_section",
             div(class = "nav-sub-item", actionLink("nav_public_graphs", "Public Employment")),
             div(class = "nav-sub-item", actionLink("nav_public_workforce", "Employment Distribution")),
@@ -389,31 +389,32 @@ server <- function(input, output, session) {
             
             p("This Dashboard is a product of the Bureaucracy Lab, a joint initiative between the Governance Global Practice and the Development Impact Evaluation (DIME) Department of the Research Group at the World Bank."),
             
-            p("The dashboard allows users to explore key indicators from the Worldwide Bureaucracy Indicators (WWBI) through interactive visualizations, which can also be exported into a Word report for further use and analysis."),
+            p("The dashboard allows users to explore key indicators from the Worldwide Bureaucracy Indicators (WWBI) through a variety of interactive visualizations, which can also be exported into a Word report for further use and analysis."),
             
-            p("In all visualization sections, the dropdown menus for country, region, or income group only display options with available data for the selected indicator. If an indicator is not available for a specific country or group, it will not appear in the dropdown list."),
-            
-            p("Each section of the dashboard presents graphs to facilitate benchmarking of state capacity measures across countries, regions, and income groups. Below is an overview of the sections:"),
+            p("Each section of the dashboard presents a set of graphs designed to facilitate benchmarking of state capacity measures across countries, regions, and income groups. Below is a brief overview of each section:"),
             
             tags$ul(
               tags$li(tags$b("Macro-Fundamentals of the Public Sector:"), 
-                      " Trends in the public wage bill as a percentage of total expenditure and GDP, with comparisons by income level."),
+                      "This section shows the trends in the size of the public wage bill, expressed as a percentage of both total public expenditure and GDP. It also includes cross-country comparisons of these indicators by income level (measured by GDP per capita)."),
               tags$li(tags$b("Size and Characteristics of the Public Sector:"), 
-                      " Explore employment within the labor market, workforce by sector (industry), and education levels compared to the private sector."),
+                      "In this section, users can examine the size of public sector employment within the overall labor market, the distribution of the public workforce by sector (industry), and the educational attainment of public sector workers compared to private sector employees."),
               tags$li(tags$b("Competitiveness of Public Sector Wages:"), 
-                      " View wage differentials between public and private sectors, by gender, education, and location, plus compression ratios."),
+                      "This section presents the public sector wage premium or the difference in wages between public and private sector workers, adjusted for characteristics such as gender, education, and location. It also shows how this premium varies by education level and compares wage compression ratios for both public and private sector across countries."),
               tags$li(tags$b("Equity in the Public Sector:"), 
-                      " Analyze gender equity, representation, occupational segregation, and wage gaps within the public sector."),
+                      "This section provides insights into gender equity in public employment. The visualizations compare the representation of women in the public and private sectors, examines occupational segregation, and highlights gender wage gaps across industries within the public sector."),
               tags$li(tags$b("Download Graph Report:"), 
-                      " Export all dashboard graphs into a full or custom Word report with prefilled interpretation text.")
+                      "This tab allows users to download a complete report containing all visualizations from the dashboard or create a custom report by selecting specific sections and their corresponding graphs. The reports are generated in .doc format and include prefilled text to support interpretation and analysis.")
             ),
             
             h4("🧭 How to Use the Dashboard"),
             tags$ol(
               tags$li("In each tab, select a country of interest and choose comparator countries, regions, or income groups."),
-              tags$li("The first country selected will serve as the reference for benchmark comparisons."),
-              tags$li("Download individual graphs using the 'Download Report Word' button on each tab."),
-              tags$li("To export all selected visualizations into a single Word report, go to the final tab “Download All Graphs.”")
+              tags$li("To check the availability of each indicator by country, users can navigate to the “Metadata” section. By selecting the indicator of interest, the map will display the countries for which data is available and the corresponding value for that indicator."),
+              tags$li("In all visualization sections, the dropdown menus for country, region, or income group only display options with available data for the selected indicator. If an indicator is not available for a specific country or group, it will not appear in the dropdown list."),
+              tags$li("The first country selected will appear first in the graphs and will serve as the reference point for benchmark comparisons."),
+              tags$li("Each tab presents different sets of graphs, which can be downloaded individually using the Download Report in Word option."),
+              tags$li("Alternatively, users may choose their country and comparators across all tabs and then go to the final tab, “Download All Graphs,” to export all selected visualizations into a comprehensive, pre-formatted Word report."),
+              tags$li("For detailed information on how indicators are constructed, data sources, and the list of countries and surveys included in the dataset, please refer to the WWBI Codebook, accessible through the button below.")
             ),
             
             p("For more information on indicator construction, data sources, and the countries and surveys included in the dataset, refer to the WWBI Codebook using the button below.")
