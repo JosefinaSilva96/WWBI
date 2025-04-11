@@ -301,10 +301,10 @@ server <- function(input, output, session) {
       tagList(
         fluidRow(
           column(6, align = "center",
-                 tags$img(src = "wbg_dec_logo.png", height = "80px")
+                 tags$img(src = "Logos/wbg_dec_logo.png", height = "80px")
           ),
           column(6, align = "center",
-                 tags$img(src = "wbg_institutions_logo.png", height = "80px")
+                 tags$img(src = "Logos/wbg_institutions_logo.png", height = "80px")
           )
         ),
         h3("Overview"),
