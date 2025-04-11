@@ -646,7 +646,7 @@ server <- function(input, output, session) {
           div(style = "border: 2px solid white; padding: 10px; 
                       background: linear-gradient(to right, #4A90E2, #D4145A);
                       color: white; font-size: 16px; text-align: center;",
-              "This visualization explores public sector employment across selected countries and its trend over time.")
+              "Note: This indicator represents the size of public sector employment in the labor market for the most recent year available in each country.")
         ),
         
         # Multi-Country Selection for First Graph
