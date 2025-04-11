@@ -243,12 +243,12 @@ ui <- bootstrapPage(
       div(id = "public_sector_wages_section", style = "display: none;",
           div(class = "nav-sub-item", actionLink("nav_wagepremium", "Public Sector Wage Premium")),
           div(class = "nav-sub-item", actionLink("nav_public_educ", "Public Sector Wage Premium by Education Level")),
-          div(class = "nav-sub-item", actionLink("nav_wagepremium_gender", "Wage Premium Gender Graphs")), 
-          div(class = "nav-sub-item", actionLink("nav_pay_compression", "Pay Compression Graphs"))
+          div(class = "nav-sub-item", actionLink("nav_pay_compression", "Pay Compression Ratios"))
       ),
       # Collapsible Section - Equity in the Public Sector
       div(class = "nav-section", onclick = "toggleSection('equity_public_sector_section')", "Equity in the Public Sector"),
       div(id = "equity_public_sector_section", style = "display: none;",
+          div(class = "nav-sub-item", actionLink("nav_wagepremium_gender", "Public Sector Wage Premium by Gender")), 
           div(class = "nav-sub-item", actionLink("nav_gender_workforce", "Female Share of Employment")), 
           div(class = "nav-sub-item", actionLink("nav_female_leadership", "Female  Leadership Occupations")),
           div(class = "nav-sub-item", actionLink("nav_gender_wage_premium", "Gender Wage premium in Public Sector by Industry")),
@@ -531,7 +531,7 @@ server <- function(input, output, session) {
         )
     } else if(tab == "wagepremium_gender") {
       tagList(
-        h3("Wage Premium by Gender Graphs"),
+        h3("Public Sector Wage Premium by Gender"),
         
         # Description Box
         fluidRow(
@@ -578,7 +578,7 @@ server <- function(input, output, session) {
         
         # Download Button
         fluidRow(
-          downloadButton("downloadGraphsWordGenderWagePremium", "Download Gender Wage Premium Report (Word)")
+          downloadButton("downloadGraphsWordGenderWagePremium", "Download Public Sector Wage Premium by Gender Report")
         )
       )
       
@@ -752,7 +752,7 @@ server <- function(input, output, session) {
       )
     } else if(tab == "pay_compression") {
       tagList(
-        h3("Pay Compression in the Public and Private Sectors"),
+        h3("Pay Compression Ratios"),
         
         # Section Description
         fluidRow(
@@ -787,7 +787,7 @@ server <- function(input, output, session) {
         
         # Download Button for Report
         fluidRow(
-          downloadButton("downloadPayCompressionDoc", "Download Pay Compression Report")
+          downloadButton("downloadPayCompressionDoc", "Download Pay Compression Ratios Report")
         )
       )
     } else if(tab == "download_all") {
@@ -830,14 +830,13 @@ server <- function(input, output, session) {
             "Gender Wage Premium" = "genderwagepremium",
             "Public Sector Wage Premium by Education Level" = "wagepremiumeducation",
             "Public Employment" = "public_employment",
-            "Wage Premium by Gender" = "wagepremiumgender",
+            "Public sector Wage Premium by Gender" = "wagepremiumgender",
             "Public Sector Workforce" = "public_workforce",
             "Female share of employment" = "gender_workforce",
-            "Female Occupation Groups" = "femaleoccupation",
             "Female Leadership Occupations" = "female_leadership",
             "Wage Premium" = "wagepremium",
             "Gender Wage premium in Public Sector by Industry" = "gender_wage_premium", 
-            "Pay Compression Report" = "pay_compression"
+            "Pay Compression Ratios" = "pay_compression"
           ),
           selected = c("wagebill", "public_employment") # Default selections
         ),
@@ -3776,7 +3775,7 @@ server <- function(input, output, session) {
       "Note: This graph compares pay compression ratios in the public and private sectors. The trendline provides a visual reference for overall patterns across countries."
     })
     output$downloadPayCompressionDoc <- downloadHandler(
-      filename = function() { paste0("Pay_Compression_Report_", Sys.Date(), ".docx") },
+      filename = function() { paste0("Pay_Compression_Ratios_Report_", Sys.Date(), ".docx") },
       
       content = function(file) {
         # **Filter data for selected countries**
@@ -3792,7 +3791,7 @@ server <- function(input, output, session) {
           "Selected Countries"
         }
         
-        report_title <- paste("Pay Compression Analysis Report -", countries)
+        report_title <- paste("Pay Compression Ratios Analysis Report -", countries)
         
         # **Create Word document**
         doc <- read_docx()
