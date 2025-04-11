@@ -234,14 +234,8 @@ ui <- bootstrapPage(
       div(class = "nav-section", onclick = "toggleSection('public_sector_section')", "The size and characteristics of the public sector"),
       div(id = "public_sector_section", style = "display: none;",
           div(class = "nav-sub-item", actionLink("nav_public_graphs", "Public Sector Employment")),
-          div(class = "nav-sub-item", actionLink("nav_public_workforce", "Distribution of Public Sector Employment"))
-      ),
-      
-      # Collapsible Section - Characteristics of Public Sector Workforce
-      div(class = "nav-section", onclick = "toggleSection('public_sector_workforce_section')", "Characteristics of Public Sector Workforce"),
-      div(id = "public_sector_workforce_section", style = "display: none;",
-          div(class = "nav-sub-item", actionLink("nav_gender_workforce", "Gender Workforce Graphs")), 
-          div(class = "nav-sub-item", actionLink("nav_education", "Tertiary Education Graphs")),
+          div(class = "nav-sub-item", actionLink("nav_public_workforce", "Distribution of Public Sector Employment")),
+          div(class = "nav-sub-item", actionLink("nav_education", "Workers with Tertiary Education")),
           div(class = "nav-sub-item", actionLink("nav_public_educ", "Public Sector Education Graphs")),
           div(class = "nav-sub-item", actionLink("nav_female_leadership", "Female Leadership Graphs")),
           div(class = "nav-sub-item", actionLink("nav_gender_wage_premium", "Gender Wage Premium Graphs")),
@@ -253,6 +247,11 @@ ui <- bootstrapPage(
           div(class = "nav-sub-item", actionLink("nav_wagepremium", "Public Sector Wage Premium")),
           div(class = "nav-sub-item", actionLink("nav_wagepremium_gender", "Wage Premium Gender Graphs")), 
           div(class = "nav-sub-item", actionLink("nav_pay_compression", "Pay Compression Graphs"))
+      ),
+      # Collapsible Section - Equity in the Public Sector
+      div(class = "nav-section", onclick = "toggleSection('equity_public_sector_section')", "Equity in the Public Sector"),
+      div(id = "equity_public_sector_section", style = "display: none;",
+          div(class = "nav-sub-item", actionLink("nav_gender_workforce", "Female Share of Employment")), 
       ),
       
       div(class = "nav-item", actionLink("nav_download_all", "Download All Graphs"))
@@ -480,13 +479,13 @@ server <- function(input, output, session) {
       
     } else if(tab == "education") {
       tagList(
-        h3("Tertiary Education Graphs"),
+        h3("Workers with Tertiary Education"),
         fluidRow(
           fluidRow(
             div(style = "border: 2px solid white; padding: 10px; 
                       background: linear-gradient(to right, #4A90E2, #D4145A);
                       color: white; font-size: 16px; text-align: center;",
-                "This visualization explores the relationship between wage bill and GDP per capita (log scale).")
+                "This visualization shows the proportion of workers with tertiary education in the public and private sectors.")
           ),
           selectInput("selected_countries", "Select Countries", 
                       choices = unique(tertiary_education$country_name), multiple = TRUE)
@@ -688,7 +687,7 @@ server <- function(input, output, session) {
       )
     } else if(tab == "gender_workforce") {
       tagList(
-        h3("Female Employment by Sector"),
+        h3("Female share of employment"),
         fluidRow(
           div(style = "border: 2px solid white; padding: 10px; 
                       background: linear-gradient(to right, #4A90E2, #D4145A);
@@ -716,7 +715,7 @@ server <- function(input, output, session) {
           plotlyOutput("secondGraphGenderWorkforce")
         ),
         fluidRow(
-          downloadButton("downloadGraphsWordGender", "Download Gender Workforce Report")
+          downloadButton("downloadGraphsWordGender", "Download Female share of employment Report")
         ), 
         fluidRow(
           div(style = "border: 2px solid white; padding: 10px; 
@@ -833,7 +832,7 @@ server <- function(input, output, session) {
             "Public Employment" = "public_employment",
             "Wage Premium by Gender" = "wagepremiumgender",
             "Public Sector Workforce" = "public_workforce",
-            "Gender Workforce" = "gender_workforce",
+            "Female share of employment" = "gender_workforce",
             "Female Occupation Groups" = "femaleoccupation",
             "Wage Premium" = "wagepremium",
             "Gender Wage Premium Report" = "gender_wage_premium", 
@@ -1702,7 +1701,7 @@ server <- function(input, output, session) {
   }
   
   
-  #Tertiary Education 
+  #Workers with tertiary education
   
   output$barPlot <- renderPlotly({
     req(input$selected_countries)
@@ -1721,7 +1720,7 @@ server <- function(input, output, session) {
               color = ~indicator_name, colors = custom_colors, 
               type = 'bar', barmode = 'group', text = ~paste0(round(value_percentage, 1), "%"),
               textposition = "auto") %>%
-      layout(title = "Tertiary Education by Sector and Country",
+      layout(title = "Workers with tertiary education by sector and country",
              xaxis = list(title = "Country"),
              yaxis = list(title = "Tertiary Education (%)"),
              legend = list(title = list(text = "<b>Sector</b>")))
@@ -1733,7 +1732,7 @@ server <- function(input, output, session) {
   })
   
   output$downloadGraphsWordEducation <- downloadHandler(
-    filename = function() { paste0("Tertiary_Education_Report_", Sys.Date(), ".docx") },
+    filename = function() { paste0("Workers_Tertiary_Education_Report_", Sys.Date(), ".docx") },
     content = function(file) {
       
       # Create Word Document
@@ -1797,7 +1796,7 @@ server <- function(input, output, session) {
       geom_bar(stat = "identity", position = "dodge") +
       scale_fill_manual(values = c("as a share of private paid employees" = "#B3242B", 
                                    "as a share of public paid employees" = "#003366")) +
-      labs(title = "Tertiary Education by Sector and Country", x = "Country", y = "Tertiary Education (%)", fill = "Sector") +
+      labs(title = "Workers with tertiary education by sector and country", x = "Country", y = "Tertiary Education (%)", fill = "Sector") +
       theme_minimal() +
       theme(axis.text.x = element_text(angle = 45, hjust = 1))
     
@@ -2075,7 +2074,7 @@ server <- function(input, output, session) {
     return(doc)
   }
   
-  
+  #Female share of employment
   
   output$employment_plot <- renderPlotly({
     filtered_data <- gender_workforce %>% filter(country_name %in% input$countries_workforce)
