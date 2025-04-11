@@ -253,7 +253,7 @@ ui <- bootstrapPage(
         div(class = "nav-item", actionLink("nav_instructions", "Instructions")),
         div(class = "nav-item", actionLink("nav_metadata", "Metadata")),
         
-        div(class = "nav-section", onclick = "toggleSection('macro_section')", "Macro Fundamentals of the Public SEctor"),
+        div(class = "nav-section", onclick = "toggleSection('macro_section')", "Macro Fundamentals of the Public Sector"),
         div(id = "macro_section",
             div(class = "nav-sub-item", actionLink("nav_wagebill", "Wage Bill Graphs")),
             div(class = "nav-sub-item", actionLink("nav_wagebill_gdp", "Wage Bill & GDP Graphs"))
@@ -4142,22 +4142,17 @@ server <- function(input, output, session) {
       
       section_style <- fp_text(color = "#003366", font.size = 14, bold = TRUE)
       
+      doc <- doc %>% body_add_fpar(fpar(ftext("Macro-Fundamentals of the Public Sector:", prop = section_style)))
+      
       # Add Sections from Each Tab
       doc <- generate_wage_bill_analysis_section(doc) #  Wage Bill Analysis
       doc <- generate_gdp_analysis_section(doc, selected_countries)
-      doc <- generate_tertiary_education_section(doc) # Tertiary Education Analysis
-      doc <- generate_wage_premium_genderbysector_section(doc) #Wage Premium Gender Analysis by industry
-      doc <- generate_wage_premium_education_section(doc) #Wage Premium by Education
       
-      doc <- doc %>% body_add_fpar(fpar(ftext("The size of the public sector", prop = section_style)))
+      doc <- doc %>% body_add_fpar(fpar(ftext("Size and Characteristics of the Public Sector", prop = section_style)))
       
       doc <- generate_public_sector_employment_section(doc)  #Public Sector Employment
-      doc <- generate_wage_premium_gender_report_section(doc) #Wage Premium Gender Report
+      doc <- generate_tertiary_education_section(doc) # Tertiary Education Analysis
       
-      doc <- doc %>% body_add_fpar(fpar(ftext("Characteristics of the public sector workforce", prop = section_style)))
-      
-      doc <- generate_gender_workforce_section(doc) #Gender Workforce Analysis
-      doc <- generate_females_occupation_groups_section(doc) #Females by Occupational Groups
       
       doc <- doc %>% 
         body_add_fpar(fpar(ftext("Competitiveness of Public Sector Wages", prop = section_style))) %>%
@@ -4167,8 +4162,19 @@ server <- function(input, output, session) {
         )
       
       doc <- generate_wage_premium_report_section(doc) #Public Sector Wage Premium Report
-      doc <- generate_gender_wage_premium_section(doc)    # Wage Premium by industry Analysis
+      doc <- generate_wage_premium_education_section(doc) #Wage Premium by Education
       doc <- generate_pay_compression_section(doc, selected_countries = selected_countries) #Pay Compression section
+      
+      
+      doc <- doc %>% body_add_fpar(fpar(ftext("Equity in the Public Sector", prop = section_style)))
+      doc <- generate_gender_workforce_section(doc) #Gender Workforce Analysis
+      doc <- generate_females_occupation_groups_section(doc) #Females by Occupational Groups
+      
+      doc <- generate_wage_premium_genderbysector_section(doc) #Wage Premium Gender Analysis by industry
+    
+      doc <- generate_wage_premium_gender_report_section(doc) #Wage Premium Gender Report
+      doc <- generate_gender_wage_premium_section(doc)    # Wage Premium by industry Analysis
+    
       
       
       # ✅ Add Conclusion Section at the End
