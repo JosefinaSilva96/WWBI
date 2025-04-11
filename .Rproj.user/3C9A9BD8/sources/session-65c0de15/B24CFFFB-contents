@@ -259,14 +259,14 @@ ui <- bootstrapPage(
             div(class = "nav-sub-item", actionLink("nav_wagebill_gdp", "Wage Bill & GDP Graphs"))
         ),
         
-        div(class = "nav-section", onclick = "toggleSection('public_sector_section')", "The Size and Characteristics of the Public Sector"),
+        div(class = "nav-section", onclick = "toggleSection('public_sector_section')", "Size and Characteristics of the Public Sector"),
         div(id = "public_sector_section",
             div(class = "nav-sub-item", actionLink("nav_public_graphs", "Public Employment")),
             div(class = "nav-sub-item", actionLink("nav_public_workforce", "Employment Distribution")),
             div(class = "nav-sub-item", actionLink("nav_education", "Tertiary Education"))
         ),
         
-        div(class = "nav-section", onclick = "toggleSection('public_sector_wages_section')", "Public Sector Wages"),
+        div(class = "nav-section", onclick = "toggleSection('public_sector_wages_section')", "Competitiveness of Public Sector Wages"),
         div(id = "public_sector_wages_section",
             div(class = "nav-sub-item", actionLink("nav_wagepremium", "Wage Premium")),
             div(class = "nav-sub-item", actionLink("nav_public_educ", "Wage Premium by Education")),
@@ -413,11 +413,9 @@ server <- function(input, output, session) {
               tags$li("In all visualization sections, the dropdown menus for country, region, or income group only display options with available data for the selected indicator. If an indicator is not available for a specific country or group, it will not appear in the dropdown list."),
               tags$li("The first country selected will appear first in the graphs and will serve as the reference point for benchmark comparisons."),
               tags$li("Each tab presents different sets of graphs, which can be downloaded individually using the Download Report in Word option."),
-              tags$li("Alternatively, users may choose their country and comparators across all tabs and then go to the final tab, “Download All Graphs,” to export all selected visualizations into a comprehensive, pre-formatted Word report."),
-              tags$li("For detailed information on how indicators are constructed, data sources, and the list of countries and surveys included in the dataset, please refer to the WWBI Codebook, accessible through the button below.")
+              tags$li("Alternatively, users may choose their country and comparators across all tabs and then go to the final tab, “Download All Graphs,” to export all selected visualizations into a comprehensive, pre-formatted Word report.")
             ),
-            
-            p("For more information on indicator construction, data sources, and the countries and surveys included in the dataset, refer to the WWBI Codebook using the button below.")
+            p("For detailed information on how indicators are constructed, data sources, and the list of countries and surveys included in the dataset, please refer to the WWBI Codebook, accessible through the button below.")
           )
         ),
         
