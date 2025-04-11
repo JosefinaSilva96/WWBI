@@ -237,7 +237,6 @@ ui <- bootstrapPage(
           div(class = "nav-sub-item", actionLink("nav_public_workforce", "Distribution of Public Sector Employment")),
           div(class = "nav-sub-item", actionLink("nav_education", "Workers with Tertiary Education")),
           div(class = "nav-sub-item", actionLink("nav_public_educ", "Public Sector Education Graphs")),
-          div(class = "nav-sub-item", actionLink("nav_female_leadership", "Female Leadership Graphs")),
           div(class = "nav-sub-item", actionLink("nav_gender_wage_premium", "Gender Wage Premium Graphs")),
       ),
       
@@ -252,6 +251,7 @@ ui <- bootstrapPage(
       div(class = "nav-section", onclick = "toggleSection('equity_public_sector_section')", "Equity in the Public Sector"),
       div(id = "equity_public_sector_section", style = "display: none;",
           div(class = "nav-sub-item", actionLink("nav_gender_workforce", "Female Share of Employment")), 
+          div(class = "nav-sub-item", actionLink("nav_female_leadership", "Female  Leadership Occupations")),
       ),
       
       div(class = "nav-item", actionLink("nav_download_all", "Download All Graphs"))
@@ -505,7 +505,7 @@ server <- function(input, output, session) {
       )
     } else if(tab == "female_leadership") {
         tagList(
-          h3("Females by Occupational Group and Sector"),
+          h3("Female Leadership Occupations and Sector"),
           fluidRow(
             div(style = "border: 2px solid white; padding: 10px; 
                       background: linear-gradient(to right, #4A90E2, #D4145A);
@@ -526,7 +526,7 @@ server <- function(input, output, session) {
                 textOutput("note_barPlotwomen"))
           ),
           fluidRow(
-            downloadButton("downloadGraphsWordfemale", "Download Female Leadership Report")
+            downloadButton("downloadGraphsWordfemale", "Download Female Leadership Occupations Report")
           )
         )
     } else if(tab == "wagepremium_gender") {
@@ -834,6 +834,7 @@ server <- function(input, output, session) {
             "Public Sector Workforce" = "public_workforce",
             "Female share of employment" = "gender_workforce",
             "Female Occupation Groups" = "femaleoccupation",
+            "Female Leadership Occupations" = "female_leadership",
             "Wage Premium" = "wagepremium",
             "Gender Wage Premium Report" = "gender_wage_premium", 
             "Pay Compression Report" = "pay_compression"
@@ -3042,7 +3043,7 @@ server <- function(input, output, session) {
   # Download Handler - Save Graphs to Word Document
   output$downloadGraphsWordGender <- downloadHandler(
     filename = function() {
-      paste0("Gender_Workforce_Analysis_", Sys.Date(), ".docx")
+      paste0("Female share of employment_Analysis_", Sys.Date(), ".docx")
     },
     content = function(file) {
       doc <- read_docx()
