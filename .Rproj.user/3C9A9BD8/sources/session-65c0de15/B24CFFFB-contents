@@ -236,14 +236,13 @@ ui <- bootstrapPage(
           div(class = "nav-sub-item", actionLink("nav_public_graphs", "Public Sector Employment")),
           div(class = "nav-sub-item", actionLink("nav_public_workforce", "Distribution of Public Sector Employment")),
           div(class = "nav-sub-item", actionLink("nav_education", "Workers with Tertiary Education")),
-          div(class = "nav-sub-item", actionLink("nav_public_educ", "Public Sector Education Graphs")),
-          div(class = "nav-sub-item", actionLink("nav_gender_wage_premium", "Gender Wage Premium Graphs")),
       ),
       
       # Collapsible Section - Competitiveness of Public Sector Wages
       div(class = "nav-section", onclick = "toggleSection('public_sector_wages_section')", "Competitiveness of Public Sector Wages"),
       div(id = "public_sector_wages_section", style = "display: none;",
           div(class = "nav-sub-item", actionLink("nav_wagepremium", "Public Sector Wage Premium")),
+          div(class = "nav-sub-item", actionLink("nav_public_educ", "Public Sector Wage Premium by Education Level")),
           div(class = "nav-sub-item", actionLink("nav_wagepremium_gender", "Wage Premium Gender Graphs")), 
           div(class = "nav-sub-item", actionLink("nav_pay_compression", "Pay Compression Graphs"))
       ),
@@ -252,6 +251,7 @@ ui <- bootstrapPage(
       div(id = "equity_public_sector_section", style = "display: none;",
           div(class = "nav-sub-item", actionLink("nav_gender_workforce", "Female Share of Employment")), 
           div(class = "nav-sub-item", actionLink("nav_female_leadership", "Female  Leadership Occupations")),
+          div(class = "nav-sub-item", actionLink("nav_gender_wage_premium", "Gender Wage premium in Public Sector by Industry")),
       ),
       
       div(class = "nav-item", actionLink("nav_download_all", "Download All Graphs"))
@@ -604,7 +604,7 @@ server <- function(input, output, session) {
       )
     } else if(tab == "public_educ") {
       tagList(
-        h3("Public Sector Education Graphs"),
+        h3("Public Sector Wage Premium by Education Level"),
         
         # Description Box
         fluidRow(
@@ -633,7 +633,7 @@ server <- function(input, output, session) {
         ),
         # Download Button
         fluidRow(
-          downloadButton("downloadEducationWagePremium", "Download Wage Premium Report (Word)")
+          downloadButton("downloadEducationWagePremium", "Download Public Sector Wage premium by Education Level Report")
         )
       )
     } else if(tab == "public_graphs") {
@@ -747,7 +747,7 @@ server <- function(input, output, session) {
               textOutput("note_gender_wage_barplot"))
         ),
         fluidRow(
-          downloadButton("downloadGenderWagePremium", "Download Gender Wage Premium Report")
+          downloadButton("downloadGenderWagePremium", "Download Gender Wage premium in Public Sector by Industry Report")
         )
       )
     } else if(tab == "pay_compression") {
@@ -828,7 +828,7 @@ server <- function(input, output, session) {
             "Wage Bill as % of GDP" = "wagebill_gdp",
             "Tertiary Education" = "tertiaryeducation",
             "Gender Wage Premium" = "genderwagepremium",
-            "Wage Premium by Education" = "wagepremiumeducation",
+            "Public Sector Wage Premium by Education Level" = "wagepremiumeducation",
             "Public Employment" = "public_employment",
             "Wage Premium by Gender" = "wagepremiumgender",
             "Public Sector Workforce" = "public_workforce",
@@ -836,7 +836,7 @@ server <- function(input, output, session) {
             "Female Occupation Groups" = "femaleoccupation",
             "Female Leadership Occupations" = "female_leadership",
             "Wage Premium" = "wagepremium",
-            "Gender Wage Premium Report" = "gender_wage_premium", 
+            "Gender Wage premium in Public Sector by Industry" = "gender_wage_premium", 
             "Pay Compression Report" = "pay_compression"
           ),
           selected = c("wagebill", "public_employment") # Default selections
@@ -2379,7 +2379,7 @@ server <- function(input, output, session) {
   
   output$downloadEducationWagePremium <- downloadHandler(
     filename = function() {
-      paste0("Public_Sector_Wage_Premium_Education_", Sys.Date(), ".docx")
+      paste0("Public_Sector_Wage_Premium_Education Level_", Sys.Date(), ".docx")
     },
     content = function(file) {
       
@@ -3502,7 +3502,7 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
-  generate_gender_wage_premium_section <- function(doc) {
+  generate_gender_wage_premiumbysector_section <- function(doc) {
     # Add Section Title
     doc <- doc %>% body_add_par("Gender Wage Premium in Public Sector by Industry", style = "heading 1")
     
@@ -4009,7 +4009,7 @@ server <- function(input, output, session) {
           doc <- generate_wage_premium_report_section(doc)
         }
         if ("gender_wage_premium" %in% selected_sections) {
-          doc <- generate_gender_wage_premium_section(doc)
+          doc <- generate_gender_wage_premiumbysector_section(doc)
         }
         if ("pay_compression" %in% selected_sections) {
           doc <- generate_pay_compression_section(doc, selected_countries = selected_countries)
@@ -4050,7 +4050,7 @@ server <- function(input, output, session) {
       doc <- generate_wage_bill_analysis_section(doc) #  Wage Bill Analysis
       doc <- generate_gdp_analysis_section(doc, selected_countries)
       doc <- generate_tertiary_education_section(doc) # Tertiary Education Analysis
-      doc <- generate_wage_premium_gender_section(doc) #Wage Premium Gender Analysis
+      doc <- generate_wage_premium_genderbysector_section(doc) #Wage Premium Gender Analysis by industry
       doc <- generate_wage_premium_education_section(doc) #Wage Premium by Education
       
       doc <- doc %>% body_add_fpar(fpar(ftext("The size of the public sector", prop = section_style)))
