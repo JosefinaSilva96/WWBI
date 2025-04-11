@@ -221,7 +221,7 @@ ui <- bootstrapPage(
       div(class = "nav-item", actionLink("nav_dashboard", "Overview")),
       div(class = "nav-item", actionLink("nav_instructions", "Instructions")),
       div(class = "nav-item", actionLink("nav_metadata", "Metadata")),
-      div(class = "nav-item", actionLink("nav_publications", "Publications")),
+      
       
       # Collapsible Section - The Macro Fundamentals
       div(class = "nav-section", onclick = "toggleSection('macro_section')", "The Macro Fundamentals of the Public Sector"),
@@ -248,9 +248,9 @@ ui <- bootstrapPage(
       # Collapsible Section - Equity in the Public Sector
       div(class = "nav-section", onclick = "toggleSection('equity_public_sector_section')", "Equity in the Public Sector"),
       div(id = "equity_public_sector_section", style = "display: none;",
-          div(class = "nav-sub-item", actionLink("nav_wagepremium_gender", "Public Sector Wage Premium by Gender")), 
           div(class = "nav-sub-item", actionLink("nav_gender_workforce", "Female Share of Employment")), 
           div(class = "nav-sub-item", actionLink("nav_female_leadership", "Female  Leadership Occupations")),
+          div(class = "nav-sub-item", actionLink("nav_wagepremium_gender", "Public Sector Wage Premium by Gender")), 
           div(class = "nav-sub-item", actionLink("nav_gender_wage_premium", "Gender Wage premium in Public Sector by Industry")),
       ),
       
@@ -312,7 +312,46 @@ server <- function(input, output, session) {
                       color: white; font-size: 16px; text-align: center;",
               "Contact Information: Zahid Hasnain-zhasnain@worldbank.org and
                                     Daniel Rogger-drogger@worldbank.org")
-        )
+        ), 
+        fluidRow(
+          div(style = "border: 2px solid white; padding: 15px; border-radius: 10px; 
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
+              "We kindly ask all users of the dashboard to cite it as follows: Source: Worldwide Bureaucracy Indicators (WWBI) Dashboard – World Bank.")
+        ), 
+        fluidRow(
+          div(style = "border: 2px solid white; padding: 15px; border-radius: 10px; 
+                      background: linear-gradient(to right, #4A90E2, #D4145A);
+                      color: white; font-size: 16px; text-align: center;",
+              "Disclaimer:The findings, interpretations, and conclusions presented in this dashboard are those of the World Bank staff and do not necessarily reflect the views of the World Bank, its affiliated organizations, the Executive Directors of the World Bank, or the governments they represent.
+              The boundaries, colors, denominations, and other information shown on this dashboard do not imply any judgment on the part of the World Bank concerning the legal status of any territory, or the endorsement or acceptance of such boundaries. The terms “country” or “economy,” as used in this dashboard, are used for statistical convenience and do not imply political independence.")
+        ), 
+        fluidRow(
+          column(10,
+                 h3("📄 Publications"),
+                 wellPanel(
+                   style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
+                   h4("Download Team Publications:"),
+                   tags$ul(
+                     tags$li(
+                       downloadLink("pub1", "Innovating Bureaucracy for a More Capable Government"),
+                       br(), tags$small("Report")
+                     ),
+                     tags$li(
+                       downloadLink("pub2", "Introducing the Worldwide Bureaucracy Indicators: A New Global Dataset on Public Sector Employment and Compensation"),
+                       br(), tags$small("Faisal Ali Baig- World Bank Group, Xu Han- University of Maryland, Zahid Hasnain- World Bank Group, Daniel Rogger- World Bank Group ")
+                     ),
+                     tags$li(
+                       downloadLink("pub3", "Public Sector Employment and Compensation: An Assessment Framework"),
+                       br(), tags$small("Report")), 
+                       tags$li(
+                         downloadLink("pub4", "Worldwide Bureaucracy Indicators"),
+                         br(), tags$small("Report")
+                       )
+                     )
+                   )
+                 )
+          )
       )
     } else if (tab == "instructions") {
       tagList(
@@ -864,6 +903,56 @@ server <- function(input, output, session) {
       }
     )
 
+#Publications 
+  output$pub1 <- downloadHandler(
+    filename = function() {
+      "Innovating-Bureaucracy-for-a-More-Capable-Government.pdf"
+    },
+    content = function(file) {
+      file.copy(
+        file.path(data_path, "Files", "Innovating-Bureaucracy-for-a-More-Capable-Government.pdf"),
+        file
+      )
+    }
+  )
+  output$pub2 <- downloadHandler(
+    filename = function() {
+      "Public Administration Review - 2021 - Baig - Introducing the Worldwide Bureaucracy Indicators  A New Global Dataset on.pdf"
+    },
+    content = function(file) {
+      file.copy(
+        file.path(data_path, "Files", "Public Administration Review - 2021 - Baig - Introducing the Worldwide Bureaucracy Indicators  A New Global Dataset on.pdf"),
+        file
+      )
+    }
+  )
+  
+  output$pub3 <- downloadHandler(
+    filename = function() {
+      "Public-Sector-Employment-and-Compensation-An-Assessment-Framework.pdf"
+    },
+    content = function(file) {
+      file.copy(
+        file.path(data_path, "Files", "Public-Sector-Employment-and-Compensation-An-Assessment-Framework.pdf"),
+        file
+      )
+    }
+  )
+  
+  output$pub4 <- downloadHandler(
+    filename = function() {
+      "Worldwide-Bureaucracy-Indicators-Methodology-Insights-and-Applications.pdf"
+    },
+    content = function(file) {
+      file.copy(
+        file.path(data_path, "Files", "PWorldwide-Bureaucracy-Indicators-Methodology-Insights-and-Applications.pdf"),
+        file
+      )
+    }
+  )
+  
+  
+  
   
   # 3. All your original outputs and downloadHandlers follow.
   # (For brevity, the code below is the same as in your original server code.)
