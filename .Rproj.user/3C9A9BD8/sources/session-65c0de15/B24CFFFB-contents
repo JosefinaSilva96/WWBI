@@ -304,7 +304,7 @@ server <- function(input, output, session) {
                  tags$img(src = "Logos/wbg_dec_logo.png", height = "80px")
           ),
           column(6, align = "center",
-                 tags$img(src = "Logos/wbg_institutions_logo.png", height = "80px")
+                 tags$img(src = file.path(data_path, "wbg_institutions_logo.png"), height = "80px")
           )
         ),
         h3("Overview"),
@@ -363,18 +363,61 @@ server <- function(input, output, session) {
       )
     } else if (tab == "instructions") {
       tagList(
-        h3("Instructions Manual"),
+        h3("📘 Instructions Manual"),
         fluidRow(
-          div(style = "border: 2px solid white; padding: 15px; border-radius: 10px; 
-                      background: linear-gradient(to right, #4A90E2, #D4145A);
-                      color: white; font-size: 16px; text-align: center;",
-              "The Worldwide Bureaucracy Indicators (WWBI), developed by the Bureaucracy Lab at the World Bank, provide a unique cross-national dataset on public sector employment and wages. Designed to fill critical data gaps, the WWBI support researchers, development practitioners, and policymakers in understanding the size, structure, and fiscal impact of the public sector. The dataset, derived from household surveys and administrative data, offers insights into public-sector employment demographics, wage competitiveness, and the overall wage bill. Version 3.1 expands the dataset with 129 new surveys, two additional countries, and updated wage bill data for 195 countries (2022), strengthening its role as a key tool for comparative and quantitative research on state capacity and public-sector labor markets worldwide.")
+          wellPanel(
+            style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px; color: white;",
+            
+            p("This Dashboard is a product of the Bureaucracy Lab, a joint initiative between the Governance Global Practice and the Development Impact Evaluation (DIME) Department of the Research Group at the World Bank."),
+            
+            p("The dashboard allows users to explore key indicators from the Worldwide Bureaucracy Indicators (WWBI) through interactive visualizations, which can also be exported into a Word report for further use and analysis."),
+            
+            p("In all visualization sections, the dropdown menus for country, region, or income group only display options with available data for the selected indicator. If an indicator is not available for a specific country or group, it will not appear in the dropdown list."),
+            
+            p("Each section of the dashboard presents graphs to facilitate benchmarking of state capacity measures across countries, regions, and income groups. Below is an overview of the sections:"),
+            
+            tags$ul(
+              tags$li(tags$b("Macro-Fundamentals of the Public Sector:"), 
+                      " Trends in the public wage bill as a percentage of total expenditure and GDP, with comparisons by income level."),
+              tags$li(tags$b("Size and Characteristics of the Public Sector:"), 
+                      " Explore employment within the labor market, workforce by sector (industry), and education levels compared to the private sector."),
+              tags$li(tags$b("Competitiveness of Public Sector Wages:"), 
+                      " View wage differentials between public and private sectors, by gender, education, and location, plus compression ratios."),
+              tags$li(tags$b("Equity in the Public Sector:"), 
+                      " Analyze gender equity, representation, occupational segregation, and wage gaps within the public sector."),
+              tags$li(tags$b("Download Graph Report:"), 
+                      " Export all dashboard graphs into a full or custom Word report with prefilled interpretation text.")
+            ),
+            
+            h4("🧭 How to Use the Dashboard"),
+            tags$ol(
+              tags$li("In each tab, select a country of interest and choose comparator countries, regions, or income groups."),
+              tags$li("The first country selected will serve as the reference for benchmark comparisons."),
+              tags$li("Download individual graphs using the 'Download Report Word' button on each tab."),
+              tags$li("To export all selected visualizations into a single Word report, go to the final tab “Download All Graphs.”")
+            ),
+            
+            p("For more information on indicator construction, data sources, and the countries and surveys included in the dataset, refer to the WWBI Codebook using the button below.")
+          )
         ),
         
         # Button to download the PDF
-        downloadButton("download_pdf", "Download Codebook")
+        downloadButton("download_pdf", "📥 Download Codebook"), 
+        
+        fluidRow(
+          wellPanel(
+            style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px; color: white;",
+            
+            p("GitHub Repository: ", 
+              tags$a(href = "https://github.com/worldbank/Worldwide-Bureaucracy-Indicators", 
+                     "https://github.com/worldbank/Worldwide-Bureaucracy-Indicators", target = "_blank")),
+            
+            p("Data Catalog: ", 
+              tags$a(href = "https://datacatalog.worldbank.org/int/home", 
+                     "https://datacatalog.worldbank.org/int/home", target = "_blank"))
+          )
+        )
       )
-      
     } else if(tab == "metadata") {
       tagList(
         h3("Metadata"),
