@@ -4169,11 +4169,10 @@ server <- function(input, output, session) {
       doc <- doc %>% body_add_fpar(fpar(ftext("Equity in the Public Sector", prop = section_style)))
       doc <- generate_gender_workforce_section(doc) #Gender Workforce Analysis
       doc <- generate_females_occupation_groups_section(doc) #Females by Occupational Groups
-      
-      doc <- generate_wage_premium_genderbysector_section(doc) #Wage Premium Gender Analysis by industry
-    
+      doc <- generate_gender_wage_premiumbysector_section(doc)
+       
       doc <- generate_wage_premium_gender_report_section(doc) #Wage Premium Gender Report
-      doc <- generate_gender_wage_premium_section(doc)    # Wage Premium by industry Analysis
+      
     
       
       
