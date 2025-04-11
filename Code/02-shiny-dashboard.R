@@ -328,10 +328,10 @@ server <- function(input, output, session) {
       tagList(
         fluidRow(
           column(6, align = "center",
-                 tags$img(src = "Logos/wbg_dec_logo.png", height = "80px")
+                 tags$img(src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/wbg_dec_logo.png", height = "80px")
           ),
           column(6, align = "center",
-                 tags$img(src = file.path(data_path, "wbg_institutions_logo.png"), height = "80px")
+                 tags$img(src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/wbg_institutions_logo.png", height = "80px")
           )
         ),
         h3("Overview"),
@@ -3808,8 +3808,6 @@ server <- function(input, output, session) {
     # Define a bold, blue style for section headings
     section_style <- fp_text(color = "#003366", font.size = 14, bold = TRUE)
     
-    # ✅ Add section title using styled text
-    doc <- doc %>% body_add_fpar(fpar(ftext("The Macro Fundamentals of the Public Sector", prop = section_style)))
     
     return(doc)
   }
@@ -4142,7 +4140,7 @@ server <- function(input, output, session) {
       
       section_style <- fp_text(color = "#003366", font.size = 14, bold = TRUE)
       
-      doc <- doc %>% body_add_fpar(fpar(ftext("Macro-Fundamentals of the Public Sector:", prop = section_style)))
+      doc <- doc %>% body_add_fpar(fpar(ftext("Macro-Fundamentals of the Public Sector", prop = section_style)))
       
       # Add Sections from Each Tab
       doc <- generate_wage_bill_analysis_section(doc) #  Wage Bill Analysis
