@@ -953,7 +953,7 @@ server <- function(input, output, session) {
     },
     content = function(file) {
       file.copy(
-        file.path(data_path, "Files", "PWorldwide-Bureaucracy-Indicators-Methodology-Insights-and-Applications.pdf"),
+        file.path(data_path, "Files", "Worldwide-Bureaucracy-Indicators-Methodology-Insights-and-Applications.pdf"),
         file
       )
     }
