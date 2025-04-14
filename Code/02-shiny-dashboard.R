@@ -4253,7 +4253,7 @@ server <- function(input, output, session) {
   })
   
   
-  # Change infoBox colors to "purple" to match the quartz theme
+  # Change info Box colors to "purple" to match the quartz theme
   
   output$numberIndicatorsBox <- renderInfoBox({
     infoBox("Indicators", 302, icon = icon("list"), color = "purple")
@@ -4282,4 +4282,4 @@ shinyApp(ui = ui, server = server)
 
 
 
-# the end##############################################
+# the end ##############################################
