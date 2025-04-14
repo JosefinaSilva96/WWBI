@@ -385,7 +385,7 @@ server <- function(input, output, session) {
       )
     } else if (tab == "instructions") {
       tagList(
-        h3("📘 Instructions Manual"),
+        h3("📘 Instruction Manual"),
         fluidRow(
           wellPanel(
             style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px; color: white;",
@@ -713,10 +713,10 @@ server <- function(input, output, session) {
         h3("Public Sector Employment Graphs"),
         
         # Description Box
-        fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              "Note: This indicator represents the size of public sector employment in the labor market for the most recent year available in each country.")
-        ),
+        #fluidRow(
+          #div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
+              #"Note: This indicator represents the size of public sector employment in the labor market for the most recent year available in each country.")
+        #),
         
         # Multi-Country Selection for First Graph
         fluidRow(
