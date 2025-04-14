@@ -2561,7 +2561,7 @@ server <- function(input, output, session) {
       filter(country_name %in% input$selected_countries) %>%
       drop_na(value_percentage)
     
-    # ✅ Handle empty dataset case
+    # ✅ Handle empty data set case
     if (nrow(filtered_data) == 0) {
       doc <- doc %>% body_add_par("No data available for the selected countries.", style = "Normal")
       return(doc)
