@@ -2137,7 +2137,7 @@ server <- function(input, output, session) {
     if (!is.na(first_country_premium) && !is.na(comparison_premium) && first_country_premium > comparison_premium) {
       comparison_statement <- paste0("This is higher than the average of", round(comparison_premium, 1), "% across the other selected countries.")
     } else if (!is.na(first_country_premium) && !is.na(comparison_premium)) {
-      comparison_statement <- paste0("This is lower than the average of", round(comparison_premium, 1), "% across the other selected countries.")
+      comparison_statement <- paste0("This is lower than the average of ", round(comparison_premium, 1), "% across the other selected countries.")
     } else {
       comparison_statement <- "Comparison data is not available."
     }
@@ -2161,7 +2161,7 @@ server <- function(input, output, session) {
       "This graph compares public sector wage premiums across selected countries. ",
       "On average, public sector employees earn ",avg_wage_premium, "% more than private sector employees. ",
       "The country with the highest wage premium is ",  highest_country, ", while ",  lowest_country, " has the lowest wage premium.\n\n",
-      "In ", first_country, ", the public sector wage premium is", round(first_country_premium, 1), "%. ", 
+      "In ", first_country, ", the public sector wage premium is ", round(first_country_premium, 1), "%. ", 
       comparison_statement
     )
     
