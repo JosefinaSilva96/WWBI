@@ -1936,8 +1936,8 @@ server <- function(input, output, session) {
     interpretation_text <- paste0(
       "This graph compares tertiary education attainment among employees in the public and private sectors across selected countries. ",
       "On average,",  avg_public, "% of public sector employees have completed tertiary education, while in the private sector, the share is ", avg_private, "%. ",
-      "The country with the highest share of tertiary-educated public sector employees is ", highest_public_country, ", whereas ", lowest_public_country, "has the lowest proportion. ",
-      "In the private sector, ", highest_private_country, "has the highest tertiary education level among employees, while ", lowest_private_country, " has the lowest."
+      "The country with the highest share of tertiary-educated public sector employees is ", highest_public_country, ", whereas ", lowest_public_country, " has the lowest proportion. ",
+      "In the private sector, ", highest_private_country, "  has the highest tertiary education level among employees, while ", lowest_private_country, " has the lowest."
     )
     
     # ✅ Add image and interpretation text to the document
@@ -4238,11 +4238,11 @@ server <- function(input, output, session) {
         color = "white",
         weight = 1,
         highlightOptions = highlightOptions(color = "#FFD700", weight = 2, fillOpacity = 0.9),
-        label = ~paste0("Country: ", name_long, "<br>", 
+        label = ~paste0("Country: ", name_long, "-", 
                         ifelse(!is.na(has_data), "Reported", "No Data")),
         popup = ~paste(
-          "Country:", name_long, "<br>",
-          "Indicator:", ifelse(!is.na(indicator_name), indicator_name, "None"), "<br>",
+          "Country:", name_long, "-",
+          "Indicator:", ifelse(!is.na(indicator_name), indicator_name, "None"), "-",
           ifelse(!is.na(has_data), "Reported", "No Data Available")
         )
       )
