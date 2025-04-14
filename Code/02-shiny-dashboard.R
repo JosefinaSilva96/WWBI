@@ -3070,7 +3070,7 @@ server <- function(input, output, session) {
       interpretation_text2 <- paste0(
         "This graph illustrates how the public sector wage premium by gender has evolved over time across selected countries. ",
         "For ", first_country, ", in ", first_year, ", the male wage premium was ", male_2010, 
-        "% and the female wage premium was ", female_2010, "%.** In **", last_year, 
+        "% and the female wage premium was ", female_2010, "%. In ", last_year, 
         ", the male wage premium is ", male_last, "% and the female wage premium is ", female_last, "%."
       )
       
@@ -3506,7 +3506,7 @@ server <- function(input, output, session) {
       "This graph compares female representation in different occupational groups across selected countries. ",
       "On average,", avg_public_managers, "% of public sector managers are female, while in the private sector, female managers account for ", avg_private_managers, "%. ",
       "The highest female representation among public sector managers is in ", highest_public_managers, ", whereas the lowest is in  ", lowest_public_managers, ". ",
-      "In the private sector, the highest female manager share is in ", highest_private_managers, "**, while the lowest is in", lowest_private_managers, ".\n\n",
+      "In the private sector, the highest female manager share is in ", highest_private_managers, ", while the lowest is in ", lowest_private_managers, ".\n\n",
       "In ", first_country, ", female managers account for ", first_country_public_managers, "% in the public sector. ", 
       comparison_public_managers, "\n",
       "In the private sector, female managers in ", first_country, "represent", first_country_private_managers, "%. ",
