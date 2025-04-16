@@ -387,6 +387,7 @@ saveRDS(public_sector_emp_temp_last, file.path(data_path, "Data", "public_sector
 
 
 # Step 1: Filter for relevant indicators and convert to percentage
+
 public_sector_workforce <- data_wwbi_long %>%
   filter(indicator_name %in% c(
     "Education workers, as a share of public paid employees", 
@@ -396,6 +397,7 @@ public_sector_workforce <- data_wwbi_long %>%
   mutate(value_percentage = value * 100)
 
 # Step 2: Calculate 'Other' = 100 - sum of the 3 indicators per country-year
+
 public_sector_workforce <- public_sector_workforce %>%
   group_by(country_name, year, wb_region) %>%
   mutate(other_value = 100 - sum(value_percentage, na.rm = TRUE)) %>%
@@ -411,20 +413,24 @@ other_rows <- public_sector_workforce %>%
   )
 
 # Step 4: Bind the new 'Other' rows to the original data
+
 public_sector_workforce <- bind_rows(public_sector_workforce, other_rows)
 
 # Step 5: Keep only the most recent year per country for each indicator
+
 public_sector_workforce <- public_sector_workforce %>%
   group_by(country_name, indicator_name) %>%
   filter(year == max(year, na.rm = TRUE)) %>%
   ungroup()
 
 # Remove rows where country_name is actually a region
+
 public_sector_workforce_clean <- public_sector_workforce %>%
   filter(!country_name %in% unique(wb_region))
 
 
 # Step 6: Calculate the regional mean (not yet normalized)
+
 region_summary <- public_sector_workforce_clean %>%
   group_by(wb_region, indicator_name) %>%
   summarise(
@@ -432,21 +438,14 @@ region_summary <- public_sector_workforce_clean %>%
     .groups = "drop"
   )
 
-# Step 7: Normalize so each region sums to 100%
-region_summary_normalized <- region_summary %>%
-  group_by(wb_region) %>%
-  mutate(
-    total = sum(mean_value, na.rm = TRUE),
-    normalized_value = mean_value / total * 100
-  ) %>%
-  ungroup()
+
 
 # Step 1: Prepare region-level data to match country-level structure
-region_as_country <- region_summary_normalized %>%
+region_as_country <- region_summary %>%
   transmute(
     country_name = wb_region,
     indicator_name,
-    value_percentage = normalized_value,
+    value_percentage = mean_value,
     year = NA,  # No year for region average
     wb_region,
     is_region = TRUE
