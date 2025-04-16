@@ -87,7 +87,7 @@ public_sector_emp_temp_last <- readRDS(file.path(data_path, "Data", "public_sect
     across(where(~inherits(.x, "haven_labelled")), as_factor)  # Convert haven-labelled to factors
   )
 
-public_sector_workforce     <- read_dta(file.path(data_path, "Data/public_sector_workforce.dta"))
+public_sector_workforce_clean     <- read_dta(file.path(data_path, "Data/public_sector_workforce_clean.dta"))
 
 public_sector_workforce_first_last     <- read_dta(file.path(data_path, "Data/public_sector_workforce_first_last.dta"))
 
