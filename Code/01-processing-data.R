@@ -473,7 +473,7 @@ public_sector_workforce_clean <- public_sector_workforce_clean %>%
 
 #Save data set
 
-write_dta(public_sector_workforce_clean, file.path(data_path, "Data/public_sector_workforce_clean"))
+write_dta(public_sector_workforce_clean, file.path(data_path, "Data/public_sector_workforce_clean.dta"))
 
 
 
