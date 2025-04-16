@@ -40,6 +40,7 @@ library(scales)
 data_path <- "C:/WBG/GitHub/WWBI"
 
 # Load the data correctly
+
 data_wwbi <- read_dta(file.path(data_path, "Data", "data_wwbi.dta"))
 
 
@@ -276,7 +277,7 @@ data_wwbi_long <- bind_rows(data_wwbi_long, income_mean)
 
 #Drop Na observations in the column country_name
 
-data_wwbi_long <- data_wwbi_long %>% filter(!is.na(country_name))
+#data_wwbi_long <- data_wwbi_long %>% filter(!is.na(country_name))
 
 #Save data set
 
@@ -385,61 +386,89 @@ saveRDS(public_sector_emp_temp_last, file.path(data_path, "Data", "public_sector
 
 
 
-# Filter the data for the specific indicator "Characteristics of the public sector workforce"
+# Step 1: Filter for relevant indicators and convert to percentage
 
-public_sector_workforce <- data_wwbi_long[data_wwbi_long$indicator_name %in% c("Education workers, as a share of public paid employees", 
-                                                                               "Health workers, as a share of public paid employees", 
-                                                                               "Public Administration workers, as a share of public paid employees"), ]
-
-public_sector_workforce <- public_sector_workforce %>%
+public_sector_workforce <- data_wwbi_long %>%
+  filter(indicator_name %in% c(
+    "Education workers, as a share of public paid employees", 
+    "Health workers, as a share of public paid employees", 
+    "Public Administration workers, as a share of public paid employees"
+  )) %>%
   mutate(value_percentage = value * 100)
 
-
-# Step 1: Calculate the 'Other' value for each country and year
+# Step 2: Calculate 'Other' = 100 - sum of the 3 indicators per country-year
 
 public_sector_workforce <- public_sector_workforce %>%
   group_by(country_name, year, wb_region) %>%
-  mutate(
-    # Calculate the value for 'Other' as 100 minus the sum of specific indicators
-    other_value = 100 - sum(value_percentage[indicator_name %in% c(
-      "Education workers, as a share of public paid employees",
-      "Health workers, as a share of public paid employees",
-      "Public Administration workers, as a share of public paid employees"
-    )], na.rm = TRUE)
-  ) %>%
+  mutate(other_value = 100 - sum(value_percentage, na.rm = TRUE)) %>%
   ungroup()
 
-# Step 2: Create a new dataset for the 'Other' indicator and update the value_percentage
+# Step 3: Create a new row for the 'Other' indicator
+other_rows <- public_sector_workforce %>%
+  group_by(country_name, year, wb_region) %>%
+  summarise(
+    indicator_name = "Other",
+    value_percentage = first(other_value),
+    .groups = "drop"
+  )
+
+# Step 4: Bind the new 'Other' rows to the original data
+
+public_sector_workforce <- bind_rows(public_sector_workforce, other_rows)
+
+# Step 5: Keep only the most recent year per country for each indicator
 
 public_sector_workforce <- public_sector_workforce %>%
-  bind_rows(
-    public_sector_workforce %>%
-      # Filter rows for the specified indicators
-      filter(indicator_name %in% c(
-        "Education workers, as a share of public paid employees",
-        "Health workers, as a share of public paid employees",
-        "Public Administration workers, as a share of public paid employees"
-      )) %>%
-      group_by(country_name, year, wb_region) %>%
-      summarize(
-        indicator_name = "Other",  # Set the indicator name to "Other"
-        value_percentage = first(other_value),  # Replace the value with the calculated 'other_value'
-        .groups = "drop"  # Drop the grouping after summarizing
-      ) %>%
-      ungroup()
+  group_by(country_name, indicator_name) %>%
+  filter(year == max(year, na.rm = TRUE)) %>%
+  ungroup()
+
+# Remove rows where country_name is actually a region
+
+public_sector_workforce_clean <- public_sector_workforce %>%
+  filter(!country_name %in% unique(wb_region))
+
+
+# Step 6: Calculate the regional mean (not yet normalized)
+
+region_summary <- public_sector_workforce_clean %>%
+  group_by(wb_region, indicator_name) %>%
+  summarise(
+    mean_value = mean(value_percentage, na.rm = TRUE),
+    .groups = "drop"
   )
 
 
-public_sector_workforce <- public_sector_workforce %>%
+
+# Step 1: Prepare region-level data to match country-level structure
+region_as_country <- region_summary %>%
+  transmute(
+    country_name = wb_region,
+    indicator_name,
+    value_percentage = mean_value,
+    year = NA,  # No year for region average
+    wb_region,
+    is_region = TRUE
+  )
+
+# Step 2: Add a flag to public_sector_workforce too
+public_sector_workforce_flagged <- public_sector_workforce_clean %>%
+  mutate(is_region = FALSE)
+
+# Step 3: Combine both datasets
+public_sector_workforce_clean <- bind_rows(public_sector_workforce_flagged, region_as_country)
+
+
+public_sector_workforce_clean <- public_sector_workforce_clean %>%
   mutate(indicator_name = ifelse(indicator_name == "Education workers, as a share of public paid employees", "Education", indicator_name))
 
-public_sector_workforce <- public_sector_workforce %>%
+public_sector_workforce_clean <- public_sector_workforce_clean %>%
   mutate(indicator_name = ifelse(indicator_name == "Health workers, as a share of public paid employees", "Health", indicator_name))
 
-public_sector_workforce <- public_sector_workforce %>%
+public_sector_workforce_clean <- public_sector_workforce_clean %>%
   mutate(indicator_name = ifelse(indicator_name == "Public Administration workers, as a share of public paid employees", "Public Administration", indicator_name))
 
-public_sector_workforce <- public_sector_workforce %>%
+public_sector_workforce_clean <- public_sector_workforce_clean %>%
   mutate(indicator_name = ifelse(indicator_name == "Publicd Administration", "Public Administration", indicator_name))
 
 #Save data set

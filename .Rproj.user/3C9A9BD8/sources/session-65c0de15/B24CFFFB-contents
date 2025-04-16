@@ -1577,7 +1577,7 @@ server <- function(input, output, session) {
   
   filtered_workforce_data <- reactive({
     req(input$countries_workforce)
-    public_sector_workforce %>% group_by(country_name, indicator_name) %>% slice_max(order_by = year, n = 1) %>% ungroup()
+    public_sector_workforce_clean %>% group_by(country_name, indicator_name) %>% slice_max(order_by = year, n = 1) %>% ungroup()
   })
   
   output$stackedBarGraph <- renderPlotly({
@@ -1604,7 +1604,7 @@ server <- function(input, output, session) {
     "Note: This indicator represents the distribution of public sector employment across different industries (Public Administration, Education, Health, and Other) as a percentage of paid public employment."
   })
   output$messageOutput <- renderUI({
-    filtered_data <- public_sector_workforce %>% filter(country_name == input$selected_country)
+    filtered_data <- public_sector_workforce_clean %>% filter(country_name == input$selected_country)
     if(nrow(filtered_data) < 2) {
       return(tags$p("Not enough data available for this country to create the graph.", style = "color: red; font-weight: bold;"))
     }
@@ -1613,7 +1613,7 @@ server <- function(input, output, session) {
   
   output$horizontalStackedBar <- renderPlotly({
     req(input$selected_country)
-    filtered_data <- public_sector_workforce %>% filter(country_name == input$selected_country)
+    filtered_data <- public_sector_workforce_clean %>% filter(country_name == input$selected_country)
     if(nrow(filtered_data) == 0) return(NULL)
     first_year <- min(filtered_data$year, na.rm = TRUE)
     last_year <- max(filtered_data$year, na.rm = TRUE)
