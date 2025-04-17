@@ -479,7 +479,7 @@ write_dta(public_sector_workforce_clean, file.path(data_path, "Data/public_secto
 
 # Keep the first and  last year available for each country
 
-public_sector_workforce_first_last <- public_sector_workforce %>%
+public_sector_workforce_first_last <- public_sector_workforce_clean %>%
   filter(!is.na(value_percentage)) %>%               # Keep rows where `value_percentage` is not NA
   group_by(country_name, indicator_name, wb_region) %>%         # Group by country and indicator
   filter(year == max(year, na.rm = TRUE) |           # Keep rows for the last year
