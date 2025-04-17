@@ -507,12 +507,25 @@ public_sector_workforce_clean <- public_sector_workforce_clean %>%
 public_sector_workforce_clean <- public_sector_workforce_clean %>%
   filter(!country_name %in% unique(public_sector_workforce_clean$wb_region))
 
-# Step 7: Region summary (mean of latest indicator values)
-region_summary <- public_sector_workforce_clean %>%
+# Step 7: Region summary (mean of latest indicator values, excluding 'Other')
+region_summary_partial <- public_sector_workforce_clean %>%
+  filter(indicator_name != "Other") %>%
   group_by(wb_region, indicator_name) %>%
   summarise(mean_value = mean(value_percentage, na.rm = TRUE), .groups = "drop")
 
-# Step 8: Add region aggregates as pseudo-"countries"
+# Step 8: Compute 'Other' for the region
+region_other <- region_summary_partial %>%
+  group_by(wb_region) %>%
+  summarise(
+    indicator_name = "Other",
+    mean_value = 100 - sum(mean_value, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# Step 9: Combine with partial summary
+region_summary <- bind_rows(region_summary_partial, region_other)
+
+# Step 10: Add region aggregates as pseudo-"countries"
 region_as_country <- region_summary %>%
   transmute(
     country_name = wb_region,
@@ -523,7 +536,7 @@ region_as_country <- region_summary %>%
     is_region = TRUE
   )
 
-# Step 9: Final dataset (add region rows)
+# Step 11: Final dataset
 public_sector_workforce_clean <- public_sector_workforce_clean %>%
   mutate(is_region = FALSE) %>%
   bind_rows(region_as_country)
