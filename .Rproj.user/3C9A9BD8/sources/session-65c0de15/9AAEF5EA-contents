@@ -538,6 +538,8 @@ region_as_country <- region_summary %>%
 
 # Step 11: Final dataset
 public_sector_workforce_clean <- public_sector_workforce_clean %>%
+  # Remove old incorrect region-level "Other" rows
+  filter(!(country_name %in% unique(wb_region) & indicator_name == "Other")) %>%
   mutate(is_region = FALSE) %>%
   bind_rows(region_as_country)
 
