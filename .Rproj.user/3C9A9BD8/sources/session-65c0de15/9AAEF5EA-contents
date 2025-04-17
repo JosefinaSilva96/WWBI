@@ -496,18 +496,25 @@ public_sector_workforce_first_last <- public_sector_workforce %>%
 
 
 
-public_sector_workforce_first_last <- public_sector_workforce_first_last %>%
+public_sector_workforce <- public_sector_workforce %>%
   mutate(indicator_name = ifelse(indicator_name == "Education workers, as a share of public paid employees", "Education", indicator_name))
 
-public_sector_workforce_first_last <- public_sector_workforce_first_last %>%
+public_sector_workforce <- public_sector_workforce %>%
   mutate(indicator_name = ifelse(indicator_name == "Health workers, as a share of public paid employees", "Health", indicator_name))
 
-public_sector_workforce_first_last <- public_sector_workforce_first_last %>%
-  mutate(indicator_name = ifelse(indicator_name == "Public Administration workers, as a share of public paid total employees", "Public Administration", indicator_name))
+public_sector_workforce <- public_sector_workforce %>%
+  mutate(indicator_name = ifelse(indicator_name == "Public Administration workers, as a share of public paid employees", "Public Administration", indicator_name))
 
 
 public_sector_workforce_first_last <- public_sector_workforce_first_last %>%
-  mutate(indicator_name = ifelse(indicator_name == "Public Administration", "Public Administration", indicator_name))
+  mutate(
+    indicator_name = as.character(indicator_name),
+    country_name = as.character(country_name),
+    value_percentage = as.numeric(value_percentage)
+  )
+
+sapply(public_sector_workforce_first_last, class)
+
 
 #Save data set
 

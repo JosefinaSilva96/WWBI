@@ -89,6 +89,9 @@ public_sector_emp_temp_last <- readRDS(file.path(data_path, "Data", "public_sect
 
 public_sector_workforce_clean     <- read_dta(file.path(data_path, "Data/public_sector_workforce_clean.dta"))
 
+
+public_sector_workforce     <- read_dta(file.path(data_path, "Data/public_sector_workforce.dta"))
+
 public_sector_workforce_first_last     <- read_dta(file.path(data_path, "Data/public_sector_workforce_first_last.dta"))
 
 gender_workforce     <- read_dta(file.path(data_path, "Data/gender_workforce.dta"))
@@ -1604,7 +1607,7 @@ server <- function(input, output, session) {
     "Note: This indicator represents the distribution of public sector employment across different industries (Public Administration, Education, Health, and Other) as a percentage of paid public employment."
   })
   output$messageOutput <- renderUI({
-    filtered_data <- public_sector_workforce_clean %>% filter(country_name == input$selected_country)
+    filtered_data <- public_sector_workforce %>% filter(country_name == input$selected_country)
     if(nrow(filtered_data) < 2) {
       return(tags$p("Not enough data available for this country to create the graph.", style = "color: red; font-weight: bold;"))
     }
@@ -1613,7 +1616,7 @@ server <- function(input, output, session) {
   
   output$horizontalStackedBar <- renderPlotly({
     req(input$selected_country)
-    filtered_data <- public_sector_workforce_clean %>% filter(country_name == input$selected_country)
+    filtered_data <- public_sector_workforce %>% filter(country_name == input$selected_country)
     if(nrow(filtered_data) == 0) return(NULL)
     first_year <- min(filtered_data$year, na.rm = TRUE)
     last_year <- max(filtered_data$year, na.rm = TRUE)
