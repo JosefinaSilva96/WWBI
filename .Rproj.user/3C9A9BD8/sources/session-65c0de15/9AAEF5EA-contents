@@ -409,7 +409,6 @@ public_sector_workforce <- public_sector_workforce %>%
 # Now compute the "Other" share per country and year
 
 
-
 public_sector_workforce <- public_sector_workforce %>%
   group_by(country_name, year, wb_region) %>%
   mutate(other_value = 100 - sum(value_percentage, na.rm = TRUE)) %>%
@@ -436,27 +435,7 @@ public_sector_workforce_first_last <- public_sector_workforce %>%
   filter(!is.na(value_percentage)) %>%
   group_by(country_name, indicator_name, wb_region) %>%
   filter(year == max(year, na.rm = TRUE) | year == min(year, na.rm = TRUE)) %>%
-  ungroup() %>%
-  mutate(
-    indicator_name = case_when(
-      indicator_name == "Education workers, as a share of public paid employees" ~ "Education",
-      indicator_name == "Health workers, as a share of public paid employees" ~ "Health",
-      indicator_name == "Public Administration workers, as a share of public paid total employees" ~ "Public Administration",
-      TRUE ~ indicator_name
-    ),
-    indicator_name = as.factor(indicator_name) # Clean up and remove unused levels
-  )
-
-
-
-public_sector_workforce <- public_sector_workforce %>%
-  mutate(indicator_name = ifelse(indicator_name == "Education workers, as a share of public paid employees", "Education", indicator_name))
-
-public_sector_workforce <- public_sector_workforce %>%
-  mutate(indicator_name = ifelse(indicator_name == "Health workers, as a share of public paid employees", "Health", indicator_name))
-
-public_sector_workforce <- public_sector_workforce %>%
-  mutate(indicator_name = ifelse(indicator_name == "Public Administration workers, as a share of public paid employees", "Public Administration", indicator_name))
+  ungroup() 
 
 
 public_sector_workforce_first_last <- public_sector_workforce_first_last %>%
@@ -471,7 +450,7 @@ sapply(public_sector_workforce_first_last, class)
 
 #Save data set
 
-write_dta(public_sector_workforce_first_last, file.path(data_path, "Data/public_sector_workforce_first_last.dta"))
+write_dta(public_sector_workforce, file.path(data_path, "Data/public_sector_workforce.dta"))
 
 # Step 1: Filter and convert to percentage
 public_sector_workforce <- data_wwbi_long %>%
