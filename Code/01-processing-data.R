@@ -396,7 +396,10 @@ public_sector_workforce <- data_wwbi_long %>%
   )) %>%
   mutate(value_percentage = value * 100)
 
-# Step 2: Calculate 'Other' = 100 - sum of the 3 indicators per country-year
+
+# Now compute the "Other" share per country and year
+
+
 
 public_sector_workforce <- public_sector_workforce %>%
   group_by(country_name, year, wb_region) %>%
@@ -412,69 +415,10 @@ other_rows <- public_sector_workforce %>%
     .groups = "drop"
   )
 
+
 # Step 4: Bind the new 'Other' rows to the original data
 
 public_sector_workforce <- bind_rows(public_sector_workforce, other_rows)
-
-# Step 5: Keep only the most recent year per country for each indicator
-
-public_sector_workforce_clean <- public_sector_workforce %>%
-  group_by(country_name, indicator_name) %>%
-  filter(year == max(year, na.rm = TRUE)) %>%
-  ungroup()
-
-# Remove rows where country_name is actually a region
-
-public_sector_workforce_clean <- public_sector_workforce_clean %>%
-  filter(!country_name %in% unique(wb_region))
-
-
-# Step 6: Calculate the regional mean 
-
-region_summary <- public_sector_workforce_clean %>%
-  group_by(wb_region, indicator_name) %>%
-  summarise(
-    mean_value = mean(value_percentage, na.rm = TRUE),
-    .groups = "drop"
-  )
-
-
-
-# Step 1: Prepare region-level data to match country-level structure
-region_as_country <- region_summary %>%
-  transmute(
-    country_name = wb_region,
-    indicator_name,
-    value_percentage = mean_value,
-    year = NA,  # No year for region average
-    wb_region,
-    is_region = TRUE
-  )
-
-# Step 2: Add a flag to public_sector_workforce too
-public_sector_workforce_flagged <- public_sector_workforce_clean %>%
-  mutate(is_region = FALSE)
-
-# Step 3: Combine both datasets
-public_sector_workforce_clean <- bind_rows(public_sector_workforce_flagged, region_as_country)
-
-
-public_sector_workforce_clean <- public_sector_workforce_clean %>%
-  mutate(indicator_name = ifelse(indicator_name == "Education workers, as a share of public paid employees", "Education", indicator_name))
-
-public_sector_workforce_clean <- public_sector_workforce_clean %>%
-  mutate(indicator_name = ifelse(indicator_name == "Health workers, as a share of public paid employees", "Health", indicator_name))
-
-public_sector_workforce_clean <- public_sector_workforce_clean %>%
-  mutate(indicator_name = ifelse(indicator_name == "Public Administration workers, as a share of public paid employees", "Public Administration", indicator_name))
-
-public_sector_workforce_clean <- public_sector_workforce_clean %>%
-  mutate(indicator_name = ifelse(indicator_name == "Publicd Administration", "Public Administration", indicator_name))
-
-#Save data set
-
-write_dta(public_sector_workforce_clean, file.path(data_path, "Data/public_sector_workforce_clean.dta"))
-
 
 
 # Keep the first and  last year available for each country
@@ -520,6 +464,72 @@ sapply(public_sector_workforce_first_last, class)
 
 write_dta(public_sector_workforce_first_last, file.path(data_path, "Data/public_sector_workforce_first_last.dta"))
 
+# Step 1: Filter and convert to percentage
+public_sector_workforce <- data_wwbi_long %>%
+  filter(indicator_name %in% c(
+    "Education workers, as a share of public paid employees", 
+    "Health workers, as a share of public paid employees", 
+    "Public Administration workers, as a share of public paid employees"
+  )) %>%
+  mutate(value_percentage = value * 100)
+
+# Step 2: For each country + indicator, get the latest available year
+latest_values <- public_sector_workforce %>%
+  group_by(country_name, indicator_name, wb_region) %>%
+  filter(year == max(year, na.rm = TRUE)) %>%
+  ungroup() %>%
+  group_by(country_name, indicator_name, wb_region, year) %>%
+  summarise(value_percentage = mean(value_percentage, na.rm = TRUE), .groups = "drop")
+
+# Step 3: Compute 'Other' as 100 - sum of the 3 latest indicator values
+other_values <- latest_values %>%
+  group_by(country_name, wb_region) %>%
+  summarise(
+    indicator_name = "Other",
+    value_percentage = 100 - sum(value_percentage, na.rm = TRUE),
+    year = NA,  # Optional: or max(year), but not meaningful here
+    .groups = "drop"
+  )
+
+# Step 4: Bind the 'Other' row
+public_sector_workforce_clean <- bind_rows(latest_values, other_values)
+
+# Step 5: Clean indicator names
+public_sector_workforce_clean <- public_sector_workforce_clean %>%
+  mutate(indicator_name = case_when(
+    indicator_name == "Education workers, as a share of public paid employees" ~ "Education",
+    indicator_name == "Health workers, as a share of public paid employees" ~ "Health",
+    indicator_name == "Public Administration workers, as a share of public paid employees" ~ "Public Administration",
+    TRUE ~ indicator_name
+  ))
+
+# Step 6: Remove region-aggregate names from country list
+public_sector_workforce_clean <- public_sector_workforce_clean %>%
+  filter(!country_name %in% unique(public_sector_workforce_clean$wb_region))
+
+# Step 7: Region summary (mean of latest indicator values)
+region_summary <- public_sector_workforce_clean %>%
+  group_by(wb_region, indicator_name) %>%
+  summarise(mean_value = mean(value_percentage, na.rm = TRUE), .groups = "drop")
+
+# Step 8: Add region aggregates as pseudo-"countries"
+region_as_country <- region_summary %>%
+  transmute(
+    country_name = wb_region,
+    indicator_name,
+    value_percentage = mean_value,
+    year = NA,
+    wb_region,
+    is_region = TRUE
+  )
+
+# Step 9: Final dataset (add region rows)
+public_sector_workforce_clean <- public_sector_workforce_clean %>%
+  mutate(is_region = FALSE) %>%
+  bind_rows(region_as_country)
+
+# Step 10: Save it
+write_dta(public_sector_workforce_clean, file.path(data_path, "Data/public_sector_workforce_clean.dta"))
 
 
 # Filter the data for the specific indicator "Characteristics of the gender workforce"
