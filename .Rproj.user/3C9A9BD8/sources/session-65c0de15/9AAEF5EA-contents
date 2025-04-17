@@ -429,7 +429,7 @@ public_sector_workforce_clean <- public_sector_workforce_clean %>%
   filter(!country_name %in% unique(wb_region))
 
 
-# Step 6: Calculate the regional mean (not yet normalized)
+# Step 6: Calculate the regional mean 
 
 region_summary <- public_sector_workforce_clean %>%
   group_by(wb_region, indicator_name) %>%
@@ -480,11 +480,20 @@ write_dta(public_sector_workforce_clean, file.path(data_path, "Data/public_secto
 # Keep the first and  last year available for each country
 
 public_sector_workforce_first_last <- public_sector_workforce %>%
-  filter(!is.na(value_percentage)) %>%               # Keep rows where `value_percentage` is not NA
-  group_by(country_name, indicator_name, wb_region) %>%         # Group by country and indicator
-  filter(year == max(year, na.rm = TRUE) |           # Keep rows for the last year
-           year == min(year, na.rm = TRUE)) %>%      # Keep rows for the first year
-  ungroup()
+  filter(!is.na(value_percentage)) %>%
+  group_by(country_name, indicator_name, wb_region) %>%
+  filter(year == max(year, na.rm = TRUE) | year == min(year, na.rm = TRUE)) %>%
+  ungroup() %>%
+  mutate(
+    indicator_name = case_when(
+      indicator_name == "Education workers, as a share of public paid employees" ~ "Education",
+      indicator_name == "Health workers, as a share of public paid employees" ~ "Health",
+      indicator_name == "Public Administration workers, as a share of public paid total employees" ~ "Public Administration",
+      TRUE ~ indicator_name
+    ),
+    indicator_name = as.factor(indicator_name) # Clean up and remove unused levels
+  )
+
 
 
 public_sector_workforce_first_last <- public_sector_workforce_first_last %>%
