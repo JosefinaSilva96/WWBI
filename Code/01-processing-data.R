@@ -396,6 +396,15 @@ public_sector_workforce <- data_wwbi_long %>%
   )) %>%
   mutate(value_percentage = value * 100)
 
+public_sector_workforce <- public_sector_workforce %>%
+  mutate(indicator_name = ifelse(indicator_name == "Education workers, as a share of public paid employees", "Education", indicator_name))
+
+public_sector_workforce <- public_sector_workforce %>%
+  mutate(indicator_name = ifelse(indicator_name == "Health workers, as a share of public paid employees", "Health", indicator_name))
+
+public_sector_workforce <- public_sector_workforce %>%
+  mutate(indicator_name = ifelse(indicator_name == "Public Administration workers, as a share of public paid employees", "Public Administration", indicator_name))
+
 
 # Now compute the "Other" share per country and year
 
