@@ -453,7 +453,7 @@ sapply(public_sector_workforce_first_last, class)
 write_dta(public_sector_workforce, file.path(data_path, "Data/public_sector_workforce.dta"))
 
 # Step 1: Filter and convert to percentage
-public_sector_workforce <- data_wwbi_long %>%
+public_sector_workforce_clean <- data_wwbi_long %>%
   filter(indicator_name %in% c(
     "Education workers, as a share of public paid employees", 
     "Health workers, as a share of public paid employees", 
@@ -462,7 +462,7 @@ public_sector_workforce <- data_wwbi_long %>%
   mutate(value_percentage = value * 100)
 
 # Step 2: For each country + indicator, get the latest available year
-latest_values <- public_sector_workforce %>%
+latest_values <- public_sector_workforce_clean %>%
   group_by(country_name, indicator_name, wb_region) %>%
   filter(year == max(year, na.rm = TRUE)) %>%
   ungroup() %>%
