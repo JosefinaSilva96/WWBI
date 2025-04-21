@@ -896,11 +896,13 @@ server <- function(input, output, session) {
         
         br(),
         
-        # ✅ Download Selected Graphs Button
+        # ✅ Download Buttons
         fluidRow(
-          column(12, align = "center",
-                 downloadButton("downloadSelectedGraphsDoc", "Download Selected Report",
-                                style = "padding: 10px 20px; font-size: 16px;")
+          column(6,
+                 downloadButton("downloadSelectedGraphsDoc", "Download Word Report")
+          ),
+          column(6,
+                 downloadButton("downloadSelectedGraphsPPT", "Download PowerPoint Presentation")
           )
         )
       )
@@ -4220,7 +4222,7 @@ server <- function(input, output, session) {
     }
   )
   
-  #Ppt slides 
+  #Power Point Slides 
   
   output$downloadSelectedGraphsPPT <- downloadHandler(
     filename = function() { 
