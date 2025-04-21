@@ -3755,6 +3755,57 @@ server <- function(input, output, session) {
     return(doc)
   }
   
+  generate_gender_wage_premiumbysector_slide <- function(ppt, selected_countries) {
+    if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
+      return(ppt)
+    }
+    
+    # Filter relevant indicators
+    filtered_data <- gender_wage_premiumpublic %>%
+      filter(
+        country_name %in% selected_countries,
+        indicator_name %in% c(
+          "Gender wage premium in the public sector, by industry: Public Administration (compared to male paid employees)",
+          "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)",
+          "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)"
+        )
+      )
+    
+    if (nrow(filtered_data) == 0 || all(is.na(filtered_data$value_percentage))) {
+      return(ppt)  # no data to plot
+    }
+    
+    # Rename for labels
+    filtered_data$indicator_label <- recode(
+      filtered_data$indicator_name,
+      "Gender wage premium in the public sector, by industry: Public Administration (compared to male paid employees)" = "Public Administration",
+      "Gender wage premium in the public sector, by industry: Education (compared to male paid employees)" = "Education",
+      "Gender wage premium in the public sector, by industry: Health (compared to male paid employees)" = "Health"
+    )
+    
+    # Create ggplot graph
+    gender_wage_plot <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_label)) +
+      geom_bar(stat = "identity", position = "dodge") +
+      scale_fill_brewer(palette = "Blues") +
+      labs(
+        title = "Gender Wage Premium in Public Sector by Industry",
+        x = "Country", y = "Wage Premium (%)", fill = "Industry"
+      ) +
+      theme_minimal()
+    
+    # Save to PNG
+    img_path <- tempfile(fileext = ".png")
+    ggsave(filename = img_path, plot = gender_wage_plot, width = 8, height = 6, dpi = 300)
+    
+    # Add slide with image only
+    ppt <- ppt %>%
+      add_slide(layout = "Title and Content", master = "Office Theme") %>%
+      ph_with(external_img(img_path, height = 5, width = 7), location = ph_location_type(type = "body"))
+    
+    return(ppt)
+  }
+  
+  
   generate_intro_section <- function(doc) {
     # Initialize Word document
     doc <- read_docx() 
@@ -4061,7 +4112,7 @@ server <- function(input, output, session) {
       # Add slide with only the image
       ppt <- ppt %>%
         add_slide(layout = "Title and Content", master = "Office Theme") %>%
-        ph_with(external_img(img_path, height = 5, width = 7),
+        ph_with(external_img(img_path, height = 5, width = 5),
                 location = ph_location_type(type = "body"))
       
       return(ppt)
@@ -4249,9 +4300,10 @@ server <- function(input, output, session) {
         if ("wagebill" %in% selected_sections) {
           ppt <- generate_wage_bill_slide(ppt, selected_countries)
         }
-        if ("wagebill_gdp" %in% selected_sections) {
-          ppt <- generate_gdp_analysis_slide(ppt, selected_countries)
+        if ("gender_wage_premium" %in% selected_sections) {
+          ppt <- generate_gender_wage_premiumbysector_slide(ppt, selected_countries)
         }
+        
         if ("public_employment" %in% selected_sections) {
           ppt <- generate_public_employment_slide(ppt, selected_countries)
         }
