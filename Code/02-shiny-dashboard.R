@@ -4032,7 +4032,39 @@ server <- function(input, output, session) {
       return(doc)
     }
     
-  
+    generate_pay_compression_slide <- function(ppt, selected_countries) {
+      if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
+        return(ppt)
+      }
+      
+      filtered_data_df <- pay_compression_wide %>%
+        filter(country_name %in% selected_countries)
+      
+      req(nrow(filtered_data_df) > 0)
+      
+      # Create summary for plot
+      plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector)) +
+        geom_point(color = "#003366", size = 3) +
+        geom_text(aes(label = country_name), vjust = -0.5, size = 3) +
+        geom_smooth(method = "lm", color = "gray", linetype = "dashed") +
+        labs(title = "Pay Compression: Public vs. Private Sector",
+             x = "Private Sector Pay Compression",
+             y = "Public Sector Pay Compression") +
+        theme_minimal()
+      
+      # Save plot as image
+      img_path <- tempfile(fileext = ".png")
+      ggsave(filename = img_path, plot = plot, width = 8, height = 6, dpi = 300)
+      
+      # Add slide with only the image
+      ppt <- ppt %>%
+        add_slide(layout = "Title and Content", master = "Office Theme") %>%
+        ph_with(external_img(img_path, height = 5, width = 7),
+                location = ph_location_type(type = "body"))
+      
+      return(ppt)
+    }
+    
   generate_conclusion_section <- function(doc) {
     # Add Section Title
     doc <- doc %>% body_add_par("Conclusion", style = "heading 1")
@@ -4188,6 +4220,52 @@ server <- function(input, output, session) {
     }
   )
   
+  #Ppt slides 
+  
+  output$downloadSelectedGraphsPPT <- downloadHandler(
+    filename = function() { 
+      paste0("Wage_bill_and_public_employment_analysis_Selected_Presentation_", Sys.Date(), ".pptx")
+    },
+    content = function(file) {
+      selected_countries <- input$countries_first
+      selected_sections <- input$selected_graphs
+      
+      # Initialize PowerPoint
+      ppt <- read_pptx()
+      
+      # Add a title slide
+      ppt <- ppt %>%
+        add_slide(layout = "Title Slide", master = "Office Theme") %>%
+        ph_with_text(type = "ctrTitle", str = "Wage bill and public employment analysis") %>%
+        ph_with_text(type = "subTitle", str = paste("Generated on", Sys.Date()))
+      
+      # Only include selected graphs
+      if (!is.null(selected_sections) && length(selected_sections) > 0) {
+        if ("pay_compression" %in% selected_sections) {
+          ppt <- generate_pay_compression_slide(ppt, selected_countries)
+        }
+        if ("wagebill" %in% selected_sections) {
+          ppt <- generate_wage_bill_slide(ppt, selected_countries)
+        }
+        if ("wagebill_gdp" %in% selected_sections) {
+          ppt <- generate_gdp_analysis_slide(ppt, selected_countries)
+        }
+        if ("public_employment" %in% selected_sections) {
+          ppt <- generate_public_employment_slide(ppt, selected_countries)
+        }
+        # add more slide generators here as needed
+      } else {
+        # If no selection: optionally include a placeholder slide
+        ppt <- ppt %>%
+          add_slide(layout = "Title and Content", master = "Office Theme") %>%
+          ph_with_text(type = "title", str = "No graphs selected") %>%
+          ph_with_text(type = "body", str = "Please select at least one graph to download.")
+      }
+      
+      # Save the PowerPoint
+      print(ppt, target = file)
+    }
+  )
   
   
   # ---------------------
