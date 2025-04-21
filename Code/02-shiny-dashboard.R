@@ -4247,7 +4247,7 @@ server <- function(input, output, session) {
       title_style <- fp_text(color = "#722F37", font.size = 20, bold = TRUE)
       doc <- doc %>%
         body_add_fpar(fpar(ftext("Wage bill and public employment analysis", prop = title_style))) %>%
-        generate_intro_section(doc, selected_countries)
+        generate_intro_section(selected_countries)
       
       # Section Header Style
       
@@ -4452,3 +4452,7 @@ shinyApp(ui = ui, server = server)
 
 
 # the end ##############################################
+
+
+
+
