@@ -860,11 +860,22 @@ server <- function(input, output, session) {
         
         br(),
         
-        # ✅ Download Full Report Button
         fluidRow(
           column(12, align = "center",
+                 
+                 # Country selector
+                 selectInput(
+                   inputId = "download_report_countries",
+                   label = "Select countries for the full report:",
+                   choices = unique(data_wwbi$country_name),  # Update with your country list source
+                   selected = c("Chile", "Brazil"),      # Optional default
+                   multiple = TRUE,
+                   selectize = TRUE
+                 ),
+                 
+                 # Download button
                  downloadButton("downloadAllGraphsDoc", "Download Full Report", 
-                                style = "padding: 10px 20px; font-size: 16px;")
+                                style = "padding: 10px 20px; font-size: 16px; margin-top: 10px;")
           )
         ),
         
@@ -1184,7 +1195,7 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
-  generate_wage_bill_analysis_section <- function(doc) {
+  generate_wage_bill_analysis_section <- function(doc, selected_countries) {
     # Use the first selected country from input
     first_country <- if (!is.null(input$countries) & length(input$countries) > 0) {
       input$countries[1]
@@ -1692,7 +1703,7 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
-  generate_public_sector_workforce_section <- function(doc) {
+  generate_public_sector_workforce_section <- function(doc, selected_countries) {
     doc <- doc %>% body_add_par("Public Sector Workforce Analysis", style = "heading 1")
     
     # Add introduction
@@ -1871,7 +1882,7 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
-  generate_tertiary_education_section <- function(doc) {
+  generate_tertiary_education_section <- function(doc, selected_countries) {
     # Add Section Title
     doc <- doc %>% body_add_par("Tertiary Education Analysis", style = "heading 1")
     
@@ -2080,7 +2091,7 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
-  generate_wage_premium_report_section <- function(doc) {
+  generate_wage_premium_report_section <- function(doc, selected_countries) {
     # Add Section Title
     doc <- doc %>% body_add_par("Public Sector Wage Premium Analysis", style = "heading 1")
     
@@ -2293,7 +2304,7 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
-  generate_wage_premium_gender_section <- function(doc) {
+  generate_wage_premium_gender_section <- function(doc, selected_countries) {
     # Add Section Title
     doc <- doc %>% body_add_par("Wage Premium Gender Analysis", style = "heading 1")
     
@@ -2541,7 +2552,7 @@ server <- function(input, output, session) {
     }
   )
   
-  generate_wage_premium_education_section <- function(doc) {
+  generate_wage_premium_education_section <- function(doc, selected_countries) {
     # Add Section Title
     doc <- doc %>% body_add_par("Public Sector Wage Premium by Education Level", style = "heading 1")
     
@@ -2735,7 +2746,7 @@ server <- function(input, output, session) {
   )
   
   
-  generate_public_sector_employment_section <- function(doc) {
+  generate_public_sector_employment_section <- function(doc, selected_countries) {
     # Add Section Title
     doc <- doc %>% body_add_par("Public Sector Employment Analysis", style = "heading 1")
     
@@ -2957,7 +2968,7 @@ server <- function(input, output, session) {
     }
   )
   
-  generate_wage_premium_gender_report_section <- function(doc) {
+  generate_wage_premium_gender_report_section <- function(doc, selected_countries) {
     # Add Section Title
     doc <- doc %>% body_add_par("Public Sector Wage Premium by Gender", style = "heading 1")
     
@@ -3196,7 +3207,7 @@ server <- function(input, output, session) {
     }
   )
   
-  generate_gender_workforce_section <- function(doc) {
+  generate_gender_workforce_section <- function(doc, selected_countries) {
     # Add Section Title
     doc <- doc %>% body_add_par("Gender Workforce Analysis", style = "heading 1")
     
@@ -3384,7 +3395,7 @@ server <- function(input, output, session) {
     }
   )
   
-  generate_females_occupation_groups_section <- function(doc) {
+  generate_females_occupation_groups_section <- function(doc, selected_countries) {
     # Add Section Title
     doc <- doc %>% body_add_par("Females by Occupational Group and Sector", style = "heading 1")
     
@@ -3527,6 +3538,48 @@ server <- function(input, output, session) {
     return(doc)
   }
   
+  generate_females_occupation_groups_slide <- function(ppt, selected_countries) {
+    if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
+      return(ppt)
+    }
+    
+    # Filter the data
+    filtered_data <- gender_leadership %>% 
+      filter(country_name %in% selected_countries)
+    
+    if (nrow(filtered_data) == 0) {
+      return(ppt)  # no data to plot
+    }
+    
+    # Plot
+    ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_label)) +
+      geom_bar(stat = "identity", position = "dodge") +
+      scale_fill_manual(values = c(
+        "Clerks-Public" = "#003366", 
+        "Managers-Public" = "#ADD8E6",
+        "Clerks-Private" = "#006400", 
+        "Managers-Private" = "#90EE90"
+      )) +
+      labs(
+        title = "Females by Occupational Group and Sector",
+        x = "Country", 
+        y = "Female Share (%)", 
+        fill = "Occupation"
+      ) +
+      theme_minimal()
+    
+    # Save as image
+    img_path <- tempfile(fileext = ".png")
+    ggsave(img_path, plot = ggplot_obj, width = 8, height = 6, dpi = 300)
+    
+    # Add to PowerPoint
+    ppt <- ppt %>%
+      add_slide(layout = "Title and Content", master = "Office Theme") %>%
+      ph_with(external_img(img_path, height = 5, width = 7), location = ph_location_type(type = "body"))
+    
+    return(ppt)
+  }
+  
   
   #Gender Wage premium in the public sector, by industry 
   output$gender_wage_barplot <- renderPlot({
@@ -3557,6 +3610,7 @@ server <- function(input, output, session) {
   
   
   # Download Handler for Word Document
+  
   output$downloadGenderWagePremium <- downloadHandler(
     filename = function() { paste0("Gender_Wage_Premium_Report_", Sys.Date(), ".docx") },
     content = function(file) {
@@ -3606,7 +3660,7 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
-  generate_gender_wage_premiumbysector_section <- function(doc) {
+  generate_gender_wage_premiumbysector_section <- function(doc, selected_countries) {
     # Add Section Title
     doc <- doc %>% body_add_par("Gender Wage Premium in Public Sector by Industry", style = "heading 1")
     
@@ -3806,7 +3860,7 @@ server <- function(input, output, session) {
   }
   
   
-  generate_intro_section <- function(doc) {
+  generate_intro_section <- function(doc, selected_countries) {
     # Initialize Word document
     doc <- read_docx() 
     
@@ -4215,63 +4269,71 @@ server <- function(input, output, session) {
       paste0("Wage_bill_and_public_employment_analysis_", Sys.Date(), ".docx") 
     },
     content = function(file) {
-          
-      # Get the selected countries dynamically
-          selected_countries <- input$countries_first  
-  
+      selected_countries <- input$download_report_countries # ✅ Use country selector from the download tab
+      
       # Initialize Word document
       doc <- read_docx() 
       
-      # Add Report Title
-      title_style <- fp_text(color = "#722F37", font.size = 20, bold = TRUE)
-      doc <- doc %>% body_add_fpar(fpar(ftext("Wage bill and public employment analysis", prop = title_style)))
-      doc <- generate_intro_section(doc)  # Add the Intro First
+      # Title
       
-      #Define Section Style 
+      title_style <- fp_text(color = "#722F37", font.size = 20, bold = TRUE)
+      doc <- doc %>%
+        body_add_fpar(fpar(ftext("Wage bill and public employment analysis", prop = title_style))) %>%
+        generate_intro_section(selected_countries)
+      
+      # Section Header Style
       
       section_style <- fp_text(color = "#003366", font.size = 14, bold = TRUE)
       
-      doc <- doc %>% body_add_fpar(fpar(ftext("Macro-Fundamentals of the Public Sector", prop = section_style)))
+      # ──────────────────────────────────────
+      # 📘 Section 1: Macro-Fundamentals
+      # ──────────────────────────────────────
+      doc <- doc %>%
+        body_add_fpar(fpar(ftext("Macro-Fundamentals of the Public Sector", prop = section_style))) %>%
+        generate_wage_bill_analysis_section(selected_countries) %>%
+        generate_gdp_analysis_section(selected_countries)
       
-      # Add Sections from Each Tab
-      doc <- generate_wage_bill_analysis_section(doc) #  Wage Bill Analysis
-      doc <- generate_gdp_analysis_section(doc, selected_countries)
+      # ──────────────────────────────────────
+      # 📘 Section 2: Size and Characteristics
+      # ──────────────────────────────────────
+      doc <- doc %>%
+        body_add_fpar(fpar(ftext("Size and Characteristics of the Public Sector", prop = section_style))) %>%
+        generate_public_sector_employment_section(selected_countries) %>%
+        generate_tertiary_education_section(selected_countries)
       
-      doc <- doc %>% body_add_fpar(fpar(ftext("Size and Characteristics of the Public Sector", prop = section_style)))
-      
-      doc <- generate_public_sector_employment_section(doc)  #Public Sector Employment
-      doc <- generate_tertiary_education_section(doc) # Tertiary Education Analysis
-      
-      
-      doc <- doc %>% 
+      # ──────────────────────────────────────
+      # 📘 Section 3: Competitiveness of Public Sector Wages
+      # ──────────────────────────────────────
+      doc <- doc %>%
         body_add_fpar(fpar(ftext("Competitiveness of Public Sector Wages", prop = section_style))) %>%
         body_add_par(
-          "Public sector compensation should theoretically be designed with an awareness of its influence on the broader labor market. According to the theory of “compensating wage differentials,” a job should pay more (or less) depending on its non-wage characteristics that are undesirable (or desirable). Therefore, the optimal design of public sector wages should account for the greater presence of both financial and non-financial benefits in public service. Ideally, public sector wages should include a slight penalty in base wages due to the higher non-monetary benefits such as job security, pension plans, and the opportunity to serve the public. This structure means that, despite lower monetary compensation, the total de facto compensation (including these non-monetary benefits) that individuals receive would be roughly equivalent to that in the private sector. Public sector wages should also track private sector wages, maintaining a small penalty while ensuring that wage rigidities in the public sector do not create a significant gap between the two sectors. This alignment would ensure that public sector compensation remains competitive without being distortionary, preventing shortages of skills or qualified applicants in either sector.",
+          "Public sector compensation should theoretically be designed with an awareness of its influence on the broader labor market. According to the theory of “compensating wage differentials,” a job should pay more (or less) depending on its non-wage characteristics that are undesirable (or desirable)...",
           style = "Normal"
-        )
+        ) %>%
+        generate_wage_premium_report_section(selected_countries) %>%
+        generate_wage_premium_education_section(selected_countries) %>%
+        generate_pay_compression_section(selected_countries = selected_countries)
       
-      doc <- generate_wage_premium_report_section(doc) #Public Sector Wage Premium Report
-      doc <- generate_wage_premium_education_section(doc) #Wage Premium by Education
-      doc <- generate_pay_compression_section(doc, selected_countries = selected_countries) #Pay Compression section
+      # ──────────────────────────────────────
+      # 📘 Section 4: Equity in the Public Sector
+      # ──────────────────────────────────────
+      doc <- doc %>%
+        body_add_fpar(fpar(ftext("Equity in the Public Sector", prop = section_style))) %>%
+        generate_gender_workforce_section(selected_countries) %>%
+        generate_females_occupation_groups_section(selected_countries) %>%
+        generate_gender_wage_premiumbysector_section(selected_countries) %>%
+        generate_wage_premium_gender_report_section(selected_countries)
       
+      # ──────────────────────────────────────
+      # 📘 Conclusion
+      # ──────────────────────────────────────
+      doc <- generate_conclusion_section(doc)
       
-      doc <- doc %>% body_add_fpar(fpar(ftext("Equity in the Public Sector", prop = section_style)))
-      doc <- generate_gender_workforce_section(doc) #Gender Workforce Analysis
-      doc <- generate_females_occupation_groups_section(doc) #Females by Occupational Groups
-      doc <- generate_gender_wage_premiumbysector_section(doc)
-       
-      doc <- generate_wage_premium_gender_report_section(doc) #Wage Premium Gender Report
-      
-    
-      
-      
-      # ✅ Add Conclusion Section at the End
-      doc <- generate_conclusion_section(doc)  
-      
-      # Save the Final Report
+      # Save final report
       print(doc, target = file)
     }
   )
+  
   
   #Power Point Slides 
   
@@ -4302,6 +4364,10 @@ server <- function(input, output, session) {
         }
         if ("gender_wage_premium" %in% selected_sections) {
           ppt <- generate_gender_wage_premiumbysector_slide(ppt, selected_countries)
+        }
+        
+        if ("femaleoccupation" %in% selected_sections) {
+          ppt <- generate_females_occupation_groups_slide(ppt, selected_countries)
         }
         
         if ("public_employment" %in% selected_sections) {
