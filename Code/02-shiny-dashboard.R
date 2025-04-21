@@ -1606,7 +1606,7 @@ server <- function(input, output, session) {
   output$note_stackedBarGraph <- renderText({
     "Note: This indicator represents the distribution of public sector employment across different industries (Public Administration, Education, Health, and Other) as a percentage of paid public employment."
   })
-  output$messageOutput <- renderUI({
+  output$messageOutput <- renderText({
     filtered_data <- public_sector_workforce %>% filter(country_name == input$selected_country)
     if(nrow(filtered_data) < 2) {
       return(tags$p("Not enough data available for this country to create the graph.", style = "color: red; font-weight: bold;"))
