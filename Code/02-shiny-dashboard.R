@@ -4056,7 +4056,7 @@ server <- function(input, output, session) {
       
       # Save plot as image
       img_path <- tempfile(fileext = ".png")
-      ggsave(filename = img_path, plot = plot, width = 8, height = 6, dpi = 300)
+      ggsave(filename = img_path, plot = plot, width = 6, height = 6, dpi = 300)
       
       # Add slide with only the image
       ppt <- ppt %>%
@@ -4238,8 +4238,8 @@ server <- function(input, output, session) {
       # Add a title slide
       ppt <- ppt %>%
         add_slide(layout = "Title Slide", master = "Office Theme") %>%
-        ph_with_text(type = "ctrTitle", str = "Wage bill and public employment analysis") %>%
-        ph_with_text(type = "subTitle", str = paste("Generated on", Sys.Date()))
+        ph_with("Wage bill and public employment analysis", location = ph_location_type(type = "ctrTitle")) %>%
+        ph_with(paste("Generated on", Sys.Date()), location = ph_location_type(type = "subTitle"))
       
       # Only include selected graphs
       if (!is.null(selected_sections) && length(selected_sections) > 0) {
