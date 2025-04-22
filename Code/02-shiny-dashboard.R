@@ -880,6 +880,24 @@ server <- function(input, output, session) {
         ),
         
         hr(),
+        fluidRow(
+          column(12, align = "center",
+                 
+                 # Country selector
+                 selectInput(
+                   inputId = "download_report_countries",
+                   label = "Select countries for the report/slides:",
+                   choices = unique(data_wwbi$country_name),  # Update with your country list source
+                   selected = c("Chile", "Brazil"),      # Optional default
+                   multiple = TRUE,
+                   selectize = TRUE
+                 ),
+                 
+                 # Download button
+                 downloadButton("downloadAllGraphsDoc", "Download Full Report", 
+                                style = "padding: 10px 20px; font-size: 16px; margin-top: 10px;")
+          )
+        ),
         
         # ✅ Select Graphs to Download
         h4("Download a Custom Report"),
@@ -3006,6 +3024,7 @@ server <- function(input, output, session) {
     return(doc)
   }
   #slides 
+  
   generate_public_sector_employment_slide <- function(ppt, selected_countries) {
     if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
       return(ppt)
@@ -4385,7 +4404,7 @@ server <- function(input, output, session) {
       # Add slide with only the image
       ppt <- ppt %>%
         add_slide(layout = "Title and Content", master = "Office Theme") %>%
-        ph_with(external_img(img_path, height = 5, width = 5),
+        ph_with(external_img(img_path, height = 4, width = 4),
                 location = ph_location_type(type = "body"))
       
       return(ppt)
@@ -4405,6 +4424,18 @@ server <- function(input, output, session) {
     return(doc)
   }
   
+  add_section_slide <- function(ppt, title) {
+    ppt %>%
+      add_slide(layout = "Title Slide", master = "Office Theme") %>%
+      ph_with(
+        value = fpar(
+          ftext(title, prop = fp_text(color = "#003366", font.size = 40, bold = TRUE))
+        ),
+        location = ph_location_type(type = "ctrTitle")
+      )
+  }
+  
+  
   #Download selected graphs 
   
   output$downloadSelectedGraphsDoc <- downloadHandler(
@@ -4420,7 +4451,7 @@ server <- function(input, output, session) {
       
       # Add Report Title
       title_style <- fp_text(color = "#722F37", font.size = 20, bold = TRUE)
-      doc <- doc %>% body_add_fpar(fpar(ftext("Wage_bill_and_public_employment_analysis_Selected_Report_", prop = title_style)))
+      doc <- doc %>% body_add_fpar(fpar(ftext("Wage bill and public employment analysis", prop = title_style)))
       doc <- generate_intro_section(doc, selected_countries)  # Add the Intro First
       
       # Define Section Style 
@@ -4434,40 +4465,40 @@ server <- function(input, output, session) {
         doc <- doc %>% body_add_par("No sections selected for download.", style = "Normal")
       } else {
         if ("wagebill" %in% selected_sections) {
-          doc <- generate_wage_bill_analysis_section(doc)
+          doc <- generate_wage_bill_analysis_section(doc, selected_countries)
         }
         if ("wagebill_gdp" %in% selected_sections) {
           doc <- generate_gdp_analysis_section(doc, selected_countries)
         }
         if ("tertiaryeducation" %in% selected_sections) {
-          doc <- generate_tertiary_education_section(doc)
+          doc <- generate_tertiary_education_section(doc, selected_countries)
         }
         if ("genderwagepremium" %in% selected_sections) {
-          doc <- generate_wage_premium_gender_section(doc)
+          doc <- generate_wage_premium_gender_section(doc, selected_countries)
         }
         if ("wagepremiumeducation" %in% selected_sections) {
-          doc <- generate_wage_premium_education_section(doc)
+          doc <- generate_wage_premium_education_section(doc, selected_countries)
         }
         if ("public_employment" %in% selected_sections) {
-          doc <- generate_public_sector_employment_section(doc) 
+          doc <- generate_public_sector_employment_section(doc, selected_countries) 
         }
         if ("wagepremiumgender" %in% selected_sections) {
-          doc <- generate_wage_premium_gender_report_section(doc)
+          doc <- generate_wage_premium_gender_report_section(doc, selected_countries)
         }
         if ("public_workforce" %in% selected_sections) {
-          doc <- generate_public_sector_workforce_section(doc)
+          doc <- generate_public_sector_workforce_section(doc, selected_countries)
         }
         if ("gender_workforce" %in% selected_sections) {
-          doc <- generate_gender_workforce_section(doc)
+          doc <- generate_gender_workforce_section(doc, selected_countries)
         }
-        if ("femaleoccupation" %in% selected_sections) {  # Fixed typo from "femaleocuupation"
-          doc <- generate_females_occupation_groups_section(doc)
+        if ("female_leadership" %in% selected_sections) {  # Fixed typo from "femaleocuupation"
+          doc <- generate_females_occupation_groups_section(doc, selected_countries)
         }
         if ("wagepremium" %in% selected_sections) {
-          doc <- generate_wage_premium_report_section(doc)
+          doc <- generate_wage_premium_report_section(doc, selected_countries)
         }
         if ("gender_wage_premium" %in% selected_sections) {
-          doc <- generate_gender_wage_premiumbysector_section(doc)
+          doc <- generate_gender_wage_premiumbysector_section(doc, selected_countries)
         }
         if ("pay_compression" %in% selected_sections) {
           doc <- generate_pay_compression_section(doc, selected_countries = selected_countries)
@@ -4575,8 +4606,9 @@ server <- function(input, output, session) {
       
       # Only include selected graphs
       if (!is.null(selected_sections) && length(selected_sections) > 0) {
-        if ("pay_compression" %in% selected_sections) {
-          ppt <- generate_pay_compression_slide(ppt, selected_countries)
+      
+        if ("wagebill" %in% selected_sections || "wagebill_gdp" %in% selected_sections) {
+          ppt <- add_section_slide(ppt, "Macro-Fundamentals of the Public Sector")
         }
         if ("wagebill" %in% selected_sections) {
           ppt <- generate_wage_bill_analysis_slide(ppt, selected_countries)
@@ -4584,29 +4616,42 @@ server <- function(input, output, session) {
         if ("wagebill_gdp" %in% selected_sections) {
           ppt <- generate_gdp_analysis_slide(ppt, selected_countries)
         }
-        
+        if ("public_employment" %in% selected_sections || "public_workforce" %in% selected_sections || "tertiaryeducation" %in% selected_sections) {
+          ppt <- add_section_slide(ppt, "Size and Characteristics of the Public Sector")
+        }
+        if ("public_employment" %in% selected_sections) {
+          ppt <- generate_public_sector_employment_slide(ppt, selected_countries)
+        }
+        if ("public_workforce" %in% selected_sections) {
+          ppt <- generate_public_sector_workforce_slide(ppt, selected_countries)
+        }
         if ("tertiaryeducation" %in% selected_sections) {
           ppt <- generate_tertiary_education_slide(ppt, selected_countries)
         }
+        if ("genderwagepremium" %in% selected_sections || "wagepremiumeducation" %in% selected_sections || "pay_compression" %in% selected_sections) {
+          ppt <- add_section_slide(ppt, "Competiiveness of public sector wages")
+        }
+        
         if ("genderwagepremium" %in% selected_sections) {
           ppt <- generate_wage_premium_gender_slide(ppt, selected_countries)
         }
-        
         if ("wagepremiumeducation" %in% selected_sections) {
           ppt <-generate_wage_premium_education_slide(ppt, selected_countries)
         }
         
-        if ("public_employment" %in% selected_sections) {
-          ppt <- generate_public_sector_employment_slide(ppt, selected_countries)
+        if ("pay_compression" %in% selected_sections) {
+          ppt <- generate_pay_compression_slide(ppt, selected_countries)
+        }
+        
+        if ("wagepremiumgender" %in% selected_sections || "gender_workforce" %in% selected_sections || "gender_wage_premium" %in% selected_sections
+            || "female_leadership" %in% selected_sections) {
+          ppt <- add_section_slide(ppt, "Equity in public sector")
         }
         
         if ("wagepremiumgender" %in% selected_sections) {
           ppt <- generate_wage_premium_gender_report_slide(ppt, selected_countries)
         }
         
-        if ("public_workforce" %in% selected_sections) {
-          ppt <- generate_public_sector_workforce_slide(ppt, selected_countries)
-        }
         
         if ("gender_workforce" %in% selected_sections) {
           ppt <- generate_gender_workforce_slide(ppt, selected_countries)
@@ -4615,13 +4660,10 @@ server <- function(input, output, session) {
           ppt <- generate_gender_wage_premiumbysector_slide(ppt, selected_countries)
         }
         
-        if ("femaleoccupation" %in% selected_sections) {
+        if ("female_leadership" %in% selected_sections) {
           ppt <- generate_females_occupation_groups_slide(ppt, selected_countries)
         }
-        
-        if ("public_employment" %in% selected_sections) {
-          ppt <- generate_public_employment_slide(ppt, selected_countries)
-        }
+  
         # add more slide generators here as needed
       } else {
         # If no selection: optionally include a placeholder slide
