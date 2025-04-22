@@ -855,47 +855,22 @@ server <- function(input, output, session) {
         fluidRow(
           div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               p("You can download a comprehensive report with all graphs or select specific graphs to include in your report.",
-                style = "font-size: 16px; color: #333;"))
+                style = "font-size: 16px; color: #333;")
+          )
         ),
         
         br(),
         
         fluidRow(
-          column(12, align = "center",
-                 
-                 # Country selector
-                 selectInput(
-                   inputId = "download_report_countries",
-                   label = "Select countries for the full report:",
-                   choices = unique(data_wwbi$country_name),  # Update with your country list source
-                   selected = c("Chile", "Brazil"),      # Optional default
-                   multiple = TRUE,
-                   selectize = TRUE
-                 ),
-                 
-                 # Download button
-                 downloadButton("downloadAllGraphsDoc", "Download Full Report", 
-                                style = "padding: 10px 20px; font-size: 16px; margin-top: 10px;")
-          )
-        ),
-        
-        hr(),
-        fluidRow(
-          column(12, align = "center",
-                 
-                 # Country selector
+          column(6, align = "center",
                  selectInput(
                    inputId = "download_report_countries",
                    label = "Select countries for the report/slides:",
-                   choices = unique(data_wwbi$country_name),  # Update with your country list source
-                   selected = c("Chile", "Brazil"),      # Optional default
+                   choices = unique(data_wwbi$country_name),
+                   selected = c("Chile"),
                    multiple = TRUE,
                    selectize = TRUE
-                 ),
-                 
-                 # Download button
-                 downloadButton("downloadAllGraphsDoc", "Download Full Report", 
-                                style = "padding: 10px 20px; font-size: 16px; margin-top: 10px;")
+                 )
           )
         ),
         
@@ -927,14 +902,17 @@ server <- function(input, output, session) {
         
         # ✅ Download Buttons
         fluidRow(
-          column(6,
-                 downloadButton("downloadSelectedGraphsDoc", "Download Word Report")
+          column(6, align = "center",
+                 downloadButton("downloadAllGraphsDoc", "\U1F4C4 Download Word Report",
+                                style = "padding: 10px 20px; font-size: 16px; margin-top: 10px;")
           ),
-          column(6,
-                 downloadButton("downloadSelectedGraphsPPT", "Download PowerPoint Presentation")
+          column(6, align = "center",
+                 downloadButton("downloadSelectedGraphsPPT", "\U1F4CA Download PowerPoint Slides",
+                                style = "padding: 10px 20px; font-size: 16px; margin-top: 10px;")
           )
         )
-      )
+        
+      )  
     }
   }
 )
@@ -4592,7 +4570,7 @@ server <- function(input, output, session) {
       paste0("Wage_bill_and_public_employment_analysis_Selected_Presentation_", Sys.Date(), ".pptx")
     },
     content = function(file) {
-      selected_countries <- input$countries_first
+      selected_countries <- input$download_report_countries
       selected_sections <- input$selected_graphs
       
       # Initialize PowerPoint
