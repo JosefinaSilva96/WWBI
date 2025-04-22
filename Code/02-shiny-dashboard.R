@@ -1264,12 +1264,12 @@ server <- function(input, output, session) {
     first_country_2010 <- wage_bill_gdp %>%
       filter(country_name == first_country, year == 2010) %>%
       summarise(value = first(value)) %>%
-      pull(value) %||% NA
+      pull(value) round(0) %||% NA
     
     first_country_latest <- wage_bill_gdp %>%
       filter(country_name == first_country, year == last_year) %>%
       summarise(value = first(value)) %>%
-      pull(value) %||% NA
+      pull(value) round(0) %||% NA
     
     trend_text <- if (!is.na(first_country_2010) && !is.na(first_country_latest)) {
       if (first_country_latest > first_country_2010) {
@@ -1298,8 +1298,8 @@ server <- function(input, output, session) {
     # ✅ Public Expenditure analysis
     exp_data <- wage_bill_publicexp %>% filter(country_name == first_country)
     
-    exp_2010 <- exp_data %>% filter(year == 2010) %>% summarise(value = max(value, na.rm = TRUE)) %>% pull(value) %||% NA
-    exp_latest <- exp_data %>% filter(year == last_year) %>% summarise(value = max(value, na.rm = TRUE)) %>% pull(value) %||% NA
+    exp_2010 <- exp_data %>% filter(year == 2010) %>% summarise(value = max(value, na.rm = TRUE)) %>% pull(value) %>% round(0) %||% NA
+    exp_latest <- exp_data %>% filter(year == last_year) %>% summarise(value = max(value, na.rm = TRUE)) %>% pull(value) %>% round(0) %||% NA
     
     country_volatility <- sd(exp_data$value, na.rm = TRUE)
     regional_volatility <- wage_bill_publicexp %>%
