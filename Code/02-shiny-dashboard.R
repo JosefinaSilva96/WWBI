@@ -8,7 +8,7 @@ packages <- unique(c(
   "ggplot2", "shiny", "shinythemes", "DT", "maps", "mapdata",
   "leaflet", "rnaturalearth", "sf", "plotly", "officer",
   "viridis", "here", "glue", "colourpicker", "wbstats", "htmlwidgets",
-  "bs4Dash", "countrycode", "bslib"
+  "bs4Dash", "countrycode", "bslib", "ggthemes"
 ))
 
 # Function to check and install missing packages
@@ -1535,7 +1535,8 @@ server <- function(input, output, session) {
         y = "Wage Bill (% of Public Expenditure)",
         color = "Country"
       ) +
-      theme_minimal()
+      theme_minimal() +
+      scale_color_manual(values = scales::hue_pal()(length(unique(filtered_data_df$country_name))))
     
     # Save and insert
     img_path <- tempfile(fileext = ".png")
@@ -1573,7 +1574,8 @@ server <- function(input, output, session) {
         y = "Wage Bill (% of Public Expenditure)",
         color = "Country"
       ) +
-      theme_minimal()
+      theme_minimal() +
+      scale_color_manual(values = scales::hue_pal()(length(unique(filtered_data_df$country_name))))
     
     # Save plot to image
     img_path <- tempfile(fileext = ".png")
@@ -1599,6 +1601,15 @@ server <- function(input, output, session) {
     req(input$countries_workforce)
     data_to_plot <- filtered_workforce_data() %>% filter(country_name %in% input$countries_workforce)
     req(nrow(data_to_plot) > 0)
+    # Define color-blind friendly palette (Okabe-Ito)
+    color_blind_palette <- c(
+      "Public Administration" = "#E69F00",  # orange
+      "Education" = "#56B4E9",              # sky blue
+      "Health" = "#009E73",                 # bluish green
+      "Other" = "#F0E442"                   # yellow
+    )
+    
+    # Create plot
     plot_ly(data = data_to_plot,
             x = ~country_name,
             y = ~value_percentage,
@@ -1606,13 +1617,15 @@ server <- function(input, output, session) {
             type = "bar",
             text = ~paste("Country:", country_name, "<br>Indicator:", indicator_name, "<br>Value:", round(value_percentage, 1), "%"),
             textposition = "auto",
-            colors = c("Public Administration" = "#568340", "Education" = "#B3242B", 
-                       "Health" = "#003366", "Other" = "#A9A9A9")) %>%
-      layout(barmode = "stack",
-             title = "Public Workforce Distribution by Country",
-             xaxis = list(title = "Country"),
-             yaxis = list(title = "Workforce Distribution (%)", range = c(0, 100)),
-             legend = list(title = list(text = "<b>Indicator</b>")))
+            colors = color_blind_palette) %>%
+      layout(
+        barmode = "stack",
+        title = "Public Workforce Distribution by Country",
+        xaxis = list(title = "Country"),
+        yaxis = list(title = "Workforce Distribution (%)", range = c(0, 100)),
+        legend = list(title = list(text = "<b>Indicator</b>"))
+      )
+    
   })
   
   output$note_stackedBarGraph <- renderText({
@@ -1635,6 +1648,14 @@ server <- function(input, output, session) {
     if(is.infinite(first_year) || is.infinite(last_year)) return(NULL)
     data_to_plot <- filtered_data %>% filter(year %in% c(first_year, last_year)) %>% 
       group_by(year, indicator_name) %>% summarise(value_percentage = mean(value_percentage, na.rm = TRUE), .groups = "drop")
+    # Color-blind friendly palette (Okabe-Ito)
+    color_blind_palette <- c(
+      "Public Administration" = "#E69F00",  # orange
+      "Education" = "#56B4E9",              # sky blue
+      "Health" = "#009E73",                 # bluish green
+      "Other" = "#F0E442"                   # yellow
+    )
+    
     plot_ly(data = data_to_plot,
             x = ~value_percentage,
             y = ~factor(year, levels = c(last_year, first_year)),
@@ -1643,8 +1664,7 @@ server <- function(input, output, session) {
             orientation = "h",
             text = ~paste0(round(value_percentage, 1), "%"),
             textposition = "inside",
-            colors = c("Public Administration" = "#568340", "Education" = "#B3242B", 
-                       "Health" = "#003366", "Other" = "#A9A9A9")) %>%
+            colors = color_blind_palette) %>%
       layout(barmode = "stack",
              title = paste("Sectoral Distribution of Public Sector Workforce in", input$selected_country, "(", first_year, "&", last_year, ")"),
              xaxis = list(title = "Percentage (%)"),
@@ -1667,9 +1687,13 @@ server <- function(input, output, session) {
       first_graph_data <- filtered_workforce_data() %>% filter(country_name %in% input$countries_workforce)
       first_graph_ggplot <- ggplot(first_graph_data, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
         geom_bar(stat = "identity", position = "stack") +
-        scale_fill_manual(values = c("Public Administration" = "#568340", "Education" = "#B3242B", 
-                                     "Health" = "#003366", "Other" = "#A9A9A9")) +
-        labs(title = "Public Workforce Distribution by Country", x = "Country", y = "Workforce Distribution (%)") +
+        scale_fill_viridis_d(option = "D") +  # Color-blind friendly discrete palette
+        labs(
+          title = "Public Workforce Distribution by Country",
+          x = "Country",
+          y = "Workforce Distribution (%)",
+          fill = "Sector"
+        ) +
         theme_minimal()
       ggsave("first_graph.png", plot = first_graph_ggplot, width = 6, height = 4)
       doc <- doc %>% body_add_par("First Graph: Public Workforce Distribution by Country", style = "heading 1") %>% 
@@ -1685,13 +1709,19 @@ server <- function(input, output, session) {
         if(!is.finite(first_year) || !is.finite(last_year)) {
           doc <- doc %>% body_add_par("Invalid year data for the selected country.", style = "Normal")
         } else {
-          second_graph_data <- filtered_data %>% filter(year %in% c(first_year, last_year)) %>% 
-            group_by(year, indicator_name) %>% summarise(value_percentage = mean(value_percentage, na.rm = TRUE), .groups = "drop")
-          second_graph_ggplot <- ggplot(second_graph_data, aes(x = value_percentage, y = factor(year, levels = c(last_year, first_year)), fill = indicator_name)) +
+          second_graph_ggplot <- ggplot(second_graph_data, aes(
+            x = value_percentage,
+            y = factor(year, levels = c(last_year, first_year)),
+            fill = indicator_name
+          )) +
             geom_bar(stat = "identity", position = "stack", orientation = "horizontal") +
-            scale_fill_manual(values = c("Public Administration" = "#568340", "Education" = "#B3242B", 
-                                         "Health" = "#003366", "Other" = "#A9A9A9")) +
-            labs(title = paste("Sectoral Distribution of Public Sector Workforce in", input$selected_country), x = "Percentage (%)", y = "Year") +
+            scale_fill_viridis_d(option = "D") +  # Color-blind friendly discrete palette
+            labs(
+              title = paste("Sectoral Distribution of Public Sector Workforce in", input$selected_country),
+              x = "Percentage (%)",
+              y = "Year",
+              fill = "Sector"
+            ) +
             theme_minimal()
           ggsave("second_graph.png", plot = second_graph_ggplot, width = 6, height = 4)
           doc <- doc %>% body_add_par("Second Graph: Sectoral Distribution of Public Sector Workforce", style = "heading 1") %>% 
@@ -1730,10 +1760,11 @@ server <- function(input, output, session) {
     # ✅ Plot graph
     first_graph_ggplot <- ggplot(first_graph_data, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
       geom_bar(stat = "identity", position = "stack") +
-      scale_fill_manual(values = c("Public Administration" = "#568340", "Education" = "#B3242B", 
-                                   "Health" = "#003366", "Other" = "#A9A9A9")) +
-      labs(title = "Public Workforce Distribution by Country", 
-           x = "Country", y = "Workforce Distribution (%)", fill = "Sector") +
+      scale_fill_viridis_d(option = "D") +  # Automatically assigns different accessible colors
+      labs(
+        title = "Public Workforce Distribution by Country", 
+        x = "Country", y = "Workforce Distribution (%)", fill = "Sector"
+      ) +
       theme_minimal()
     
     img_path1 <- tempfile(fileext = ".png")
@@ -1827,12 +1858,7 @@ server <- function(input, output, session) {
     # Create the bar plot
     first_graph_ggplot <- ggplot(first_graph_data, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
       geom_bar(stat = "identity", position = "stack") +
-      scale_fill_manual(values = c(
-        "Public Administration" = "#568340",
-        "Education" = "#B3242B",
-        "Health" = "#003366",
-        "Other" = "#A9A9A9"
-      )) +
+      scale_fill_viridis_d(option = "D") +  # Automatically assigns different accessible colors
       labs(
         title = "Public Workforce Distribution by Country", 
         x = "Country", y = "Workforce Distribution (%)", fill = "Sector"
@@ -1864,8 +1890,8 @@ server <- function(input, output, session) {
       filter(country_name %in% input$selected_countries)
     
     # Define Colors
-    custom_colors <- c("as a share of private paid employees" = "#B3242B", 
-                       "as a share of public paid employees" = "#003366")
+    custom_colors <- c("as a share of private paid employees" = "#0072B2", 
+                       "as a share of public paid employees" = "#D55E00")
     
     # Generate Bar Plot
     plot <- filtered_data %>%
@@ -1904,8 +1930,8 @@ server <- function(input, output, session) {
       
       ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
         geom_bar(stat = "identity", position = "dodge") +
-        scale_fill_manual(values = c("as a share of private paid employees" = "#B3242B", 
-                                     "as a share of public paid employees" = "#003366")) +
+        scale_fill_manual(values = c("as a share of private paid employees" = "#0072B2", 
+                                     "as a share of public paid employees" = "#D55E00")) +
         labs(title = "Tertiary Education by Sector and Country", x = "Country", y = "Tertiary Education (%)") +
         theme_minimal()
       
@@ -1948,8 +1974,8 @@ server <- function(input, output, session) {
     ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
       geom_bar(stat = "identity", position = "dodge") +
       scale_fill_manual(values = c(
-        "as a share of private paid employees" = "#B3242B", 
-        "as a share of public paid employees" = "#003366"
+        "as a share of private paid employees" = "#0072B2", 
+        "as a share of public paid employees" = "#D55E00"
       )) +
       labs(
         title = "Workers with Tertiary Education by Sector and Country",
@@ -2022,8 +2048,8 @@ server <- function(input, output, session) {
     plot <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
       geom_bar(stat = "identity", position = "dodge") +
       scale_fill_manual(values = c(
-        "as a share of private paid employees" = "#B3242B", 
-        "as a share of public paid employees" = "#003366"
+        "as a share of private paid employees" = "#0072B2", 
+        "as a share of public paid employees" = "#D55E00"
       )) +
       labs(
         title = "Workers with Tertiary Education by Sector and Country",
@@ -2076,7 +2102,7 @@ server <- function(input, output, session) {
       mode = "markers",
       marker = list(size = 10, opacity = 0.8),
       color = ~color,  # Assign color dynamically
-      colors = c("#B3242B", "#003366"),  # Red & Dark Blue
+      colors = c("#0072B2", "#D55E00"),  # Red & Dark Blue
       text = ~paste0("Country: ", country_name, "<br>Wage Premium: ", round(value_percentage, 1), "%"),
       hoverinfo = "text"
     ) %>%
@@ -2232,7 +2258,7 @@ server <- function(input, output, session) {
     
     # ✅ Plot
     filtered_data <- filtered_data %>%
-      mutate(color = ifelse(country_name == first_country, "#B3242B", "#003366"))
+      mutate(color = ifelse(country_name == first_country, "#0072B2", "#D55E00"))
     
     ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, color = color)) +
       geom_point(size = 5) +
@@ -2277,7 +2303,7 @@ server <- function(input, output, session) {
                     x = ~country_name,
                     y = ~value_percentage,
                     type = 'bar',
-                    color = I("#003366"),
+                    color = I("#0072B2"),
                     text = ~paste("Country: ", country_name, "<br>Last year available: ", year, "<br>Employment (%): ", round(value_percentage, 2)),
                     hoverinfo = "text",
                     name = "Public Sector",
@@ -2287,7 +2313,7 @@ server <- function(input, output, session) {
                 y = ~value_percentage,
                 type = "scatter",
                 mode = "markers",
-                marker = list(size = 10, color = "#B3242B"),
+                marker = list(size = 10, color = "#D55E00"),
                 name = "Private Sector",
                 text = ~paste("Country: ", country_name, "<br>Last year available: ", year, "<br>Employment (%): ", round(value_percentage, 2)),
                 hoverinfo = "text",
@@ -2308,8 +2334,8 @@ server <- function(input, output, session) {
   output$employment_plot_overtime <- renderPlotly({
     filtered_data <- gender_workforce %>% filter(country_name == input$selected_country)
     if(nrow(filtered_data) == 0) return(NULL)
-    custom_colors <- c("Females, as a share of private paid employees" = "#003366", 
-                       "Females, as a share of public paid employees" = "#B3242B")
+    custom_colors <- c("Females, as a share of private paid employees" = "#0072B2", 
+                       "Females, as a share of public paid employees" = "#D55E00")
     plot <- filtered_data %>% plot_ly(x = ~year,
                                       y = ~value_percentage,
                                       color = ~indicator_name,
@@ -2323,13 +2349,25 @@ server <- function(input, output, session) {
              yaxis = list(title = "Female Employment (%)"),
              legend = list(title = list(text = "<b>Sector</b>")),
              hovermode = "closest")
-    plot <- plot %>% add_annotations(x = data_to_plot_long$year, 
-                                     y = data_to_plot_long$value_percentage, 
-                                     text = round(data_to_plot_long$value_percentage, 2),
-                                     showarrow = FALSE,
-                                     font = list(size = 12, color = "black"),
-                                     xanchor = "center",
-                                     yanchor = "bottom")
+    plot <- plot_ly(data = data_to_plot_long,
+                    x = ~year,
+                    y = ~value_percentage,
+                    color = ~indicator_label,
+                    colors = c("Male" = "#0072B2", "Female" = "#D55E00"),
+                    type = "scatter",
+                    mode = "lines+markers") %>%
+      add_annotations(x = ~year,
+                      y = ~value_percentage,
+                      text = ~round(value_percentage, 2),
+                      showarrow = FALSE,
+                      font = list(size = 12, color = "black"),
+                      xanchor = "center",
+                      yanchor = "bottom") %>%
+      layout(title = "Public Sector Wage Premium Over Time",
+             xaxis = list(title = "Year"),
+             yaxis = list(title = "Wage Premium (%)"),
+             legend = list(title = list(text = "Gender")))
+    
     plot
   })
   
@@ -2402,12 +2440,19 @@ server <- function(input, output, session) {
       # Graph
       multi_country_plot <- ggplot(data_to_plot, aes(x = country_name, y = value_percentage, color = indicator_label)) +
         geom_point(size = 3) +
+        scale_color_manual(
+          values = c(
+            "Male" = "#0072B2",    # Colorblind-friendly blue
+            "Female" = "#D55E00"   # Colorblind-friendly orange/red
+          )
+        ) +
         labs(
           title = "Public Sector Wage Premium by Gender (Latest Year)",
           x = "Country", y = "Wage Premium (%)", color = "Gender"
         ) +
         theme_minimal() +
         theme(axis.text.x = element_text(angle = 45, hjust = 1))
+      
       
       img_path1 <- tempfile(fileext = ".png")
       ggsave(img_path1, plot = multi_country_plot, width = 8, height = 6)
@@ -2464,6 +2509,12 @@ server <- function(input, output, session) {
       time_series_plot <- ggplot(time_series_data, aes(x = year, y = value_percentage, color = indicator_label, group = indicator_label)) +
         geom_line(size = 1.2) +
         geom_point(size = 3) +
+        scale_color_manual(
+          values = c(
+            "Male" = "#0072B2",    # Blue - Colorblind-friendly
+            "Female" = "#D55E00"   # Vermillion - Colorblind-friendly
+          )
+        ) +
         labs(
           title = paste("Wage Premium by Gender Over Time in", first_country),
           x = "Year", y = "Wage Premium (%)", color = "Gender"
@@ -2521,6 +2572,12 @@ server <- function(input, output, session) {
     if (nrow(data_to_plot) > 0) {
       multi_country_plot <- ggplot(data_to_plot, aes(x = country_name, y = value_percentage, color = indicator_label)) +
         geom_point(size = 3) +
+        scale_color_manual(
+          values = c(
+            "Male" = "#0072B2",    # Colorblind-friendly blue
+            "Female" = "#D55E00"   # Colorblind-friendly orange/red
+          )
+        ) +
         labs(
           title = "Public Sector Wage Premium by Gender (Latest Year)",
           x = "Country", y = "Wage Premium (%)", color = "Gender"
@@ -2545,6 +2602,12 @@ server <- function(input, output, session) {
       time_series_plot <- ggplot(time_series_data, aes(x = year, y = value_percentage, color = indicator_label, group = indicator_label)) +
         geom_line(size = 1.2) +
         geom_point(size = 3) +
+        scale_color_manual(
+          values = c(
+            "Male" = "#0072B2",    # Blue - Colorblind-friendly
+            "Female" = "#D55E00"   # Vermillion - Colorblind-friendly
+          )
+        ) +
         labs(
           title = paste("Wage Premium by Gender Over Time in", first_country),
           x = "Year", y = "Wage Premium (%)", color = "Gender"
@@ -2579,12 +2642,12 @@ server <- function(input, output, session) {
       return(NULL)
     }
     
-    # Define custom colors for education levels
+    # Define colorblind-friendly colors for education levels
     education_colors <- c(
-      "No Education" = "#003366",       # Dark Blue
-      "Primary Education" = "#B3242B",  # Dark Red
-      "Secondary Education" = "#3B3B3B",# Dark Gray/Black
-      "Tertiary Education" = "#006400"  # Dark Green
+      "No Education"        = "#E69F00",  # Orange
+      "Primary Education"   = "#56B4E9",  # Sky Blue
+      "Secondary Education" = "#009E73",  # Bluish Green
+      "Tertiary Education"  = "#D55E00"   # Vermillion
     )
     
     # Create the bar plot
@@ -2642,17 +2705,18 @@ server <- function(input, output, session) {
       img_path <- tempfile(fileext = ".png")
       
       ggplot_obj <- ggplot(filtered_data, aes(x = indicator_name, y = value_percentage, fill = indicator_name)) +
-        geom_bar(stat = "identity") +
+        geom_bar(stat = "identity", position = "dodge") +
         scale_fill_manual(values = c(
-          "No Education" = "#003366",
-          "Primary Education" = "#B3242B",
-          "Secondary Education" = "#3B3B3B",
-          "Tertiary Education" = "#006400"
+          "No Education"       = "#E69F00",  # Orange
+          "Primary Education"  = "#56B4E9",  # Sky Blue
+          "Secondary Education"= "#009E73",  # Bluish Green
+          "Tertiary Education" = "#D55E00"   # Vermillion
         )) +
         labs(
-          title = "Public Sector Wage Premium by Education Level (Compared to Private Formal Workers)",
+          title = "Public Sector Wage Premium by Education Level",
           x = "Education Level",
-          y = "Wage Premium (%)"
+          y = "Wage Premium (%)",
+          fill = "Education Level"
         ) +
         theme_minimal()
       
@@ -2700,13 +2764,13 @@ server <- function(input, output, session) {
     ggplot_obj <- ggplot(filtered_data, aes(x = indicator_name, y = value_percentage, fill = indicator_name)) +
       geom_bar(stat = "identity", position = "dodge") +
       scale_fill_manual(values = c(
-        "No Education" = "#003366",
-        "Primary Education" = "#B3242B",
-        "Secondary Education" = "#3B3B3B",
-        "Tertiary Education" = "#006400"
+        "No Education"       = "#E69F00",  # Orange
+        "Primary Education"  = "#56B4E9",  # Sky Blue
+        "Secondary Education"= "#009E73",  # Bluish Green
+        "Tertiary Education" = "#D55E00"   # Vermillion
       )) +
       labs(
-        title = "Public Sector Wage Premium by Education Level (Compared to Private Formal Workers)",
+        title = "Public Sector Wage Premium by Education Level",
         x = "Education Level",
         y = "Wage Premium (%)",
         fill = "Education Level"
@@ -2785,10 +2849,10 @@ server <- function(input, output, session) {
     ggplot_obj <- ggplot(filtered_data, aes(x = indicator_name, y = value_percentage, fill = indicator_name)) +
       geom_bar(stat = "identity", position = "dodge") +
       scale_fill_manual(values = c(
-        "No Education" = "#003366",
-        "Primary Education" = "#B3242B",
-        "Secondary Education" = "#3B3B3B",
-        "Tertiary Education" = "#006400"
+        "No Education"       = "#E69F00",  # Orange
+        "Primary Education"  = "#56B4E9",  # Sky Blue
+        "Secondary Education"= "#009E73",  # Bluish Green
+        "Tertiary Education" = "#D55E00"   # Vermillion
       )) +
       labs(
         title = "Public Sector Wage Premium by Education Level",
@@ -2820,12 +2884,22 @@ server <- function(input, output, session) {
     ggplotly(
       ggplot(filtered_data, aes(x = country_name, y = value_percentage, color = indicator_label)) +
         geom_point(size = 4) +
-        labs(title = "Public Sector Employment (Last Year Available)", 
-             x = "Country", y = "Value") +
-        theme_minimal()+
+        scale_color_manual(values = c(
+          "as a share of formal employment" = "#E69F00",  # Orange
+          "as a share of paid employment"   = "#56B4E9",  # Sky Blue
+          "as a share of total employment"  = "#009E73"   # Bluish Green
+        )) +
+        labs(
+          title = "Public Sector Employment (Last Year Available)", 
+          x = "Country", 
+          y = "Value", 
+          color = "Indicator"  # Legend title
+        ) +
+        theme_minimal() +
         theme(axis.text.x = element_text(angle = 45, hjust = 1))
     ) %>% 
-      layout(legend = list(title = list(text = "Indicator")))  # Rename legend title
+      layout(legend = list(title = list(text = "Indicator")))
+    
   })
   
   output$note_firstGraphpublic <- renderText({
@@ -2841,11 +2915,21 @@ server <- function(input, output, session) {
       ggplot(filtered_data, aes(x = year, y = value_percentage, color = indicator_label)) +
         geom_line(size = 1.2) +
         geom_point(size = 3) +
-        labs(title = "Public Sector Employment Over Time", 
-             x = "Year", y = "Value") +
+        scale_color_manual(values = c(
+          "as a share of formal employment" = "#E69F00",  # Orange
+          "as a share of paid employment"   = "#56B4E9",  # Sky Blue
+          "as a share of total employment"  = "#009E73"   # Bluish Green
+        )) +
+        labs(
+          title = "Public Sector Employment Over Time", 
+          x = "Year", 
+          y = "Value", 
+          color = "Indicator"
+        ) +
         theme_minimal()
     ) %>% 
-      layout(legend = list(title = list(text = "Indicator")))  # Rename legend title
+      layout(legend = list(title = list(text = "Indicator")))
+    
   })
   
   output$note_secondGraphpublic <- renderText({
@@ -2872,7 +2956,17 @@ server <- function(input, output, session) {
       first_graph <- ggplot(public_sector_emp_temp_last %>% filter(country_name %in% input$countries_first), 
                             aes(x = country_name, y = value_percentage, color = indicator_label)) +
         geom_point(size = 4) +
-        labs(title = "Public Sector Employment (Last Year Available)", x = "Country", y = "Value") +
+        scale_color_manual(values = c(
+          "as a share of formal employment" = "#E69F00",  # Orange
+          "as a share of paid employment"   = "#56B4E9",  # Sky Blue
+          "as a share of total employment"  = "#009E73"   # Bluish Green
+        )) +
+        labs(
+          title = "Public Sector Employment (Last Year Available)", 
+          x = "Country", 
+          y = "Value", 
+          color = "Sector"
+        ) +
         theme_minimal()
       
       img_path1 <- tempfile(fileext = ".png")
@@ -2934,6 +3028,11 @@ server <- function(input, output, session) {
     # First Graph
     first_graph <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, color = indicator_label)) +
       geom_point(size = 4) +
+      scale_color_manual(values = c(
+        "as a share of formal employment" = "#E69F00",  # Orange
+        "as a share of paid employment"   = "#56B4E9",  # Sky Blue
+        "as a share of total employment"  = "#009E73"   # Bluish Green
+      )) +
       labs(
         title = "Public Sector Employment (Last Year Available)", 
         x = "Country", 
@@ -3035,6 +3134,11 @@ server <- function(input, output, session) {
     # Plot: Public Sector Employment by Country
     first_graph <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, color = indicator_label)) +
       geom_point(size = 4) +
+      scale_color_manual(values = c(
+        "as a share of formal employment" = "#E69F00",  # Orange
+        "as a share of paid employment" = "#56B4E9",    # Sky Blue
+        "as a share of total employment" = "#009E73"    # Bluish Green
+      )) +
       labs(
         title = "Public Sector Employment (Last Year Available)", 
         x = "Country", 
@@ -3067,10 +3171,16 @@ server <- function(input, output, session) {
     ggplotly(
       ggplot(filtered_data, aes(x = country_name, y = value_percentage, color = indicator_label)) +
         geom_point(size = 4) +
-        labs(title = "Public Sector Wage Premium by Gender (Last Year Available)", 
-             x = "Country", 
-             y = "Wage Premium (%)",
-             color = "Indicator") +  # Updated label for legend
+        scale_color_manual(values = c(
+          "Male" = "#E69F00",    # Orange
+          "Female" = "#56B4E9"   # Sky Blue
+        )) +
+        labs(
+          title = "Public Sector Wage Premium by Gender (Last Year Available)", 
+          x = "Country", 
+          y = "Wage Premium (%)",
+          color = "Indicator"
+        ) +
         theme_minimal()
     )
   })
@@ -3087,15 +3197,20 @@ server <- function(input, output, session) {
       ggplot(filtered_data, aes(x = year, y = value_percentage, color = indicator_label)) +
         geom_line(size = 1.2) +
         geom_point(size = 3) +
-        labs(title = "Public Sector Wage Premium by Gender Over Time", 
-             x = "Year", 
-             y = "Wage Premium (%)",
-             color = "Indicator") +  # Updated label for legend
+        scale_color_manual(values = c(
+          "Male" = "#E69F00",    # Orange
+          "Female" = "#56B4E9"   # Sky Blue
+        )) +
+        labs(
+          title = "Public Sector Wage Premium by Gender Over Time", 
+          x = "Year", 
+          y = "Wage Premium (%)",
+          color = "Indicator"
+        ) +
         theme_minimal() +
-        annotate("text", x = Inf, y = min(filtered_data$value_percentage) - 5,  # Adjusted variable name
-                 label = "This indicator represents the gender wage premium across industries in the public sector.", 
+        annotate("text", x = Inf, y = min(filtered_data$value_percentage, na.rm = TRUE) - 5,
+                 label = "This indicator represents the gender wage premium across industries in the public sector.",
                  hjust = 1, size = 4, color = "black", fontface = "italic")
-      
     )
   })
   output$note_secondGraphGenderWagePremium <- renderText({
@@ -3124,9 +3239,16 @@ server <- function(input, output, session) {
       first_graph <- ggplot(gender_wage_premium_last %>% filter(country_name %in% input$countries_first), 
                             aes(x = country_name, y = value_percentage, color = indicator_label)) +
         geom_point(size = 4) +
-        labs(title = "Public Sector Wage Premium by Gender (Last Year Available)", 
-             x = "Country", 
-             y = "Wage Premium (%)") +
+        scale_color_manual(values = c(
+          "Male" = "#E69F00",    # Orange
+          "Female" = "#56B4E9"   # Sky Blue
+        )) +
+        labs(
+          title = "Public Sector Wage Premium by Gender (Last Year Available)", 
+          x = "Country", 
+          y = "Wage Premium (%)",
+          color = "Gender"
+        ) +
         theme_minimal()
       
       img_path1 <- tempfile(fileext = ".png")
@@ -3140,10 +3262,18 @@ server <- function(input, output, session) {
                              aes(x = year, y = value_percentage, color = indicator_label)) +
         geom_line(size = 1.2) +
         geom_point(size = 3) +
-        labs(title = "Public Sector Wage Premium by Gender Over Time", 
-             x = "Year", 
-             y = "Wage Premium (%)") +
+        scale_color_manual(values = c(
+          "Male" = "#E69F00",    # Orange
+          "Female" = "#56B4E9"   # Sky Blue
+        )) +
+        labs(
+          title = "Public Sector Wage Premium by Gender Over Time", 
+          x = "Year", 
+          y = "Wage Premium (%)",
+          color = "Gender"
+        ) +
         theme_minimal()
+      
       
       img_path2 <- tempfile(fileext = ".png")
       ggsave(img_path2, plot = second_graph, width = 8, height = 6)
@@ -3209,12 +3339,17 @@ server <- function(input, output, session) {
     # First graph
     first_graph <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, color = indicator_label)) +
       geom_point(size = 4) +
+      scale_color_manual(values = c(
+        "Male" = "#E69F00",    # Orange
+        "Female" = "#56B4E9"   # Sky Blue
+      )) +
       labs(
         title = "Public Sector Wage Premium by Gender (Last Year Available)",
         x = "Country", y = "Wage Premium (%)", color = "Gender"
       ) +
       theme_minimal() +
       theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    
     
     img_path1 <- tempfile(fileext = ".png")
     ggsave(img_path1, plot = first_graph, width = 8, height = 6)
@@ -3240,11 +3375,16 @@ server <- function(input, output, session) {
       second_graph <- ggplot(time_series_data, aes(x = year, y = value_percentage, color = indicator_label, group = indicator_label)) +
         geom_line(size = 1.2) +
         geom_point(size = 3) +
+        scale_color_manual(values = c(
+          "Male" = "#E69F00",    # Orange
+          "Female" = "#56B4E9"   # Sky Blue
+        )) +
         labs(
           title = paste("Public Sector Wage Premium by Gender Over Time in", first_country),
           x = "Year", y = "Wage Premium (%)", color = "Gender"
         ) +
         theme_minimal()
+      
       
       img_path2 <- tempfile(fileext = ".png")
       ggsave(img_path2, plot = second_graph, width = 8, height = 6)
@@ -3299,12 +3439,17 @@ server <- function(input, output, session) {
       # Graph 1: Public Sector Wage Premium by Gender (Last Year Available)
       first_graph <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, color = indicator_label)) +
         geom_point(size = 4) +
+        scale_color_manual(values = c(
+          "Male" = "#E69F00",   # Orange
+          "Female" = "#56B4E9"  # Sky Blue
+        )) +
         labs(
           title = "Public Sector Wage Premium by Gender (Last Year Available)",
           x = "Country", y = "Wage Premium (%)", color = "Gender"
         ) +
         theme_minimal() +
         theme(axis.text.x = element_text(angle = 45, hjust = 1))
+      
       
       img_path1 <- tempfile(fileext = ".png")
       ggsave(img_path1, plot = first_graph, width = 8, height = 6)
@@ -3322,12 +3467,16 @@ server <- function(input, output, session) {
       second_graph <- ggplot(time_series_data, aes(x = year, y = value_percentage, color = indicator_label, group = indicator_label)) +
         geom_line(size = 1.2) +
         geom_point(size = 3) +
+        scale_color_manual(values = c(
+          "Male" = "#E69F00",   # Orange
+          "Female" = "#56B4E9"  # Sky Blue
+        )) +
         labs(
           title = paste("Public Sector Wage Premium by Gender Over Time in", first_country),
           x = "Year", y = "Wage Premium (%)", color = "Gender"
         ) +
         theme_minimal()
-      
+
       img_path2 <- tempfile(fileext = ".png")
       ggsave(img_path2, plot = second_graph, width = 8, height = 6)
       
@@ -3355,10 +3504,14 @@ server <- function(input, output, session) {
     ggplotly(
       ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
         geom_bar(stat = "identity", position = "dodge") +
-        scale_fill_manual(values = c("as a share of private paid employees" = "#B3242B", 
-                                     "as a share of public paid employees" = "#003366")) +
-        labs(title = "Female Employment by Sector (Last Year Available)", 
-             x = "Country", y = "Employment (%)", fill = "Sector") +
+        scale_fill_manual(values = c(
+          "as a share of private paid employees" = "#E69F00",  # Orange
+          "as a share of public paid employees" = "#56B4E9"    # Sky Blue
+        )) +
+        labs(
+          title = "Female Employment by Sector (Last Year Available)", 
+          x = "Country", y = "Employment (%)", fill = "Sector"
+        ) +
         theme_minimal()
     )
   })
@@ -3380,12 +3533,17 @@ server <- function(input, output, session) {
       ggplot(filtered_data, aes(x = year, y = value_percentage, color = indicator_name)) +
         geom_line(size = 1.2) +
         geom_point(size = 3) +
-        scale_color_manual(values = c("as a share of private paid employees" = "#B3242B", 
-                                      "as a share of public paid employees" = "#003366")) +
-        labs(title = paste("Female Employment by Sector Over Time in", input$country_gender), 
-             x = "Year", y = "Female Employment (%)", color = "Sector") +
+        scale_color_manual(values = c(
+          "as a share of private paid employees" = "#E69F00",  # Orange
+          "as a share of public paid employees" = "#56B4E9"    # Sky Blue
+        )) +
+        labs(
+          title = paste("Female Employment by Sector Over Time in", input$country_gender), 
+          x = "Year", y = "Female Employment (%)", color = "Sector"
+        ) +
         theme_minimal()
     )
+    
   })
   output$note_secondGraphGenderWorkforce <- renderText({
     "Note: This indicator represents the trend of female employment in the public and private sectors over time, allowing for a comparison of sectoral changes."
@@ -3410,11 +3568,16 @@ server <- function(input, output, session) {
       first_graph <- ggplot(gender_workforce %>% filter(country_name %in% input$countries_gender), 
                             aes(x = country_name, y = value_percentage, fill = indicator_name)) +
         geom_bar(stat = "identity", position = "dodge") +
-        scale_fill_manual(values = c("as a share of private paid employees" = "#B3242B", 
-                                     "as a share of public paid employees" = "#003366")) +
-        labs(title = "Female Employment by Sector (Last Year Available)", 
-             x = "Country", y = "Employment (%)", fill = "Sector") +
+        scale_fill_manual(values = c(
+          "as a share of private paid employees" = "#E69F00",  # Orange
+          "as a share of public paid employees" = "#56B4E9"    # Sky Blue
+        )) +
+        labs(
+          title = "Female Employment by Sector (Last Year Available)", 
+          x = "Country", y = "Employment (%)", fill = "Sector"
+        ) +
         theme_minimal()
+      
       
       img_path1 <- tempfile(fileext = ".png")
       ggsave(img_path1, plot = first_graph, width = 8, height = 6)
@@ -3426,10 +3589,14 @@ server <- function(input, output, session) {
                              aes(x = year, y = value_percentage, color = indicator_name)) +
         geom_line(size = 1.2) +
         geom_point(size = 3) +
-        scale_color_manual(values = c("as a share of private paid employees" = "#B3242B", 
-                                      "as a share of public paid employees" = "#003366")) +
-        labs(title = paste("Female Employment by Sector Over Time in", input$country_gender), 
-             x = "Year", y = "Female Employment (%)", color = "Sector") +
+        scale_color_manual(values = c(
+          "as a share of private paid employees" = "#E69F00",  # orange
+          "as a share of public paid employees" = "#56B4E9"    # sky blue
+        )) +
+        labs(
+          title = paste("Female Employment by Sector Over Time in", input$country_gender), 
+          x = "Year", y = "Female Employment (%)", color = "Sector"
+        ) +
         theme_minimal()
       
       img_path2 <- tempfile(fileext = ".png")
@@ -3477,10 +3644,13 @@ server <- function(input, output, session) {
                           aes(x = country_name, y = round(value_percentage, 0), fill = indicator_name)) +
       geom_bar(stat = "identity", position = "dodge") +
       scale_fill_manual(values = c(
-        "as a share of private paid employees" = "#B3242B", 
-        "as a share of public paid employees" = "#003366")) +
-      labs(title = "Female Employment by Sector (Last Year Available)", 
-           x = "Country", y = "Employment (%)", fill = "Sector") +
+        "as a share of private paid employees" = "#E69F00",  # orange
+        "as a share of public paid employees" = "#56B4E9"    # sky blue
+      )) +
+      labs(
+        title = "Female Employment by Sector (Last Year Available)", 
+        x = "Country", y = "Employment (%)", fill = "Sector"
+      ) +
       theme_minimal() +
       theme(axis.text.x = element_text(angle = 45, hjust = 1))
     
@@ -3569,9 +3739,12 @@ server <- function(input, output, session) {
     gender_graph <- ggplot(filtered_data, 
                            aes(x = country_name, y = round(value_percentage, 0), fill = indicator_name)) +
       geom_bar(stat = "identity", position = "dodge") +
-      scale_fill_manual(values = c(
-        "as a share of private paid employees" = "#B3242B", 
-        "as a share of public paid employees" = "#003366")) +
+      scale_fill_manual(
+        values = c(
+          "as a share of private paid employees" = "#E69F00",  # orange
+          "as a share of public paid employees" = "#56B4E9"    # sky blue
+        )
+      ) +
       labs(
         title = "Female Employment by Sector (Last Year Available)", 
         x = "Country", y = "Employment (%)", fill = "Sector"
@@ -3600,18 +3773,26 @@ server <- function(input, output, session) {
     filtered_data <- gender_leadership %>% filter(country_name %in% input$selected_countries)
     if (nrow(filtered_data) == 0) return(NULL)
     
-    plot_ly(data = filtered_data,
-            x = ~country_name,
-            y = ~value_percentage,
-            color = ~indicator_label,
-            colors = c("Clerks-Public" = "#003366", "Managers-Public" = "#ADD8E6",
-                       "Clerks-Private" = "#006400", "Managers-Private" = "#90EE90"),
-            type = 'bar',
-            barmode = 'group') %>%
-      layout(title = "Females by Occupational Group and Sector",
-             xaxis = list(title = "Country"),
-             yaxis = list(title = "Female Share (%)"),
-             bargap = 0.2)
+    plot_ly(
+      data = filtered_data,
+      x = ~country_name,
+      y = ~value_percentage,
+      color = ~indicator_label,
+      colors = c(
+        "Clerks-Public" = "#E69F00",    # orange
+        "Managers-Public" = "#56B4E9",  # sky blue
+        "Clerks-Private" = "#009E73",   # green
+        "Managers-Private" = "#F0E442"  # yellow
+      ),
+      type = 'bar',
+      barmode = 'group'
+    ) %>%
+      layout(
+        title = "Females by Occupational Group and Sector",
+        xaxis = list(title = "Country"),
+        yaxis = list(title = "Female Share (%)"),
+        bargap = 0.2
+      )
   })
   
   output$note_barPlotwomen <- renderText({
@@ -3640,9 +3821,12 @@ server <- function(input, output, session) {
       # Convert to ggplot Object for ggsave()
       ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_label)) +
         geom_bar(stat = "identity", position = "dodge") +
-        scale_fill_manual(values = c("Clerks-Public" = "#003366", "Managers-Public" = "#ADD8E6",
-                                     "Clerks-Private" = "#006400", "Managers-Private" = "#90EE90")) +
-        labs(title = "Females by Occupational Group and Sector", x = "Country", y = "Female Share (%)") +
+        scale_fill_viridis_d(option = "D", name = "Occupation") +
+        labs(
+          title = "Females by Occupational Group and Sector",
+          x = "Country", 
+          y = "Female Share (%)"
+        ) +
         theme_minimal()
       
       # Save ggplot as Image
@@ -3691,9 +3875,12 @@ server <- function(input, output, session) {
     # ✅ Generate ggplot for Female Occupational Groups
     ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_label)) +
       geom_bar(stat = "identity", position = "dodge") +
-      scale_fill_manual(values = c("Clerks-Public" = "#003366", "Managers-Public" = "#ADD8E6",
-                                   "Clerks-Private" = "#006400", "Managers-Private" = "#90EE90")) +
-      labs(title = "Females by Occupational Group and Sector", x = "Country", y = "Female Share (%)", fill = "Occupation") +
+      scale_fill_viridis_d(option = "D", name = "Occupation") +
+      labs(
+        title = "Females by Occupational Group and Sector",
+        x = "Country", 
+        y = "Female Share (%)"
+      ) +
       theme_minimal()
     
     # ✅ Save the plot as an image
@@ -3819,17 +4006,11 @@ server <- function(input, output, session) {
     # Plot
     ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_label)) +
       geom_bar(stat = "identity", position = "dodge") +
-      scale_fill_manual(values = c(
-        "Clerks-Public" = "#003366", 
-        "Managers-Public" = "#ADD8E6",
-        "Clerks-Private" = "#006400", 
-        "Managers-Private" = "#90EE90"
-      )) +
+      scale_fill_viridis_d(option = "D", name = "Occupation") +
       labs(
         title = "Females by Occupational Group and Sector",
         x = "Country", 
-        y = "Female Share (%)", 
-        fill = "Occupation"
+        y = "Female Share (%)"
       ) +
       theme_minimal()
     
@@ -3860,9 +4041,11 @@ server <- function(input, output, session) {
     # Create ggplot
     ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_label)) +
       geom_bar(stat = "identity", position = "dodge") +
-      scale_fill_brewer(palette = "Blues", name = "Indicator") +  # Rename legend title
-      labs(title = "Gender Wage Premium in Public Sector by Industry",
-           x = "Country", y = "Wage Premium (%)") +
+      scale_fill_viridis_d(name = "Indicator", option = "D") +  # Viridis option D is discrete and accessible
+      labs(
+        title = "Gender Wage Premium in Public Sector by Industry",
+        x = "Country", y = "Wage Premium (%)"
+      ) +
       theme_minimal() +
       annotate("text", x = Inf, y = min(filtered_data$value_percentage) - 5, 
                label = "This indicator represents the gender wage premium across industries in the public sector.", 
@@ -3905,9 +4088,11 @@ server <- function(input, output, session) {
       
       gender_wage_plot <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_label)) +
         geom_bar(stat = "identity", position = "dodge") +
-        scale_fill_brewer(palette = "Blues") +  # Using Blues color palette
-        labs(title = "Gender Wage Premium in Public Sector by Industry",
-             x = "Country", y = "Wage Premium (%)") +
+        scale_fill_viridis_d(option = "D") +  # Options: "D", "C", "E", etc.
+        labs(
+          title = "Gender Wage Premium in Public Sector by Industry",
+          x = "Country", y = "Wage Premium (%)", fill = "Industry"
+        ) +
         theme_minimal()
       
       # Save ggplot as Image
@@ -3972,9 +4157,11 @@ server <- function(input, output, session) {
     # ✅ Plot
     gender_wage_plot <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_label)) +
       geom_bar(stat = "identity", position = "dodge") +
-      scale_fill_brewer(palette = "Blues") +
-      labs(title = "Gender Wage Premium in Public Sector by Industry",
-           x = "Country", y = "Wage Premium (%)", fill = "Industry") +
+      scale_fill_viridis_d(option = "D") +  # Options: "D", "C", "E", etc.
+      labs(
+        title = "Gender Wage Premium in Public Sector by Industry",
+        x = "Country", y = "Wage Premium (%)", fill = "Industry"
+      ) +
       theme_minimal()
     
     # ✅ Save plot
@@ -4089,7 +4276,7 @@ server <- function(input, output, session) {
     # Create ggplot graph
     gender_wage_plot <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_label)) +
       geom_bar(stat = "identity", position = "dodge") +
-      scale_fill_brewer(palette = "Blues") +
+      scale_fill_viridis_d(option = "D") +  # Discrete viridis scale
       labs(
         title = "Gender Wage Premium in Public Sector by Industry",
         x = "Country", y = "Wage Premium (%)", fill = "Industry"
@@ -4246,13 +4433,16 @@ server <- function(input, output, session) {
                        style = "Normal")
         
         # **Create scatter plot with trend line**
-        plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector, label = country_name)) +
-          geom_point(color = "#003366", size = 3) +      # Main scatter points
-          geom_text(vjust = -0.5, size = 3) +            # Country labels
-          geom_smooth(method = "lm", color = "gray", linetype = "dashed") + # Trendline
-          labs(title = "Pay Compression: Public vs. Private Sector",
-               x = "Private Sector Pay Compression",
-               y = "Public Sector Pay Compression") +
+        plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector, label = country_name, color = region)) +  # or group variable
+          geom_point(size = 3) +
+          geom_text(vjust = -0.5, size = 3) +
+          geom_smooth(method = "lm", color = "gray", linetype = "dashed") +
+          labs(
+            title = "Pay Compression: Public vs. Private Sector",
+            x = "Private Sector Pay Compression",
+            y = "Public Sector Pay Compression"
+          ) +
+          scale_color_viridis(discrete = TRUE, option = "D") +
           theme_minimal()
         
         # **Add plot to Word document**
@@ -4351,13 +4541,16 @@ server <- function(input, output, session) {
         "A higher compression ratio indicates greater income disparity within the sector. The trendline provides an overall pattern, and the 45-degree reference line represents equality between public and private sector compression."
       )
       
-      plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector)) +
-        geom_point(color = "#003366", size = 3) +
-        geom_text(aes(label = country_name), vjust = -0.5, size = 3) +
+      plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector, label = country_name, color = region)) +  # or group variable
+        geom_point(size = 3) +
+        geom_text(vjust = -0.5, size = 3) +
         geom_smooth(method = "lm", color = "gray", linetype = "dashed") +
-        labs(title = "Pay Compression: Public vs. Private Sector",
-             x = "Private Sector Pay Compression",
-             y = "Public Sector Pay Compression") +
+        labs(
+          title = "Pay Compression: Public vs. Private Sector",
+          x = "Private Sector Pay Compression",
+          y = "Public Sector Pay Compression"
+        ) +
+        scale_color_viridis(discrete = TRUE, option = "D") +
         theme_minimal()
       
       img_path <- tempfile(fileext = ".png")
@@ -4382,13 +4575,16 @@ server <- function(input, output, session) {
       req(nrow(filtered_data_df) > 0)
       
       # Create summary for plot
-      plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector)) +
-        geom_point(color = "#003366", size = 3) +
-        geom_text(aes(label = country_name), vjust = -0.5, size = 3) +
+      plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector, label = country_name, color = region)) +  # or group variable
+        geom_point(size = 3) +
+        geom_text(vjust = -0.5, size = 3) +
         geom_smooth(method = "lm", color = "gray", linetype = "dashed") +
-        labs(title = "Pay Compression: Public vs. Private Sector",
-             x = "Private Sector Pay Compression",
-             y = "Public Sector Pay Compression") +
+        labs(
+          title = "Pay Compression: Public vs. Private Sector",
+          x = "Private Sector Pay Compression",
+          y = "Public Sector Pay Compression"
+        ) +
+        scale_color_viridis(discrete = TRUE, option = "D") +
         theme_minimal()
       
       # Save plot as image
