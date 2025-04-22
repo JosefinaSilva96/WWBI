@@ -1347,6 +1347,63 @@ server <- function(input, output, session) {
     return(doc)
   }
   
+  #slides
+  
+  generate_wage_bill_analysis_slide <- function(ppt, selected_countries) {
+    # Validate selected countries
+    if (is.null(selected_countries) || length(selected_countries) == 0) {
+      return(ppt)
+    }
+    
+    # Filter data for graphs
+    graph_data_gdp <- wage_bill_gdp %>% filter(country_name %in% selected_countries)
+    graph_data_exp <- wage_bill_publicexp %>% filter(country_name %in% selected_countries)
+    
+    if (nrow(graph_data_gdp) == 0 && nrow(graph_data_exp) == 0) {
+      return(ppt)
+    }
+    
+    # Graph 1: Wage Bill as % of GDP
+    if (nrow(graph_data_gdp) > 0) {
+      graph_gdp <- ggplot(graph_data_gdp, aes(x = year, y = value, color = country_name)) +
+        geom_line(size = 1.2) +
+        geom_point(size = 3) +
+        labs(
+          title = "Wage Bill as % of GDP Over Time", 
+          x = "Year", y = "Wage Bill (% of GDP)", color = "Country"
+        ) +
+        theme_minimal()
+      
+      img_path_gdp <- tempfile(fileext = ".png")
+      ggsave(img_path_gdp, plot = graph_gdp, width = 8, height = 6, dpi = 300)
+      
+      ppt <- ppt %>%
+        add_slide(layout = "Title and Content", master = "Office Theme") %>%
+        ph_with(external_img(img_path_gdp, height = 5, width = 7), location = ph_location_type(type = "body"))
+    }
+    
+    # Graph 2: Wage Bill as % of Public Expenditure
+    if (nrow(graph_data_exp) > 0) {
+      graph_exp <- ggplot(graph_data_exp, aes(x = year, y = value, color = country_name)) +
+        geom_line(size = 1.2) +
+        geom_point(size = 3) +
+        labs(
+          title = "Wage Bill as % of Public Expenditure Over Time", 
+          x = "Year", y = "Wage Bill (% of Public Expenditure)", color = "Country"
+        ) +
+        theme_minimal()
+      
+      img_path_exp <- tempfile(fileext = ".png")
+      ggsave(img_path_exp, plot = graph_exp, width = 8, height = 6, dpi = 300)
+      
+      ppt <- ppt %>%
+        add_slide(layout = "Title and Content", master = "Office Theme") %>%
+        ph_with(external_img(img_path_exp, height = 5, width = 7), location = ph_location_type(type = "body"))
+    }
+    
+    return(ppt)
+  }
+  
   
   output$dot_plot <- renderPlotly({
     req(input$countries_first)
@@ -1479,6 +1536,45 @@ server <- function(input, output, session) {
     
     return(doc)
   }
+  
+  #slides
+  generate_gdp_analysis_slide <- function(ppt, selected_countries) {
+    # Validate input
+    if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
+      return(ppt)
+    }
+    
+    # Filter data
+    filtered_data_df <- merged_data %>% filter(country_name %in% selected_countries)
+    
+    if (nrow(filtered_data_df) == 0) {
+      return(ppt)
+    }
+    
+    # Plot
+    plot <- ggplot(filtered_data_df, aes(x = log_gdp, y = indicator_value, color = country_name)) +
+      geom_point(size = 3) +
+      geom_smooth(method = "lm", color = "gray", linetype = "dashed") +
+      labs(
+        title = "Wage Bill vs. Log(GDP per Capita)", 
+        x = "Log(GDP per Capita, 2015)", 
+        y = "Wage Bill (% of Public Expenditure)",
+        color = "Country"
+      ) +
+      theme_minimal()
+    
+    # Save plot to image
+    img_path <- tempfile(fileext = ".png")
+    ggsave(filename = img_path, plot = plot, width = 8, height = 6, dpi = 300)
+    
+    # Add slide with image only
+    ppt <- ppt %>%
+      add_slide(layout = "Title and Content", master = "Office Theme") %>%
+      ph_with(external_img(img_path, height = 5, width = 7), location = ph_location_type(type = "body"))
+    
+    return(ppt)
+  }
+
   
   #Workforce graphs 
   
@@ -1702,6 +1798,48 @@ server <- function(input, output, session) {
     return(doc)
   }
   
+  #slides
+  generate_public_sector_workforce_slide <- function(ppt, selected_countries) {
+    if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
+      return(ppt)
+    }
+    
+    # Filter data
+    first_graph_data <- public_sector_workforce %>% 
+      filter(country_name %in% selected_countries)
+    
+    if (nrow(first_graph_data) == 0) {
+      return(ppt)
+    }
+    
+    # Create the bar plot
+    first_graph_ggplot <- ggplot(first_graph_data, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
+      geom_bar(stat = "identity", position = "stack") +
+      scale_fill_manual(values = c(
+        "Public Administration" = "#568340",
+        "Education" = "#B3242B",
+        "Health" = "#003366",
+        "Other" = "#A9A9A9"
+      )) +
+      labs(
+        title = "Public Workforce Distribution by Country", 
+        x = "Country", y = "Workforce Distribution (%)", fill = "Sector"
+      ) +
+      theme_minimal()
+    
+    # Save to PNG
+    img_path <- tempfile(fileext = ".png")
+    ggsave(img_path, plot = first_graph_ggplot, width = 8, height = 4)
+    
+    # Add slide to ppt
+    ppt <- ppt %>%
+      add_slide(layout = "Title and Content", master = "Office Theme") %>%
+      ph_with(external_img(img_path, height = 5, width = 7), location = ph_location_type(type = "body"))
+    
+    return(ppt)
+  }
+  
+  
   
   
   #Workers with tertiary education
@@ -1853,6 +1991,48 @@ server <- function(input, output, session) {
     return(doc)
   }
   
+  #slides
+  generate_tertiary_education_slide <- function(ppt, selected_countries) {
+    # ✅ Validate input
+    if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
+      return(ppt)
+    }
+    
+    # ✅ Filter relevant data
+    filtered_data <- tertiary_education %>%
+      filter(country_name %in% selected_countries)
+    
+    if (nrow(filtered_data) == 0) {
+      return(ppt)
+    }
+    
+    # ✅ Create ggplot
+    plot <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
+      geom_bar(stat = "identity", position = "dodge") +
+      scale_fill_manual(values = c(
+        "as a share of private paid employees" = "#B3242B", 
+        "as a share of public paid employees" = "#003366"
+      )) +
+      labs(
+        title = "Workers with Tertiary Education by Sector and Country",
+        x = "Country", y = "Tertiary Education (%)", fill = "Sector"
+      ) +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    
+    # ✅ Save plot to image
+    img_path <- tempfile(fileext = ".png")
+    ggsave(img_path, plot = plot, width = 8, height = 6)
+    
+    # ✅ Add slide with image only
+    ppt <- ppt %>%
+      add_slide(layout = "Title and Content", master = "Office Theme") %>%
+      ph_with(external_img(img_path, height = 5, width = 7),
+              location = ph_location_type(type = "body"))
+    
+    return(ppt)
+  }
+
   #Public Sector Wage Premium 
   
   # Render the Dot Plot for Public Sector Wage Premium
@@ -2313,6 +2493,62 @@ server <- function(input, output, session) {
     return(doc)
   }
   
+  #slides
+  generate_wage_premium_gender_slide <- function(ppt, selected_countries) {
+    if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
+      return(ppt)
+    }
+    
+    first_country <- selected_countries[1]
+    
+    # ────────────────────────────────────────────────
+    # Graph 1: Multi-Country Wage Premium by Gender
+    # ────────────────────────────────────────────────
+    data_to_plot <- gender_wage_premium_last %>% filter(country_name %in% selected_countries)
+    
+    if (nrow(data_to_plot) > 0) {
+      multi_country_plot <- ggplot(data_to_plot, aes(x = country_name, y = value_percentage, color = indicator_label)) +
+        geom_point(size = 3) +
+        labs(
+          title = "Public Sector Wage Premium by Gender (Latest Year)",
+          x = "Country", y = "Wage Premium (%)", color = "Gender"
+        ) +
+        theme_minimal() +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1))
+      
+      img_path1 <- tempfile(fileext = ".png")
+      ggsave(img_path1, plot = multi_country_plot, width = 8, height = 6)
+      
+      ppt <- ppt %>%
+        add_slide(layout = "Title and Content", master = "Office Theme") %>%
+        ph_with(external_img(img_path1, height = 5, width = 7), location = ph_location_type(type = "body"))
+    }
+    
+    # ─────────────────────────────────────────────
+    # Graph 2: Time Series for First Country
+    # ─────────────────────────────────────────────
+    time_series_data <- gender_wage_premium %>% filter(country_name == first_country)
+    
+    if (nrow(time_series_data) > 0) {
+      time_series_plot <- ggplot(time_series_data, aes(x = year, y = value_percentage, color = indicator_label, group = indicator_label)) +
+        geom_line(size = 1.2) +
+        geom_point(size = 3) +
+        labs(
+          title = paste("Wage Premium by Gender Over Time in", first_country),
+          x = "Year", y = "Wage Premium (%)", color = "Gender"
+        ) +
+        theme_minimal()
+      
+      img_path2 <- tempfile(fileext = ".png")
+      ggsave(img_path2, plot = time_series_plot, width = 8, height = 6)
+      
+      ppt <- ppt %>%
+        add_slide(layout = "Title and Content", master = "Office Theme") %>%
+        ph_with(external_img(img_path2, height = 5, width = 7), location = ph_location_type(type = "body"))
+    }
+    
+    return(ppt)
+  }
 
   # Wage premium by Education Level 
   
@@ -2517,9 +2753,51 @@ server <- function(input, output, session) {
     return(doc)
   }
   
+  #slides
   
+  generate_wage_premium_education_slide <- function(ppt, selected_countries) {
+    if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
+      return(ppt)
+    }
+    
+    # Filter data
+    filtered_data <- public_wage_premium_educ %>%
+      filter(country_name %in% selected_countries) %>%
+      drop_na(value_percentage)
+    
+    if (nrow(filtered_data) == 0) {
+      return(ppt)
+    }
+    
+    # Generate plot
+    ggplot_obj <- ggplot(filtered_data, aes(x = indicator_name, y = value_percentage, fill = indicator_name)) +
+      geom_bar(stat = "identity", position = "dodge") +
+      scale_fill_manual(values = c(
+        "No Education" = "#003366",
+        "Primary Education" = "#B3242B",
+        "Secondary Education" = "#3B3B3B",
+        "Tertiary Education" = "#006400"
+      )) +
+      labs(
+        title = "Public Sector Wage Premium by Education Level",
+        x = "Education Level",
+        y = "Wage Premium (%)",
+        fill = "Education Level"
+      ) +
+      theme_minimal()
+    
+    # Save image
+    img_path <- tempfile(fileext = ".png")
+    ggsave(img_path, plot = ggplot_obj, width = 8, height = 6)
+    
+    # Add slide
+    ppt <- ppt %>%
+      add_slide(layout = "Title and Content", master = "Office Theme") %>%
+      ph_with(external_img(img_path, height = 5, width = 7), location = ph_location_type(type = "body"))
+    
+    return(ppt)
+  }
   
-
   #Public Sector Graphs 
   
   # First Graph - Multi-Country Dot Plot
@@ -2727,6 +3005,44 @@ server <- function(input, output, session) {
     
     return(doc)
   }
+  #slides 
+  generate_public_sector_employment_slide <- function(ppt, selected_countries) {
+    if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
+      return(ppt)
+    }
+    
+    # Filter data for selected countries (last available year)
+    filtered_data <- public_sector_emp_temp_last %>% 
+      filter(country_name %in% selected_countries)
+    
+    if (nrow(filtered_data) == 0) {
+      return(ppt)  # No data, skip slide
+    }
+    
+    # Plot: Public Sector Employment by Country
+    first_graph <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, color = indicator_label)) +
+      geom_point(size = 4) +
+      labs(
+        title = "Public Sector Employment (Last Year Available)", 
+        x = "Country", 
+        y = "Employment (%)", 
+        color = "Sector"
+      ) +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    
+    # Save image to temp file
+    img_path <- tempfile(fileext = ".png")
+    ggsave(img_path, plot = first_graph, width = 8, height = 6)
+    
+    # Add slide with the plot only
+    ppt <- ppt %>%
+      add_slide(layout = "Title and Content", master = "Office Theme") %>%
+      ph_with(external_img(img_path, height = 5, width = 7), location = ph_location_type(type = "body"))
+    
+    return(ppt)
+  }
+  
   
 #Gender Wage premium 
   
@@ -2951,6 +3267,65 @@ server <- function(input, output, session) {
     
     return(doc)
   }
+  
+  #slides
+  
+  generate_wage_premium_gender_report_slide <- function(ppt, selected_countries) {
+    if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
+      return(ppt)
+    }
+    
+    first_country <- selected_countries[1]
+    
+    # Filter for last available year (cross-country)
+    filtered_data <- gender_wage_premium_last %>% 
+      filter(country_name %in% selected_countries) %>%
+      drop_na(value_percentage)
+    
+    if (nrow(filtered_data) > 0) {
+      # Graph 1: Public Sector Wage Premium by Gender (Last Year Available)
+      first_graph <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, color = indicator_label)) +
+        geom_point(size = 4) +
+        labs(
+          title = "Public Sector Wage Premium by Gender (Last Year Available)",
+          x = "Country", y = "Wage Premium (%)", color = "Gender"
+        ) +
+        theme_minimal() +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1))
+      
+      img_path1 <- tempfile(fileext = ".png")
+      ggsave(img_path1, plot = first_graph, width = 8, height = 6)
+      
+      ppt <- ppt %>%
+        add_slide(layout = "Title and Content", master = "Office Theme") %>%
+        ph_with(external_img(img_path1, height = 5, width = 7), location = ph_location_type(type = "body"))
+    }
+    
+    # Graph 2: Time series for first country
+    time_series_data <- gender_wage_premium %>% 
+      filter(country_name == first_country)
+    
+    if (nrow(time_series_data) > 0) {
+      second_graph <- ggplot(time_series_data, aes(x = year, y = value_percentage, color = indicator_label, group = indicator_label)) +
+        geom_line(size = 1.2) +
+        geom_point(size = 3) +
+        labs(
+          title = paste("Public Sector Wage Premium by Gender Over Time in", first_country),
+          x = "Year", y = "Wage Premium (%)", color = "Gender"
+        ) +
+        theme_minimal()
+      
+      img_path2 <- tempfile(fileext = ".png")
+      ggsave(img_path2, plot = second_graph, width = 8, height = 6)
+      
+      ppt <- ppt %>%
+        add_slide(layout = "Title and Content", master = "Office Theme") %>%
+        ph_with(external_img(img_path2, height = 5, width = 7), location = ph_location_type(type = "body"))
+    }
+    
+    return(ppt)
+  }
+  
   
   # Gender Workforce Graphs
   
@@ -4204,8 +4579,35 @@ server <- function(input, output, session) {
           ppt <- generate_pay_compression_slide(ppt, selected_countries)
         }
         if ("wagebill" %in% selected_sections) {
-          ppt <- generate_wage_bill_slide(ppt, selected_countries)
+          ppt <- generate_wage_bill_analysis_slide(ppt, selected_countries)
         }
+        if ("wagebill_gdp" %in% selected_sections) {
+          ppt <- generate_gdp_analysis_slide(ppt, selected_countries)
+        }
+        
+        if ("tertiaryeducation" %in% selected_sections) {
+          ppt <- generate_tertiary_education_slide(ppt, selected_countries)
+        }
+        if ("genderwagepremium" %in% selected_sections) {
+          ppt <- generate_wage_premium_gender_slide(ppt, selected_countries)
+        }
+        
+        if ("wagepremiumeducation" %in% selected_sections) {
+          ppt <-generate_wage_premium_education_slide(ppt, selected_countries)
+        }
+        
+        if ("public_employment" %in% selected_sections) {
+          ppt <- generate_public_sector_employment_slide(ppt, selected_countries)
+        }
+        
+        if ("wagepremiumgender" %in% selected_sections) {
+          ppt <- generate_wage_premium_gender_report_slide(ppt, selected_countries)
+        }
+        
+        if ("public_workforce" %in% selected_sections) {
+          ppt <- generate_public_sector_workforce_slide(ppt, selected_countries)
+        }
+        
         if ("gender_workforce" %in% selected_sections) {
           ppt <- generate_gender_workforce_slide(ppt, selected_countries)
         }
