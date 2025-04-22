@@ -3162,6 +3162,46 @@ server <- function(input, output, session) {
     return(doc)
   }
   
+  #slides
+  
+  generate_gender_workforce_slide <- function(ppt, selected_countries) {
+    if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
+      return(ppt)
+    }
+    
+    # Filter relevant data
+    filtered_data <- gender_workforce %>% 
+      filter(country_name %in% selected_countries)
+    
+    if (nrow(filtered_data) == 0) {
+      return(ppt)
+    }
+    
+    # Create ggplot graph
+    gender_graph <- ggplot(filtered_data, 
+                           aes(x = country_name, y = round(value_percentage, 0), fill = indicator_name)) +
+      geom_bar(stat = "identity", position = "dodge") +
+      scale_fill_manual(values = c(
+        "as a share of private paid employees" = "#B3242B", 
+        "as a share of public paid employees" = "#003366")) +
+      labs(
+        title = "Female Employment by Sector (Last Year Available)", 
+        x = "Country", y = "Employment (%)", fill = "Sector"
+      ) +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    
+    # Save to PNG
+    img_path <- tempfile(fileext = ".png")
+    ggsave(img_path, plot = gender_graph, width = 8, height = 6, dpi = 300)
+    
+    # Add slide with image only
+    ppt <- ppt %>%
+      add_slide(layout = "Title and Content", master = "Office Theme") %>%
+      ph_with(external_img(img_path, height = 5, width = 7), location = ph_location_type(type = "body"))
+    
+    return(ppt)
+  }
   
 
   # Women Leadership 
@@ -4165,6 +4205,9 @@ server <- function(input, output, session) {
         }
         if ("wagebill" %in% selected_sections) {
           ppt <- generate_wage_bill_slide(ppt, selected_countries)
+        }
+        if ("gender_workforce" %in% selected_sections) {
+          ppt <- generate_gender_workforce_slide(ppt, selected_countries)
         }
         if ("gender_wage_premium" %in% selected_sections) {
           ppt <- generate_gender_wage_premiumbysector_slide(ppt, selected_countries)
