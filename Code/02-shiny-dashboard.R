@@ -4433,7 +4433,7 @@ server <- function(input, output, session) {
                        style = "Normal")
         
         # **Create scatter plot with trend line**
-        plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector, label = country_name, color = region)) +  # or group variable
+        plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector, label = country_name)) +  # or group variable
           geom_point(size = 3) +
           geom_text(vjust = -0.5, size = 3) +
           geom_smooth(method = "lm", color = "gray", linetype = "dashed") +
@@ -4541,7 +4541,7 @@ server <- function(input, output, session) {
         "A higher compression ratio indicates greater income disparity within the sector. The trendline provides an overall pattern, and the 45-degree reference line represents equality between public and private sector compression."
       )
       
-      plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector, label = country_name, color = region)) +  # or group variable
+      plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector, label = country_name)) +  # or group variable
         geom_point(size = 3) +
         geom_text(vjust = -0.5, size = 3) +
         geom_smooth(method = "lm", color = "gray", linetype = "dashed") +
