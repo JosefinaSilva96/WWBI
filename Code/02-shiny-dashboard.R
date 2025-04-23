@@ -4575,7 +4575,7 @@ server <- function(input, output, session) {
       req(nrow(filtered_data_df) > 0)
       
       # Create summary for plot
-      plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector, label = country_name, color = region)) +  # or group variable
+      plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector, label = country_name)) +  # or group variable
         geom_point(size = 3) +
         geom_text(vjust = -0.5, size = 3) +
         geom_smooth(method = "lm", color = "gray", linetype = "dashed") +
