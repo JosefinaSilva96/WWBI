@@ -1376,7 +1376,7 @@ server <- function(input, output, session) {
     return(doc)
   }
   
-  #slides
+  #Slides
   
   generate_wage_bill_analysis_slide <- function(ppt, selected_countries) {
     # Validate selected countries
