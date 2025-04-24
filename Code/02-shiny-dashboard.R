@@ -931,6 +931,7 @@ server <- function(input, output, session) {
     )
 
 #Publications 
+  
   output$pub1 <- downloadHandler(
     filename = function() {
       "Innovating-Bureaucracy-for-a-More-Capable-Government.pdf"
@@ -978,7 +979,7 @@ server <- function(input, output, session) {
     }
   )
   
-  
+  #Sections 
   
   
   # 3. All your original outputs and downloadHandlers follow.
