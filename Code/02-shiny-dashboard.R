@@ -1594,7 +1594,7 @@ server <- function(input, output, session) {
     return(doc)
   }
   
-  #slides
+  #Slides
   
   generate_gdp_analysis_slide <- function(ppt, selected_countries) {
     # Validate input
@@ -1907,7 +1907,8 @@ server <- function(input, output, session) {
     return(doc)
   }
   
-  #slides
+  #Slides
+  
   generate_public_sector_workforce_slide <- function(ppt, selected_countries) {
     if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
       return(ppt)
@@ -1955,6 +1956,25 @@ server <- function(input, output, session) {
     filtered_data <- tertiary_education %>% 
       filter(country_name %in% input$selected_countries)
     
+    # Check if filtered data is empty
+    if (nrow(filtered_data) == 0) {
+      return(plotly_empty(type = "bar") %>%
+               layout(
+                 title = "No data available",
+                 annotations = list(
+                   text = "No data available for the selected country/countries.",
+                   xref = "paper",
+                   yref = "paper",
+                   showarrow = FALSE,
+                   font = list(size = 16),
+                   x = 0.5,
+                   y = 0.5
+                 ),
+                 plot_bgcolor = "white",
+                 paper_bgcolor = "white"
+               ))
+    }
+    
     # Define Colors
     custom_colors <- c("as a share of private paid employees" = "#0072B2", 
                        "as a share of public paid employees" = "#D55E00")
@@ -1963,15 +1983,19 @@ server <- function(input, output, session) {
     plot <- filtered_data %>%
       plot_ly(x = ~country_name, y = ~value_percentage, 
               color = ~indicator_name, colors = custom_colors, 
-              type = 'bar', barmode = 'group', text = ~paste0(round(value_percentage, 1), "%"),
+              type = 'bar', barmode = 'group',
+              text = ~paste0(round(value_percentage, 1), "%"),
               textposition = "auto") %>%
-      layout(title = "Workers with tertiary education by sector and country",
-             xaxis = list(title = "Country"),
-             yaxis = list(title = "Tertiary Education (%)"),
-             legend = list(title = list(text = "<b>Sector</b>")))
+      layout(
+        title = "Workers with Tertiary Education by Sector and Country",
+        xaxis = list(title = "Country"),
+        yaxis = list(title = "Tertiary Education (%)"),
+        legend = list(title = list(text = "<b>Sector</b>"))
+      )
     
     plot
   })
+  
   output$note_tertiaryEducation <- renderText({
     "Note: This indicator represents the proportion of individuals with tertiary education in the public and private sectors across selected countries. It highlights differences in educational attainment among paid employees by sector."
   })
