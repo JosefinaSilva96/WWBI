@@ -1644,8 +1644,28 @@ server <- function(input, output, session) {
   
   output$stackedBarGraph <- renderPlotly({
     req(input$countries_workforce)
-    data_to_plot <- filtered_workforce_data() %>% filter(country_name %in% input$countries_workforce)
-    req(nrow(data_to_plot) > 0)
+    
+    data_to_plot <- filtered_workforce_data() %>% 
+      filter(country_name %in% input$countries_workforce)
+    
+    if (nrow(data_to_plot) == 0) {
+      return(plotly_empty(type = "bar") %>%
+               layout(
+                 title = "No data available",
+                 annotations = list(
+                   text = "No data available for the selected country/countries.",
+                   xref = "paper",
+                   yref = "paper",
+                   showarrow = FALSE,
+                   font = list(size = 16),
+                   x = 0.5,
+                   y = 0.5
+                 ),
+                 plot_bgcolor = "white",
+                 paper_bgcolor = "white"
+               ))
+    }
+    
     # Define color-blind friendly palette (Okabe-Ito)
     color_blind_palette <- c(
       "Public Administration" = "#E69F00",  # orange
@@ -1654,13 +1674,15 @@ server <- function(input, output, session) {
       "Other" = "#F0E442"                   # yellow
     )
     
-    # Create plot
+    # Create stacked bar chart
     plot_ly(data = data_to_plot,
             x = ~country_name,
             y = ~value_percentage,
             color = ~indicator_name,
             type = "bar",
-            text = ~paste("Country:", country_name, "<br>Indicator:", indicator_name, "<br>Value:", round(value_percentage, 1), "%"),
+            text = ~paste("Country:", country_name,
+                          "<br>Indicator:", indicator_name,
+                          "<br>Value:", round(value_percentage, 1), "%"),
             textposition = "auto",
             colors = color_blind_palette) %>%
       layout(
@@ -1670,7 +1692,6 @@ server <- function(input, output, session) {
         yaxis = list(title = "Workforce Distribution (%)", range = c(0, 100)),
         legend = list(title = list(text = "<b>Indicator</b>"))
       )
-    
   })
   
   output$note_stackedBarGraph <- renderText({
