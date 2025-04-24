@@ -4069,10 +4069,44 @@ server <- function(input, output, session) {
   # Women Leadership 
   
   output$barPlotwomen <- renderPlotly({
-    if (is.null(input$selected_countries) || length(input$selected_countries) == 0) return(NULL)
+    if (is.null(input$selected_countries) || length(input$selected_countries) == 0) {
+      return(plotly_empty(type = "bar") %>%
+               layout(
+                 title = "No country selected",
+                 annotations = list(
+                   text = "Please select at least one country to view the data.",
+                   xref = "paper",
+                   yref = "paper",
+                   showarrow = FALSE,
+                   font = list(size = 16),
+                   x = 0.5,
+                   y = 0.5
+                 ),
+                 plot_bgcolor = "white",
+                 paper_bgcolor = "white"
+               ))
+    }
     
-    filtered_data <- gender_leadership %>% filter(country_name %in% input$selected_countries)
-    if (nrow(filtered_data) == 0) return(NULL)
+    filtered_data <- gender_leadership %>% 
+      filter(country_name %in% input$selected_countries)
+    
+    if (nrow(filtered_data) == 0) {
+      return(plotly_empty(type = "bar") %>%
+               layout(
+                 title = "No data available",
+                 annotations = list(
+                   text = "No data available for the selected country/countries.",
+                   xref = "paper",
+                   yref = "paper",
+                   showarrow = FALSE,
+                   font = list(size = 16),
+                   x = 0.5,
+                   y = 0.5
+                 ),
+                 plot_bgcolor = "white",
+                 paper_bgcolor = "white"
+               ))
+    }
     
     plot_ly(
       data = filtered_data,
@@ -4095,6 +4129,7 @@ server <- function(input, output, session) {
         bargap = 0.2
       )
   })
+  
   
   output$note_barPlotwomen <- renderText({
     "Note: This indicator represents the share of females in different occupational groups (Managers/Clerks) in both the public and private sectors, highlighting gender representation disparities."
@@ -4339,19 +4374,30 @@ server <- function(input, output, session) {
                                     "Health", 
                                     "Other")) 
     
-    # Create ggplot
+    # Fallback if no data
+    if (nrow(filtered_data) == 0) {
+      return(
+        ggplot() + 
+          theme_void() +
+          annotate("text", x = 0.5, y = 0.5, label = "No data available for the selected country/countries.",
+                   size = 6, color = "red", hjust = 0.5, vjust = 0.5)
+      )
+    }
+    
+    # Create actual ggplot
     ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_label)) +
       geom_bar(stat = "identity", position = "dodge") +
-      scale_fill_viridis_d(name = "Indicator", option = "D") +  # Viridis option D is discrete and accessible
+      scale_fill_viridis_d(name = "Indicator", option = "D") +
       labs(
         title = "Gender Wage Premium in Public Sector by Industry",
         x = "Country", y = "Wage Premium (%)"
       ) +
       theme_minimal() +
-      annotate("text", x = Inf, y = min(filtered_data$value_percentage) - 5, 
+      annotate("text", x = Inf, y = min(filtered_data$value_percentage, na.rm = TRUE) - 5, 
                label = "This indicator represents the gender wage premium across industries in the public sector.", 
                hjust = 1, size = 4, color = "black", fontface = "italic")
   })
+  
   
   output$note_gender_wage_barplot <- renderText({
     "Note: This indicator represents the gender wage premium in the public sector across different industries, comparing wages of female employees to male employees."
@@ -4653,22 +4699,48 @@ server <- function(input, output, session) {
     filtered_data_df <- pay_compression_wide %>%
       filter(country_name %in% input$countries_first)
     
+    # Fallback if no data
     if (nrow(filtered_data_df) == 0) {
-      print("🚨 No data available after filtering! Check input selections.")
-      return(NULL)
+      return(plotly_empty(type = "scatter") %>%
+               layout(
+                 title = "No data available",
+                 annotations = list(
+                   text = "No data available for the selected country/countries.",
+                   xref = "paper", yref = "paper",
+                   showarrow = FALSE,
+                   font = list(size = 16),
+                   x = 0.5, y = 0.5
+                 ),
+                 plot_bgcolor = "white",
+                 paper_bgcolor = "white"
+               ))
     }
     
+    # Fallback if required columns are missing
     if (!all(c("Public_Sector", "Private_Sector") %in% colnames(filtered_data_df))) {
-      print("🚨 Missing required columns after filtering!")
-      return(NULL)
+      return(plotly_empty(type = "scatter") %>%
+               layout(
+                 title = "Data error",
+                 annotations = list(
+                   text = "Required columns (Public_Sector, Private_Sector) are missing.",
+                   xref = "paper", yref = "paper",
+                   showarrow = FALSE,
+                   font = list(size = 16, color = "red"),
+                   x = 0.5, y = 0.5
+                 ),
+                 plot_bgcolor = "white",
+                 paper_bgcolor = "white"
+               ))
     }
     
+    # Prepare data and trendline
     filtered_data_df <- filtered_data_df %>%
       mutate(color = ifelse(country_name == input$countries_first[1], "#B3242B", "#003366"))
     
     trendline_model <- lm(Public_Sector ~ Private_Sector, data = filtered_data_df)
     trendline_values <- predict(trendline_model, newdata = filtered_data_df)
     
+    # Build the plot
     plot_ly() %>%
       add_trace(
         data = filtered_data_df,
