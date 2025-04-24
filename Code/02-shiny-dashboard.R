@@ -483,7 +483,7 @@ server <- function(input, output, session) {
         fluidRow(
           column(4,
                  selectInput("countries", "Select Countries:",
-                             choices = unique(wage_bill_publicexp$country_name),
+                             choices = unique(data_wwbi_long$country_name),
                              selected = NULL,  # No default; user must select one or more
                              multiple = TRUE)
           ),
@@ -516,7 +516,7 @@ server <- function(input, output, session) {
         fluidRow(
           column(4,
                  selectInput("countries_first", "Select Countries:", 
-                             choices = unique(merged_data$country_name), 
+                             choices = unique(data_wwbi_long$country_name), 
                              multiple = TRUE, width = "100%"),
                  downloadButton("downloadGDPDoc", "Download GDP Analysis Report")
           ),
@@ -544,7 +544,7 @@ server <- function(input, output, session) {
         ),
         fluidRow(
           selectInput("countries_workforce", "Select Countries for Workforce Graph",
-                      choices = unique(public_sector_workforce$country_name), multiple = TRUE)
+                      choices = unique(data_wwbi_long$country_name), multiple = TRUE)
         ),
         fluidRow(
           plotlyOutput("stackedBarGraph", height = "600px")
@@ -555,7 +555,7 @@ server <- function(input, output, session) {
         ),
         fluidRow(
           selectInput("selected_country", "Select Country for Second Graph",
-                      choices = unique(public_sector_workforce$country_name), multiple = FALSE)
+                      choices = unique(data_wwbi_long$country_name), multiple = FALSE)
         ),
         fluidRow(
           plotlyOutput("horizontalStackedBar", height = "600px")
@@ -581,7 +581,7 @@ server <- function(input, output, session) {
                 "This visualization shows the proportion of workers with tertiary education in the public and private sectors.")
           ),
           selectInput("selected_countries", "Select Countries", 
-                      choices = unique(tertiary_education$country_name), multiple = TRUE)
+                      choices = unique(data_wwbi_long$country_name), multiple = TRUE)
         ),
         fluidRow(
           plotlyOutput("barPlot", height = "600px")
@@ -603,7 +603,7 @@ server <- function(input, output, session) {
           ),
           fluidRow(
             selectInput("selected_countries", "Select Countries", 
-                        choices = unique(gender_leadership$country_name), multiple = TRUE)
+                        choices = unique(data_wwbi_long$country_name), multiple = TRUE)
           ),
           fluidRow(
             plotlyOutput("barPlotwomen", height = "600px")
@@ -629,7 +629,7 @@ server <- function(input, output, session) {
         # Multi-Country Selection for First Graph
         fluidRow(
           selectInput("countries_first", "Select Countries for First Graph", 
-                      choices = unique(gender_wage_premium_last$country_name), 
+                      choices = unique(data_wwbi_long$country_name), 
                       multiple = TRUE)
         ),
         
@@ -644,7 +644,7 @@ server <- function(input, output, session) {
         # Single-Country Selection for Second Graph
         fluidRow(
           selectInput("country_second", "Select Country for Second Graph", 
-                      choices = unique(gender_wage_premium$country_name), 
+                      choices = unique(data_wwbi_long$country_name), 
                       multiple = FALSE)
         ),
         
@@ -668,7 +668,7 @@ server <- function(input, output, session) {
         h3("Public Sector Wage Premium"),
         fluidRow(
           selectInput("countries_wage_premium", "Select Countries for First Graph", 
-                      choices = unique(public_wage_premium$country_name), multiple = TRUE)
+                      choices = unique(data_wwbi_long$country_name), multiple = TRUE)
         ),
         fluidRow(
           plotlyOutput("dotPlot", height = "500px")
@@ -694,7 +694,7 @@ server <- function(input, output, session) {
         # Country Selection
         fluidRow(
           selectInput("selected_country", "Select Country for Graph", 
-                      choices = unique(public_wage_premium_educ$country_name), 
+                      choices = unique(data_wwbi_long$country_name), 
                       multiple = FALSE)
         ),
         
@@ -724,7 +724,7 @@ server <- function(input, output, session) {
         # Multi-Country Selection for First Graph
         fluidRow(
           selectInput("countries_first", "Select Countries for First Graph", 
-                      choices = unique(public_sector_emp_temp_last$country_name), multiple = TRUE)
+                      choices = unique(data_wwbi_long$country_name), multiple = TRUE)
         ),
         
         # Dot Plot Output
@@ -738,7 +738,7 @@ server <- function(input, output, session) {
         # Single-Country Selection for Line Graph
         fluidRow(
           selectInput("country_second", "Select Country for Second Graph", 
-                      choices = unique(public_sector_emp_temp$country_name), multiple = FALSE)
+                      choices = unique(data_wwbi_long$country_name), multiple = FALSE)
         ),
         
         # Line Plot Output
@@ -763,14 +763,14 @@ server <- function(input, output, session) {
         ),
         fluidRow(
           selectInput("countries_gender", "Select Countries for First Graph", 
-                      choices = unique(gender_workforce$country_name), multiple = TRUE)
+                      choices = unique(data_wwbi_long$country_name), multiple = TRUE)
         ),
         fluidRow(
           plotlyOutput("firstGraphGenderWorkforce")
         ),
         fluidRow(
           selectInput("country_gender", "Select Country for Second Graph", 
-                      choices = unique(gender_workforce$country_name), multiple = FALSE)
+                      choices = unique(data_wwbi_long$country_name), multiple = FALSE)
         ),
         fluidRow(
           div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
@@ -796,7 +796,7 @@ server <- function(input, output, session) {
         ),
         fluidRow(
           selectInput("selected_countries", "Select Countries", 
-                      choices = unique(gender_wage_premium$country_name), multiple = TRUE)
+                      choices = unique(data_wwbi_long$country_name), multiple = TRUE)
         ),
         fluidRow(
           plotOutput("gender_wage_barplot", height = "600px")
@@ -824,7 +824,7 @@ server <- function(input, output, session) {
           selectInput(
             inputId = "countries_first",
             label = "Select countries",
-            choices = unique(pay_compression_wide$country_name),
+            choices = unique(data_wwbi_long$country_name),
             multiple = TRUE
           )# Default country selected
         ),
@@ -866,7 +866,7 @@ server <- function(input, output, session) {
                  selectInput(
                    inputId = "download_report_countries",
                    label = "Select countries for the report/slides:",
-                   choices = unique(data_wwbi$country_name),
+                   choices = unique(data_wwbi_long$country_name),
                    selected = c("Chile"),
                    multiple = TRUE,
                    selectize = TRUE
