@@ -1436,11 +1436,35 @@ server <- function(input, output, session) {
   
   output$dot_plot <- renderPlotly({
     req(input$countries_first)
+    
     filtered_data_df <- merged_data %>% 
-      filter(country_name %in% input$countries_first) %>%
+      filter(country_name %in% input$countries_first)
+    
+    if (nrow(filtered_data_df) == 0) {
+      return(plotly_empty(type = "scatter", mode = "markers") %>%
+               layout(
+                 title = "No data available",
+                 annotations = list(
+                   text = "No data available for the selected country/countries.",
+                   xref = "paper",
+                   yref = "paper",
+                   showarrow = FALSE,
+                   font = list(size = 16),
+                   x = 0.5,
+                   y = 0.5
+                 ),
+                 plot_bgcolor = "white",
+                 paper_bgcolor = "white"
+               ))
+    }
+    
+    # If there's data, continue with the normal plot
+    filtered_data_df <- filtered_data_df %>%
       mutate(color = ifelse(country_name == input$countries_first[1], "#B3242B", "#003366"))
+    
     trendline_model <- lm(indicator_value ~ log_gdp, data = filtered_data_df)
     trendline_values <- predict(trendline_model, newdata = filtered_data_df)
+    
     plot_ly() %>%
       add_trace(
         data = filtered_data_df,
@@ -1460,13 +1484,16 @@ server <- function(input, output, session) {
         line = list(color = "gray", dash = "dash"),
         name = "Trendline"
       ) %>%
-      layout(title = "Wage Bill vs. Log(GDP per Capita)",
-             xaxis = list(title = "Log(GDP per Capita, 2015)"),
-             yaxis = list(title = "Wage Bill"),
-             showlegend = FALSE, 
-             plot_bgcolor = "white",   # Add this line
-             paper_bgcolor = "white")
+      layout(
+        title = "Wage Bill vs. Log(GDP per Capita)",
+        xaxis = list(title = "Log(GDP per Capita, 2015)"),
+        yaxis = list(title = "Wage Bill"),
+        showlegend = FALSE,
+        plot_bgcolor = "white",
+        paper_bgcolor = "white"
+      )
   })
+  
   output$note_dotplot <- renderText({
     "Note: This indicator represents the relationship between wage bill and log(GDP per capita). The trendline provides a visual reference for the overall pattern."
   })
@@ -1568,6 +1595,7 @@ server <- function(input, output, session) {
   }
   
   #slides
+  
   generate_gdp_analysis_slide <- function(ppt, selected_countries) {
     # Validate input
     if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
