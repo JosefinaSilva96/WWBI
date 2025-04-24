@@ -999,8 +999,24 @@ server <- function(input, output, session) {
   })
   
   # Render the Plotly graph for the wage bill
+  
   output$plotwagebill <- renderPlotly({
     d <- selected_data()
+    
+    if (nrow(d) == 0) {
+      return(plotly_empty(type = "scatter", mode = "markers") %>%
+               layout(
+                 title = "No data available",
+                 annotations = list(
+                   text = "No data available for the selected country/countries.",
+                   xref = "paper",
+                   yref = "paper",
+                   showarrow = FALSE,
+                   font = list(size = 16),
+                   x = 0.5,
+                   y = 0.5
+                 )))
+    }
     
     # Set the title and y-axis label depending on the selection:
     title_text <- ifelse(input$graph_choice == "GDP",
@@ -1014,8 +1030,8 @@ server <- function(input, output, session) {
     # Create the Plotly graph
     plot_ly(data = d,
             x = ~year,
-            y = ~value,         
-            color = ~country_name,  # Keeps color mapping by country
+            y = ~value,
+            color = ~country_name,
             type = "scatter",
             mode = "lines+markers",
             marker = list(size = 8)) %>%
@@ -1023,7 +1039,7 @@ server <- function(input, output, session) {
         title = title_text,
         xaxis = list(title = "Year", dtick = 2),
         yaxis = list(title = y_label),
-        legend = list(title = list(text = "Indicator"))  # Renames legend title
+        legend = list(title = list(text = "Indicator"))
       )
   })
   output$note_wagebill <- renderText({
