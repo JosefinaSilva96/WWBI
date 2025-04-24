@@ -2119,7 +2119,8 @@ server <- function(input, output, session) {
     return(doc)
   }
   
-  #slides
+  #Slides
+  
   generate_tertiary_education_slide <- function(ppt, selected_countries) {
     # ✅ Validate input
     if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
@@ -2174,9 +2175,23 @@ server <- function(input, output, session) {
       select(country_name, value_percentage) %>%
       drop_na(value_percentage)  # Remove any NA values
     
-    # Check if there's data after filtering
+    # Fallback if no data
     if (nrow(filtered_data) == 0) {
-      return(NULL)  # Prevents errors when no data is available
+      return(plotly_empty(type = "scatter") %>%
+               layout(
+                 title = "No data available",
+                 annotations = list(
+                   text = "No data available for the selected country/countries.",
+                   xref = "paper",
+                   yref = "paper",
+                   showarrow = FALSE,
+                   font = list(size = 16),
+                   x = 0.5,
+                   y = 0.5
+                 ),
+                 plot_bgcolor = "white",
+                 paper_bgcolor = "white"
+               ))
     }
     
     # Assign colors: First country -> Red, Others -> Dark Blue
@@ -2190,9 +2205,7 @@ server <- function(input, output, session) {
       y = ~value_percentage,
       type = "scatter",
       mode = "markers",
-      marker = list(size = 10, opacity = 0.8),
-      color = ~color,  # Assign color dynamically
-      colors = c("#0072B2", "#D55E00"),  # Red & Dark Blue
+      marker = list(size = 10, opacity = 0.8, color = ~color),
       text = ~paste0("Country: ", country_name, "<br>Wage Premium: ", round(value_percentage, 1), "%"),
       hoverinfo = "text"
     ) %>%
@@ -2205,7 +2218,7 @@ server <- function(input, output, session) {
     
     plot
   })
-  
+
   output$note_wage_premium <- renderText({
     "Note: This indicator represents the public sector wage premium compared to all private sector employees. A positive value indicates that public sector workers earn more than their private-sector counterparts, on average."
   })
@@ -2382,19 +2395,65 @@ server <- function(input, output, session) {
   #Female share of employment
   
   output$employment_plot <- renderPlotly({
-    filtered_data <- gender_workforce %>% filter(country_name %in% input$countries_workforce)
-    if(nrow(filtered_data) == 0) return(NULL)
-    public_latest <- filtered_data %>% filter(indicator_name == "Females, as a share of public paid employees") %>% 
-      group_by(country_name) %>% filter(year == max(year, na.rm = TRUE)) %>% ungroup()
-    private_latest <- filtered_data %>% filter(indicator_name == "Females, as a share of private paid employees") %>% 
-      group_by(country_name) %>% filter(year == max(year, na.rm = TRUE)) %>% ungroup()
-    if(nrow(public_latest) == 0 || nrow(private_latest) == 0) return(NULL)
+    filtered_data <- gender_workforce %>% 
+      filter(country_name %in% input$countries_workforce)
+    
+    if (nrow(filtered_data) == 0) {
+      return(plotly_empty(type = "bar") %>%
+               layout(
+                 title = "No data available",
+                 annotations = list(
+                   text = "No data available for the selected country/countries.",
+                   xref = "paper",
+                   yref = "paper",
+                   showarrow = FALSE,
+                   font = list(size = 16),
+                   x = 0.5,
+                   y = 0.5
+                 ),
+                 plot_bgcolor = "white",
+                 paper_bgcolor = "white"
+               ))
+    }
+    
+    public_latest <- filtered_data %>% 
+      filter(indicator_name == "Females, as a share of public paid employees") %>% 
+      group_by(country_name) %>% 
+      filter(year == max(year, na.rm = TRUE)) %>% 
+      ungroup()
+    
+    private_latest <- filtered_data %>% 
+      filter(indicator_name == "Females, as a share of private paid employees") %>% 
+      group_by(country_name) %>% 
+      filter(year == max(year, na.rm = TRUE)) %>% 
+      ungroup()
+    
+    if (nrow(public_latest) == 0 || nrow(private_latest) == 0) {
+      return(plotly_empty(type = "bar") %>%
+               layout(
+                 title = "No data available",
+                 annotations = list(
+                   text = "No data available for one or both sectors in the selected country/countries.",
+                   xref = "paper",
+                   yref = "paper",
+                   showarrow = FALSE,
+                   font = list(size = 16),
+                   x = 0.5,
+                   y = 0.5
+                 ),
+                 plot_bgcolor = "white",
+                 paper_bgcolor = "white"
+               ))
+    }
+    
     plot <- plot_ly(data = public_latest,
                     x = ~country_name,
                     y = ~value_percentage,
                     type = 'bar',
                     color = I("#0072B2"),
-                    text = ~paste("Country: ", country_name, "<br>Last year available: ", year, "<br>Employment (%): ", round(value_percentage, 2)),
+                    text = ~paste("Country: ", country_name, 
+                                  "<br>Last year available: ", year, 
+                                  "<br>Employment (%): ", round(value_percentage, 2)),
                     hoverinfo = "text",
                     name = "Public Sector",
                     showlegend = TRUE) %>%
@@ -2405,7 +2464,9 @@ server <- function(input, output, session) {
                 mode = "markers",
                 marker = list(size = 10, color = "#D55E00"),
                 name = "Private Sector",
-                text = ~paste("Country: ", country_name, "<br>Last year available: ", year, "<br>Employment (%): ", round(value_percentage, 2)),
+                text = ~paste("Country: ", country_name, 
+                              "<br>Last year available: ", year, 
+                              "<br>Employment (%): ", round(value_percentage, 2)),
                 hoverinfo = "text",
                 showlegend = TRUE) %>%
       layout(barmode = "group",
@@ -2416,8 +2477,10 @@ server <- function(input, output, session) {
                           ticktext = paste(public_latest$country_name, "(", public_latest$year, ")")),
              yaxis = list(title = "Employment (%)"),
              legend = list(title = list(text = "Sector")))
+    
     plot
   })
+  
   output$note_female_employment <- renderText({
     "Note: This indicator represents female employment as a percentage of paid employees in the public and private sectors. Public sector data is displayed as bars, while private sector data is represented as scatter points."
   })
@@ -2646,7 +2709,8 @@ server <- function(input, output, session) {
     return(doc)
   }
   
-  #slides
+  #Slides
+  
   generate_wage_premium_gender_slide <- function(ppt, selected_countries) {
     if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
       return(ppt)
@@ -2718,8 +2782,8 @@ server <- function(input, output, session) {
   # Wage premium by Education Level 
   
   # Render the Public Sector Wage Premium by Education Level Graph
+  
   output$education_wage_premium_plot <- renderPlotly({
-    
     req(input$selected_country)  # Ensure a country is selected
     
     # Filter the data set for the selected country
@@ -2727,9 +2791,23 @@ server <- function(input, output, session) {
       filter(country_name == input$selected_country) %>%
       drop_na(value_percentage)  # Remove NAs
     
-    # Ensure data exists
+    # Check if there's data
     if (nrow(filtered_data) == 0) {
-      return(NULL)
+      return(plotly_empty(type = "bar") %>%
+               layout(
+                 title = "No data available",
+                 annotations = list(
+                   text = "No data available for the selected country.",
+                   xref = "paper",
+                   yref = "paper",
+                   showarrow = FALSE,
+                   font = list(size = 16),
+                   x = 0.5,
+                   y = 0.5
+                 ),
+                 plot_bgcolor = "white",
+                 paper_bgcolor = "white"
+               ))
     }
     
     # Define colorblind-friendly colors for education levels
@@ -2746,15 +2824,15 @@ server <- function(input, output, session) {
       scale_fill_manual(values = education_colors) +
       labs(
         title = "Public Sector Wage Premium by Education Level (Compared to Private Formal Workers)",
-        x = "Indicator",  # Updated label
+        x = "Education Level",
         y = "Wage Premium (%)",
-        fill = "Education Level"  # Label for legend
+        fill = "Education Level"
       ) +
       theme_minimal()
     
     ggplotly(p)  # Convert ggplot to Plotly for interactivity
-    
   })
+  
   output$note_education_wage_premium <- renderText({
     "Note: This indicator represents the public sector wage premium across different education levels, comparing public sector wages to those of private formal workers."
   })
@@ -2919,7 +2997,7 @@ server <- function(input, output, session) {
     return(doc)
   }
   
-  #slides
+  #Slides
   
   generate_wage_premium_education_slide <- function(ppt, selected_countries) {
     if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
@@ -2967,10 +3045,31 @@ server <- function(input, output, session) {
   #Public Sector Graphs 
   
   # First Graph - Multi-Country Dot Plot
+  
   output$firstGraphpublic <- renderPlotly({
     filtered_data <- public_sector_emp_temp_last %>% 
       filter(country_name %in% input$countries_first)
     
+    # If there's no data, show a fallback message
+    if (nrow(filtered_data) == 0) {
+      return(plotly_empty(type = "scatter") %>%
+               layout(
+                 title = "No data available",
+                 annotations = list(
+                   text = "No data available for the selected country/countries.",
+                   xref = "paper",
+                   yref = "paper",
+                   showarrow = FALSE,
+                   font = list(size = 16),
+                   x = 0.5,
+                   y = 0.5
+                 ),
+                 plot_bgcolor = "white",
+                 paper_bgcolor = "white"
+               ))
+    }
+    
+    # Otherwise, generate the plot
     ggplotly(
       ggplot(filtered_data, aes(x = country_name, y = value_percentage, color = indicator_label)) +
         geom_point(size = 4) +
@@ -2983,24 +3082,45 @@ server <- function(input, output, session) {
           title = "Public Sector Employment (Last Year Available)", 
           x = "Country", 
           y = "Value", 
-          color = "Indicator"  # Legend title
+          color = "Indicator"
         ) +
         theme_minimal() +
         theme(axis.text.x = element_text(angle = 45, hjust = 1))
     ) %>% 
       layout(legend = list(title = list(text = "Indicator")))
-    
   })
+  
   
   output$note_firstGraphpublic <- renderText({
     "Note: This indicator represents public sector employment as a percentage of total employment for the most recent year available in each country."
   })
   
   # Second Graph - Single-Country Line Plot
+  
   output$secondGraphpublic <- renderPlotly({
     filtered_data <- public_sector_emp_temp %>% 
       filter(country_name == input$country_second)
     
+    # Fallback if no data available
+    if (nrow(filtered_data) == 0) {
+      return(plotly_empty(type = "scatter") %>%
+               layout(
+                 title = "No data available",
+                 annotations = list(
+                   text = "No data available for the selected country.",
+                   xref = "paper",
+                   yref = "paper",
+                   showarrow = FALSE,
+                   font = list(size = 16),
+                   x = 0.5,
+                   y = 0.5
+                 ),
+                 plot_bgcolor = "white",
+                 paper_bgcolor = "white"
+               ))
+    }
+    
+    # Plot if data exists
     ggplotly(
       ggplot(filtered_data, aes(x = year, y = value_percentage, color = indicator_label)) +
         geom_line(size = 1.2) +
@@ -3017,10 +3137,10 @@ server <- function(input, output, session) {
           color = "Indicator"
         ) +
         theme_minimal()
-    ) %>% 
+    ) %>%
       layout(legend = list(title = list(text = "Indicator")))
-    
   })
+  
   
   output$note_secondGraphpublic <- renderText({
     "Note: This indicator represents the trend in public sector employment over time, showing how employment levels have evolved across different years."
@@ -3206,7 +3326,8 @@ server <- function(input, output, session) {
     
     return(doc)
   }
-  #slides 
+  
+  #Slides 
   
   generate_public_sector_employment_slide <- function(ppt, selected_countries) {
     if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
