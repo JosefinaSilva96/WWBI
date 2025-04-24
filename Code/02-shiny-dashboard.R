@@ -3379,6 +3379,26 @@ server <- function(input, output, session) {
     filtered_data <- gender_wage_premium_last %>% 
       filter(country_name %in% input$countries_first)
     
+    # Show fallback if no data available
+    if (nrow(filtered_data) == 0) {
+      return(plotly_empty(type = "scatter") %>%
+               layout(
+                 title = "No data available",
+                 annotations = list(
+                   text = "No data available for the selected country/countries.",
+                   xref = "paper",
+                   yref = "paper",
+                   showarrow = FALSE,
+                   font = list(size = 16),
+                   x = 0.5,
+                   y = 0.5
+                 ),
+                 plot_bgcolor = "white",
+                 paper_bgcolor = "white"
+               ))
+    }
+    
+    # Create the actual plot
     ggplotly(
       ggplot(filtered_data, aes(x = country_name, y = value_percentage, color = indicator_label)) +
         geom_point(size = 4) +
@@ -3395,14 +3415,35 @@ server <- function(input, output, session) {
         theme_minimal()
     )
   })
-  output$note_firstGraphGenderWagePremium <- renderText({
-    "Note: This indicator represents the public sector wage premium by gender, comparing wage differences between men and women in different sectors."
-  })
+  
   
   # Second Graph - Single-Country Line Plot for Wage Premium by Gender Over Time
+  
   output$secondGraphGenderWagePremium <- renderPlotly({
     filtered_data <- gender_wage_premium %>% 
       filter(country_name == input$country_second)
+    
+    # Show fallback if no data is available
+    if (nrow(filtered_data) == 0) {
+      return(plotly_empty(type = "scatter") %>%
+               layout(
+                 title = "No data available",
+                 annotations = list(
+                   text = "No data available for the selected country.",
+                   xref = "paper",
+                   yref = "paper",
+                   showarrow = FALSE,
+                   font = list(size = 16),
+                   x = 0.5,
+                   y = 0.5
+                 ),
+                 plot_bgcolor = "white",
+                 paper_bgcolor = "white"
+               ))
+    }
+    
+    # Create the ggplot
+    min_y <- min(filtered_data$value_percentage, na.rm = TRUE) - 5
     
     ggplotly(
       ggplot(filtered_data, aes(x = year, y = value_percentage, color = indicator_label)) +
@@ -3419,11 +3460,12 @@ server <- function(input, output, session) {
           color = "Indicator"
         ) +
         theme_minimal() +
-        annotate("text", x = Inf, y = min(filtered_data$value_percentage, na.rm = TRUE) - 5,
+        annotate("text", x = Inf, y = min_y,
                  label = "This indicator represents the gender wage premium across industries in the public sector.",
                  hjust = 1, size = 4, color = "black", fontface = "italic")
     )
   })
+  
   output$note_secondGraphGenderWagePremium <- renderText({
     "Note: This indicator represents the gender wage premium across industries in the public sector, showing differences between men and women over time."
   })
@@ -3632,7 +3674,7 @@ server <- function(input, output, session) {
     return(doc)
   }
   
-  #slides
+  #Slides
   
   generate_wage_premium_gender_report_slide <- function(ppt, selected_countries) {
     if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
@@ -3703,15 +3745,36 @@ server <- function(input, output, session) {
   # Gender Workforce Graphs
   
   # First Graph - Multi-Country Bar Plot
+  
   output$firstGraphGenderWorkforce <- renderPlotly({
     filtered_data <- gender_workforce %>% 
       filter(country_name %in% input$countries_gender)
+    
+    # Show fallback if no data is available
+    if (nrow(filtered_data) == 0) {
+      return(plotly_empty(type = "bar") %>%
+               layout(
+                 title = "No data available",
+                 annotations = list(
+                   text = "No data available for the selected country/countries.",
+                   xref = "paper",
+                   yref = "paper",
+                   showarrow = FALSE,
+                   font = list(size = 16),
+                   x = 0.5,
+                   y = 0.5
+                 ),
+                 plot_bgcolor = "white",
+                 paper_bgcolor = "white"
+               ))
+    }
     
     # Ensure factor levels match color scale
     filtered_data$indicator_name <- factor(filtered_data$indicator_name, 
                                            levels = c("as a share of private paid employees", 
                                                       "as a share of public paid employees"))
     
+    # Create the grouped bar chart
     ggplotly(
       ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
         geom_bar(stat = "identity", position = "dodge") +
@@ -3721,25 +3784,49 @@ server <- function(input, output, session) {
         )) +
         labs(
           title = "Female Employment by Sector (Last Year Available)", 
-          x = "Country", y = "Employment (%)", fill = "Sector"
+          x = "Country", 
+          y = "Employment (%)", 
+          fill = "Sector"
         ) +
         theme_minimal()
     )
   })
+  
   output$note_firstGraphGenderWorkforce <- renderText({
     "Note: This indicator represents the share of females employed in the public and private sectors. It highlights gender differences in workforce participation by sector."
   })
   
   # Second Graph - Single-Country Line Plot
+  
   output$secondGraphGenderWorkforce <- renderPlotly({
     filtered_data <- gender_workforce %>% 
       filter(country_name == input$country_gender)
+    
+    # Show fallback if no data is available
+    if (nrow(filtered_data) == 0) {
+      return(plotly_empty(type = "scatter") %>%
+               layout(
+                 title = paste("No data available for", input$country_gender),
+                 annotations = list(
+                   text = "No data available for the selected country.",
+                   xref = "paper",
+                   yref = "paper",
+                   showarrow = FALSE,
+                   font = list(size = 16),
+                   x = 0.5,
+                   y = 0.5
+                 ),
+                 plot_bgcolor = "white",
+                 paper_bgcolor = "white"
+               ))
+    }
     
     # Ensure factor levels match color scale
     filtered_data$indicator_name <- factor(filtered_data$indicator_name, 
                                            levels = c("as a share of private paid employees", 
                                                       "as a share of public paid employees"))
     
+    # Create the line chart
     ggplotly(
       ggplot(filtered_data, aes(x = year, y = value_percentage, color = indicator_name)) +
         geom_line(size = 1.2) +
@@ -3750,17 +3837,20 @@ server <- function(input, output, session) {
         )) +
         labs(
           title = paste("Female Employment by Sector Over Time in", input$country_gender), 
-          x = "Year", y = "Female Employment (%)", color = "Sector"
+          x = "Year", 
+          y = "Female Employment (%)", 
+          color = "Sector"
         ) +
         theme_minimal()
     )
-    
   })
+  
   output$note_secondGraphGenderWorkforce <- renderText({
     "Note: This indicator represents the trend of female employment in the public and private sectors over time, allowing for a comparison of sectoral changes."
   })
   
   # Download Handler - Save Graphs to Word Document
+  
   output$downloadGraphsWordGender <- downloadHandler(
     filename = function() {
       paste0("Female share of employment_Analysis_", Sys.Date(), ".docx")
@@ -3931,7 +4021,7 @@ server <- function(input, output, session) {
     return(doc)
   }
   
-  #slides
+  #Slides
   
   generate_gender_workforce_slide <- function(ppt, selected_countries) {
     if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
