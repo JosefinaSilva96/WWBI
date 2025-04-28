@@ -49,7 +49,7 @@ print(paste("Using data path:", data_path))
 
 world_spdf$name <- countrycode(as.character(world_spdf$admin), origin = "country.name", destination = "country.name")
 
-
+world_map <- wbgmaps::wb_countries()
 
 data_wwbi     <- read_dta(file.path(data_path, "Data/data_wwbi.dta"))
 
