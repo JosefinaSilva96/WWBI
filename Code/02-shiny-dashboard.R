@@ -3,6 +3,7 @@
 ### Libraries
 
 # Unique list of required packages
+
 packages <- unique(c(
   "haven", "dplyr", "tidyr", "stringr", "labelled", "data.table",
   "ggplot2", "shiny", "shinythemes", "DT", "maps", "mapdata",
@@ -46,8 +47,6 @@ if (basename(getwd()) == "Code") {
 # Debugging: Print the detected data path to check correctness
 print(paste("Using data path:", data_path))
 
-
-world_spdf$name <- countrycode(as.character(world_spdf$admin), origin = "country.name", destination = "country.name")
 
 
 data_wwbi     <- read_dta(file.path(data_path, "Data/data_wwbi.dta"))
