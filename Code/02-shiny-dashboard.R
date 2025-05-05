@@ -60,6 +60,9 @@ gdp_2015     <- read_dta(file.path(data_path, "Data/gdp_2015.dta"))
 world_spdf <- st_read(file.path(data_path, "Data/world_spatial.gpkg"))
 
 
+world_sf <- wbggeo::get_map_data("countries") 
+
+
 selected_data_long     <- read_dta(file.path(data_path, "Data/selected_data_long.dta"))
 
 
