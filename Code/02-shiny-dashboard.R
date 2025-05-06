@@ -2208,7 +2208,10 @@ server <- function(input, output, session) {
       type = "scatter",
       mode = "markers",
       marker = list(size = 10, opacity = 0.8, color = ~color),
-      text = ~paste0("Country: ", country_name, "<br>Wage Premium: ", round(value_percentage, 1), "%"),
+      text = ~paste("Country:", country_name,
+                    "Indicator:", indicator_name,
+                    "Value:", round(value_percentage, 1), "%",
+                    "Year:", year),
       hoverinfo = "text"
     ) %>%
       layout(
@@ -2453,9 +2456,10 @@ server <- function(input, output, session) {
                     y = ~value_percentage,
                     type = 'bar',
                     color = I("#0072B2"),
-                    text = ~paste("Country: ", country_name, 
-                                  "<br>Last year available: ", year, 
-                                  "<br>Employment (%): ", round(value_percentage, 2)),
+                    text = ~paste("Country:", country_name,
+                                  "Indicator:", indicator_name,
+                                  "Value:", round(value_percentage, 1), "%",
+                                  "Year:", year),
                     hoverinfo = "text",
                     name = "Public Sector",
                     showlegend = TRUE) %>%
@@ -2821,6 +2825,13 @@ server <- function(input, output, session) {
     )
     
     # Create the bar plot
+    filtered_data$text <- paste(
+      "Country:", filtered_data$country_name,
+      "Indicator:", filtered_data$indicator_name,
+      "Value:", round(filtered_data$value_percentage, 1), "%",
+      "Year:", filtered_data$year
+    )
+    
     p <- ggplot(filtered_data, aes(x = indicator_name, y = value_percentage, fill = indicator_name)) +
       geom_bar(stat = "identity") +
       scale_fill_manual(values = education_colors) +
@@ -2832,7 +2843,7 @@ server <- function(input, output, session) {
       ) +
       theme_minimal()
     
-    ggplotly(p)  # Convert ggplot to Plotly for interactivity
+    ggplotly(p, tooltip = "text")  # Convert ggplot to Plotly for interactivity
   })
   
   output$note_education_wage_premium <- renderText({
@@ -3072,13 +3083,22 @@ server <- function(input, output, session) {
     }
     
     # Otherwise, generate the plot
+    
+    filtered_data$text <- paste(
+      "Country:", filtered_data$country_name,
+      "Indicator:", filtered_data$indicator_label,
+      "Value:", round(filtered_data$value_percentage, 1), "%",
+      "Year:", filtered_data$year
+    )
+    
+    
     ggplotly(
-      ggplot(filtered_data, aes(x = country_name, y = value_percentage, color = indicator_label)) +
+      ggplot(filtered_data, aes(x = country_name, y = value_percentage, color = indicator_label, text = text)) +
         geom_point(size = 4) +
         scale_color_manual(values = c(
-          "as a share of formal employment" = "#E69F00",  # Orange
-          "as a share of paid employment"   = "#56B4E9",  # Sky Blue
-          "as a share of total employment"  = "#009E73"   # Bluish Green
+          "as a share of formal employment" = "#E69F00",
+          "as a share of paid employment"   = "#56B4E9",
+          "as a share of total employment"  = "#009E73"
         )) +
         labs(
           title = "Public Sector Employment (Last Year Available)", 
@@ -3088,8 +3108,9 @@ server <- function(input, output, session) {
         ) +
         theme_minimal() +
         theme(axis.text.x = element_text(angle = 45, hjust = 1))
-    ) %>% 
+      , tooltip = "text") %>%
       layout(legend = list(title = list(text = "Indicator")))
+    
   })
   
   
@@ -3401,8 +3422,16 @@ server <- function(input, output, session) {
     }
     
     # Create the actual plot
+    filtered_data$text <- paste(
+      "Country:", filtered_data$country_name,
+      "Gender:", filtered_data$indicator_label,
+      "Wage Premium:", round(filtered_data$value_percentage, 1), "%",
+      "Year:", filtered_data$year
+    )
+    
+    
     ggplotly(
-      ggplot(filtered_data, aes(x = country_name, y = value_percentage, color = indicator_label)) +
+      ggplot(filtered_data, aes(x = country_name, y = value_percentage, color = indicator_label, text = text)) +
         geom_point(size = 4) +
         scale_color_manual(values = c(
           "Male" = "#E69F00",    # Orange
@@ -3414,7 +3443,8 @@ server <- function(input, output, session) {
           y = "Wage Premium (%)",
           color = "Indicator"
         ) +
-        theme_minimal()
+        theme_minimal(),
+      tooltip = "text"
     )
   })
   
@@ -3777,8 +3807,17 @@ server <- function(input, output, session) {
                                                       "as a share of public paid employees"))
     
     # Create the grouped bar chart
+    
+    filtered_data$text <- paste(
+      "Country:", filtered_data$country_name,
+      "Sector:", filtered_data$indicator_name,
+      "Employment:", round(filtered_data$value_percentage, 1), "%",
+      "Year:", filtered_data$year
+    )
+    
+    
     ggplotly(
-      ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
+      ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_name, text = text)) +
         geom_bar(stat = "identity", position = "dodge") +
         scale_fill_manual(values = c(
           "as a share of private paid employees" = "#E69F00",  # Orange
@@ -3790,7 +3829,8 @@ server <- function(input, output, session) {
           y = "Employment (%)", 
           fill = "Sector"
         ) +
-        theme_minimal()
+        theme_minimal(),
+      tooltip = "text"
     )
   })
   
