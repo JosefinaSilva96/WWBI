@@ -1679,9 +1679,9 @@ server <- function(input, output, session) {
             color = ~indicator_name,
             type = "bar",
             text = ~paste("Country:", country_name,
-                          "-Indicator:", indicator_name,
-                          "-Value:", round(value_percentage, 1), "%",
-                          "-Year:", year),
+                          "Indicator:", indicator_name,
+                          "Value:", round(value_percentage, 1), "%",
+                          "Year:", year),
             textposition = "auto",
             colors = color_blind_palette) %>%
       layout(
@@ -1983,7 +1983,10 @@ server <- function(input, output, session) {
       plot_ly(x = ~country_name, y = ~value_percentage, 
               color = ~indicator_name, colors = custom_colors, 
               type = 'bar', barmode = 'group',
-              text = ~paste0(round(value_percentage, 1), "%"),
+              text = ~paste("Country:", country_name,
+                            "Indicator:", indicator_name,
+                            "Value:", round(value_percentage, 1), "%",
+                            "Year:", year),
               textposition = "auto") %>%
       layout(
         title = "Workers with Tertiary Education by Sector and Country",
