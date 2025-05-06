@@ -2207,9 +2207,8 @@ server <- function(input, output, session) {
       y = ~value_percentage,
       type = "scatter",
       mode = "markers",
-      marker = list(size = 10, opacity = 0.8, color = ~color),
+      marker = list(size = 10, opacity = 0.8),
       text = ~paste("Country:", country_name,
-                    "Indicator:", indicator_name,
                     "Value:", round(value_percentage, 1), "%",
                     "Year:", year),
       hoverinfo = "text"
@@ -4798,13 +4797,7 @@ server <- function(input, output, session) {
         y = ~Public_Sector,
         type = "scatter",
         mode = "markers+text",
-        text = ~paste(
-          "Country:", country_name,
-          "Private Sector:", round(Private_Sector, 1),
-          "Public Sector:", round(Public_Sector, 1),
-          "Year:", year
-        ),
-        hoverinfo = "text",
+        text = ~country_name,
         textposition = "top center",
         marker = list(size = 10, color = ~color, opacity = 0.7)
       ) %>%
@@ -4824,7 +4817,6 @@ server <- function(input, output, session) {
         plot_bgcolor = "white",
         paper_bgcolor = "white"
       )
-    
   })
   
   
