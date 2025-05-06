@@ -60,9 +60,6 @@ gdp_2015     <- read_dta(file.path(data_path, "Data/gdp_2015.dta"))
 world_spdf <- st_read(file.path(data_path, "Data/world_spatial.gpkg"))
 
 
-world_sf <- wbggeo::get_map_data("countries") 
-
-
 selected_data_long     <- read_dta(file.path(data_path, "Data/selected_data_long.dta"))
 
 
@@ -1682,8 +1679,9 @@ server <- function(input, output, session) {
             color = ~indicator_name,
             type = "bar",
             text = ~paste("Country:", country_name,
-                          "<br>Indicator:", indicator_name,
-                          "<br>Value:", round(value_percentage, 1), "%"),
+                          "-Indicator:", indicator_name,
+                          "-Value:", round(value_percentage, 1), "%",
+                          "-Year:", year),
             textposition = "auto",
             colors = color_blind_palette) %>%
       layout(
