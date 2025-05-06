@@ -2174,7 +2174,7 @@ server <- function(input, output, session) {
     # Filter dataset & select only relevant columns
     filtered_data <- public_wage_premium %>% 
       filter(country_name %in% input$countries_wage_premium) %>%
-      select(country_name, value_percentage) %>%
+      select(country_name, value_percentage, year) %>%
       drop_na(value_percentage)  # Remove any NA values
     
     # Fallback if no data
@@ -2207,12 +2207,13 @@ server <- function(input, output, session) {
       y = ~value_percentage,
       type = "scatter",
       mode = "markers",
-      marker = list(size = 10, opacity = 0.8),
-      text = ~paste("Country:", country_name,
-                    "Value:", round(value_percentage, 1), "%",
-                    "Year:", year),
-      hoverinfo = "text"
-    ) %>%
+      marker = list(size = 10, opacity = 0.8, color = ~color),
+      text = ~paste(
+        "Country:", filtered_data$country_name,
+        "Value:", round(filtered_data$value_percentage, 1), "%",
+        "<br>Year:", filtered_data$year
+      )
+      ) %>%
       layout(
         title = "Public Sector Wage Premium (Compared to All Private Employees) by Country",
         xaxis = list(title = "Country"),
