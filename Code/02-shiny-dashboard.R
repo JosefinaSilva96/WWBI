@@ -4162,7 +4162,14 @@ server <- function(input, output, session) {
         "Managers-Private" = "#F0E442"  # yellow
       ),
       type = 'bar',
-      barmode = 'group'
+      barmode = 'group',
+      text = ~paste(
+        "Country:", country_name,
+        "Group-Sector:", indicator_label,
+        "Female Share:", round(value_percentage, 1), "%",
+        "Year:", year
+      ),
+      hoverinfo = "text"
     ) %>%
       layout(
         title = "Females by Occupational Group and Sector",
@@ -4170,6 +4177,7 @@ server <- function(input, output, session) {
         yaxis = list(title = "Female Share (%)"),
         bargap = 0.2
       )
+    
   })
   
   
@@ -4422,7 +4430,7 @@ server <- function(input, output, session) {
         ggplot() + 
           theme_void() +
           annotate("text", x = 0.5, y = 0.5, label = "No data available for the selected country/countries.",
-                   size = 6, color = "red", hjust = 0.5, vjust = 0.5)
+                   size = 6, color = "grey", hjust = 0.5, vjust = 0.5)
       )
     }
     
@@ -4790,7 +4798,13 @@ server <- function(input, output, session) {
         y = ~Public_Sector,
         type = "scatter",
         mode = "markers+text",
-        text = ~country_name,
+        text = ~paste(
+          "Country:", country_name,
+          "Private Sector:", round(Private_Sector, 1),
+          "Public Sector:", round(Public_Sector, 1),
+          "Year:", year
+        ),
+        hoverinfo = "text",
         textposition = "top center",
         marker = list(size = 10, color = ~color, opacity = 0.7)
       ) %>%
@@ -4810,6 +4824,7 @@ server <- function(input, output, session) {
         plot_bgcolor = "white",
         paper_bgcolor = "white"
       )
+    
   })
   
   
