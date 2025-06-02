@@ -95,6 +95,7 @@ data_wwbi[, wb_region := countrycode(country_name, origin = "country.name", dest
 
 unique(data_wwbi[, .(country_name, wb_region)])
 
+
 # Manually assign continent for unmatched countries
 
 
