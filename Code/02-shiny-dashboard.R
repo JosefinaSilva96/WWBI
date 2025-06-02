@@ -9,7 +9,7 @@ packages <- unique(c(
   "ggplot2", "shiny", "shinythemes", "DT", "maps", "mapdata",
   "leaflet", "rnaturalearth", "sf", "plotly", "officer",
   "viridis", "here", "glue", "colourpicker", "wbstats", "htmlwidgets",
-  "bs4Dash", "countrycode", "bslib", "ggthemes", "wbgmaps"
+  "bs4Dash", "countrycode", "bslib", "ggthemes"
 ))
 
 # Function to check and install missing packages
