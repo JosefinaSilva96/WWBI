@@ -2,34 +2,36 @@
 
 ### Libraries
 
-# Unique list of required packages
-
-packages <- unique(c(
-  "haven", "dplyr", "tidyr", "stringr", "labelled", "data.table",
-  "ggplot2", "shiny", "shinythemes", "DT", "maps", "mapdata",
-  "leaflet", "rnaturalearth", "sf", "plotly", "officer",
-  "viridis", "here", "glue", "colourpicker", "wbstats", "htmlwidgets",
-  "bs4Dash", "countrycode", "bslib", "ggthemes"
-))
-
-# Function to check and install missing packages
-install_if_missing <- function(pkg) {
-  if (!requireNamespace(pkg, quietly = TRUE)) {
-    message(paste("Installing", pkg, "..."))
-    install.packages(pkg, dependencies = TRUE)
-  }
-}
-
-# Install missing packages
-lapply(packages, install_if_missing)
-
-# Load all libraries
-lapply(packages, function(pkg) {
-  message(paste("Loading", pkg, "..."))
-  library(pkg, character.only = TRUE)
-})
-
-
+library(haven)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(labelled)
+library(data.table)
+library(ggplot2)
+library(shinydashboard)
+library(shiny)
+library(shinythemes)
+library(DT)
+library(maps)
+library(mapdata)
+library(leaflet)
+library(rnaturalearth)
+library(sf)
+library(plotly)
+library(officer)
+library(flextable)
+library(viridis)
+library(here)
+library(glue)
+library(colourpicker)
+library(wbstats)
+library(htmlwidgets)
+library(bs4Dash)
+library(countrycode)
+library(bslib)
+library(lubridate)
+library(scales)
 
 ### Load data sets ----
 
