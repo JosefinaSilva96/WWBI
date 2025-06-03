@@ -129,113 +129,135 @@ ui <- dashboardPage(
   skin = "#009FDA",
   
   dashboardHeader(title = "WWBI Dashboard"),
-  
   dashboardSidebar(
     width = 280,
     
     tags$head(
-      # Custom CSS
       tags$style(HTML("
-        body, .container-fluid, .main-container, .content-wrapper, .flex-grow-1 {
-          background-color: #356088 !important;
-          color: white !important;
-        }
+      /* Global content background and text */
+      body, .container-fluid, .main-container, .content-wrapper, .flex-grow-1 {
+        background-color: #356088 !important;
+        color: white !important;
+      }
 
-        h1, h2, h3, h4, h5, h6, p, .well, .card, .panel, .info-box, .custom-info-box, .box {
-          color: white !important;
-          background-color: transparent !important;
-          border: none !important;
-        }
+      h1, h2, h3, h4, h5, h6, p, .well, .card, .panel, .info-box, .custom-info-box, .box {
+        color: white !important;
+        background-color: transparent !important;
+        border: none !important;
+      }
 
-        .well, .panel {
-          background-color: #356088 !important;
-          border: 1px solid #6fa8dc !important;
-          border-radius: 8px;
-        }
+      .well, .panel {
+        background-color: #356088 !important;
+        border: 1px solid #6fa8dc !important;
+        border-radius: 8px;
+      }
 
-        .btn, .btn-primary {
-          background-color: #6fa8dc !important;
-          border: none !important;
-        }
+      .btn, .btn-primary {
+        background-color: #6fa8dc !important;
+        border: none !important;
+      }
 
-        .btn:hover {
-          background-color: #4a90c2 !important;
-        }
+      .btn:hover {
+        background-color: #4a90c2 !important;
+      }
 
-        a, a:hover {
-          color: #ffffff !important;
-          text-decoration: underline;
-        }
+      a, a:hover {
+        color: #ffffff !important;
+        text-decoration: underline;
+      }
 
-        #sidebar {
-          height: 100vh;
-          width: 280px;
-          min-width: 280px;
-          background-color: #2b4c66;
-          padding: 20px;
-          color: white;
-          overflow-y: auto;
-        }
+      /* SIDEBAR OVERRIDES */
 
-        .nav-item {
-          display: block;
-          margin: 10px 0;
-          padding: 10px 15px;
-          font-size: 17px;
-          font-weight: bold;
-          color: white;
-          background-color: transparent;
-          border-radius: 6px;
-          text-decoration: none;
-          transition: background 0.2s;
-        }
+      /* Make the sidebar background dark */
+      .main-sidebar {
+        background-color: #2b4c66 !important;
+      }
 
-        .nav-item:hover {
-          background-color: rgba(255, 255, 255, 0.1);
-          cursor: pointer;
-        }
+      /* Make sure all text in the sidebar is white */
+      .main-sidebar,
+      .main-sidebar .nav-item,
+      .main-sidebar .nav-sub-item,
+      .main-sidebar a,
+      .main-sidebar .nav-section {
+        color: white !important;
+      }
 
-        .nav-sub-item {
-          margin-left: 10px;
-          margin-bottom: 6px;
-          padding: 6px 12px;
-          font-size: 15px;
-          font-weight: normal;
-          color: white;
-          text-decoration: none;
-          display: block;
-          border-radius: 4px;
-        }
+      /* Hover state for links */
+      .main-sidebar a:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: white !important;
+      }
 
-        .nav-sub-item:hover {
-          background-color: rgba(255, 255, 255, 0.1);
-          cursor: pointer;
-        }
+      /* Custom sidebar structure */
+      #sidebar {
+        height: 100vh;
+        width: 280px;
+        min-width: 280px;
+        background-color: #2b4c66;
+        padding: 20px;
+        color: white;
+        overflow-y: auto;
+      }
 
-        .nav-item.active, .nav-sub-item.active {
-          background-color: #6fa8dc !important;
-          color: white !important;
-        }
+      .nav-item {
+        display: block;
+        margin: 10px 0;
+        padding: 10px 15px;
+        font-size: 17px;
+        font-weight: bold;
+        color: white;
+        background-color: transparent;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: background 0.2s;
+      }
 
-        .nav-section {
-          font-size: 18px;
-          font-weight: bold;
-          margin-top: 25px;
-          margin-bottom: 10px;
-          color: white;
-          padding-left: 5px;
-        }
+      .nav-item:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        cursor: pointer;
+      }
 
-        #macro_section, 
-        #public_sector_section, 
-        #public_sector_workforce_section, 
-        #public_sector_wages_section,
-        #equity_public_sector_section {
-          padding-left: 15px;
-          display: none;
-        }
-      ")),
-      
+      .nav-sub-item {
+        margin-left: 10px;
+        margin-bottom: 6px;
+        padding: 6px 12px;
+        font-size: 15px;
+        font-weight: normal;
+        color: white;
+        text-decoration: none;
+        display: block;
+        border-radius: 4px;
+      }
+
+      .nav-sub-item:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        cursor: pointer;
+      }
+
+      .nav-item.active, .nav-sub-item.active {
+        background-color: #6fa8dc !important;
+        color: white !important;
+      }
+
+      .nav-section {
+        font-size: 18px;
+        font-weight: bold;
+        margin-top: 25px;
+        margin-bottom: 10px;
+        color: white;
+        padding-left: 5px;
+      }
+
+      #macro_section, 
+      #public_sector_section, 
+      #public_sector_workforce_section, 
+      #public_sector_wages_section,
+      #equity_public_sector_section {
+        padding-left: 15px;
+        display: none;
+      }
+    "))
+    ),
       # JavaScript to toggle sections
       tags$script(HTML("
         function toggleSection(sectionId) {
@@ -279,7 +301,7 @@ ui <- dashboardPage(
     ),
     
     div(class = "nav-item", actionLink("nav_download_all", "📥 Download All Graphs"))
-  ),
+  )
   
   dashboardBody(
     div(class = "p-4",
@@ -287,4 +309,3 @@ ui <- dashboardPage(
         uiOutput("main_content")
     )
   )
-)
