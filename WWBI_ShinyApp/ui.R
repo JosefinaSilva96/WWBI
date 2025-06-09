@@ -129,6 +129,7 @@ ui <- dashboardPage(
   skin = "#009FDA",
   
   dashboardHeader(title = "WWBI Dashboard"),
+  
   dashboardSidebar(
     width = 280,
     
@@ -136,9 +137,16 @@ ui <- dashboardPage(
       tags$style(HTML("
       /* Global content background and text */
       body, .container-fluid, .main-container, .content-wrapper, .flex-grow-1 {
-        background-color: #356088 !important;
+        background-color: #4a90c2 !important;
         color: white !important;
       }
+      /* Title text in the top navbar */
+        .main-header .logo {
+          color: white !important;
+          font-weight: bold !important;
+          font-size: 20px !important;
+        }
+      
 
       h1, h2, h3, h4, h5, h6, p, .well, .card, .panel, .info-box, .custom-info-box, .box {
         color: white !important;
@@ -147,13 +155,13 @@ ui <- dashboardPage(
       }
 
       .well, .panel {
-        background-color: #356088 !important;
-        border: 1px solid #6fa8dc !important;
+        background-color: #4a90c2 !important;
+        border: 1px solid #4a90c2 !important;
         border-radius: 8px;
       }
 
       .btn, .btn-primary {
-        background-color: #6fa8dc !important;
+        background-color: #4a90c2 !important;
         border: none !important;
       }
 
@@ -167,13 +175,10 @@ ui <- dashboardPage(
       }
 
       /* SIDEBAR OVERRIDES */
-
-      /* Make the sidebar background dark */
       .main-sidebar {
-        background-color: #2b4c66 !important;
+        background-color: #4a90c2 !important;
       }
 
-      /* Make sure all text in the sidebar is white */
       .main-sidebar,
       .main-sidebar .nav-item,
       .main-sidebar .nav-sub-item,
@@ -182,18 +187,16 @@ ui <- dashboardPage(
         color: white !important;
       }
 
-      /* Hover state for links */
       .main-sidebar a:hover {
         background-color: rgba(255, 255, 255, 0.1);
         color: white !important;
       }
 
-      /* Custom sidebar structure */
       #sidebar {
         height: 100vh;
         width: 280px;
         min-width: 280px;
-        background-color: #2b4c66;
+        background-color: #4a90c2;
         padding: 20px;
         color: white;
         overflow-y: auto;
@@ -256,9 +259,8 @@ ui <- dashboardPage(
         padding-left: 15px;
         display: none;
       }
-    "))
-    ),
-      # JavaScript to toggle sections
+    ")),
+      
       tags$script(HTML("
         function toggleSection(sectionId) {
           var section = document.getElementById(sectionId);
@@ -301,7 +303,7 @@ ui <- dashboardPage(
     ),
     
     div(class = "nav-item", actionLink("nav_download_all", "📥 Download All Graphs"))
-  )
+  ),
   
   dashboardBody(
     div(class = "p-4",
@@ -309,3 +311,4 @@ ui <- dashboardPage(
         uiOutput("main_content")
     )
   )
+)

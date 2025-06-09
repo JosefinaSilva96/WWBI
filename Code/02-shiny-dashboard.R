@@ -63,7 +63,7 @@ world_spdf <- st_read(file.path(data_path, "Data/world_spatial.gpkg"))
 selected_data_long     <- read_dta(file.path(data_path, "Data/selected_data_long.dta"))
 
 
-data_wwbi_long     <- read_dta(file.path(data_path, "Data/data_wwbi_long.dta"))
+data_wwbi_long <- haven::read_dta(file.path(data_path, "Data/data_wwbi_long.dta"))
 
 
 wage_bill_publicexp     <- read_dta(file.path(data_path, "Data/wage_bill_publicexp.dta"))
