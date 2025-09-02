@@ -125,177 +125,166 @@ pay_compression_wide <- readRDS(file.path(data_path, "Data", "pay_compression_wi
 # UI
 # ---------------------------
 
+library(shinydashboard)
+
 ui <- dashboardPage(
-  skin = "#356088",
+  skin = "blue",  # shinydashboard accepts named skins only
   
   dashboardHeader(title = "WWBI Dashboard"),
   
   dashboardSidebar(
     width = 280,
     
-    tags$head(
-      tags$style(HTML("
-      /* Global content background and text */
-      body, .container-fluid, .main-container, .content-wrapper, .flex-grow-1 {
-        background-color: #4a90c2 !important;
-        color: white !important;
-      }
-      /* Title text in the top navbar */
-        .main-header .logo {
-          color: white !important;
-          font-weight: bold !important;
-          font-size: 20px !important;
-        }
-      
-
-      h1, h2, h3, h4, h5, h6, p, .well, .card, .panel, .info-box, .custom-info-box, .box {
-        color: white !important;
-        background-color: transparent !important;
-        border: none !important;
+    # ---------- Styles ----------
+    tags$head(tags$style(HTML("
+      :root{
+        --bg:#0f3352;         /* content background */
+        --sidebar1:#2b4c66;   /* sidebar gradient top */
+        --sidebar2:#243d55;   /* sidebar gradient bottom */
+        --accent:#6fa8dc;     /* brand accent */
+        --header:#183a5a;     /* header/nav bar */
       }
 
-      .well, .panel {
-        background-color: #4a90c2 !important;
-        border: 1px solid #4a90c2 !important;
-        border-radius: 8px;
+      /* Header */
+      .main-header .logo,
+      .main-header .navbar { background-color: var(--header) !important; }
+      .main-header .logo { color:#fff !important; font-weight:700; }
+      .main-header .navbar .sidebar-toggle { color:#fff !important; }
+
+      /* Content canvas (don't set body—let header keep its color) */
+      .content-wrapper, .right-side {
+        background: var(--bg) !important;
+        color: #fff !important;
       }
 
-      .btn, .btn-primary {
-        background-color: #4a90c2 !important;
-        border: none !important;
+      h1,h2,h3,h4,h5,h6,p,.well,.panel,.box {
+        color:#fff !important; background:transparent !important; border:none !important;
+      }
+      .well,.panel{ border:1px solid var(--accent) !important; border-radius:10px; }
+
+      .btn,.btn-primary{ background:var(--accent) !important; border:none !important; }
+      .btn:hover{ background:#4a90c2 !important; }
+      a{ color:#fff !important; text-decoration:none; }
+      a:hover{ text-decoration:underline; }
+
+      /* ---------- Sidebar ---------- */
+      .main-sidebar{
+        background:linear-gradient(180deg,var(--sidebar1) 0%, var(--sidebar2) 100%) !important;
+        color:#e8f0fb !important;
+        border-right:1px solid rgba(255,255,255,.08);
+        box-shadow:inset 0 0 12px rgba(0,0,0,.25);
+      }
+      .sidebar{ padding:14px 10px; }   /* inner container */
+
+      /* custom scrollbar */
+      .main-sidebar::-webkit-scrollbar{ width:8px; }
+      .main-sidebar::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.25); border-radius:8px; }
+
+      /* top-level items */
+      .nav-item{
+        display:flex; align-items:center; gap:10px;
+        margin:6px; padding:10px 12px; border-radius:10px;
+        font-size:16px; font-weight:600; color:#eef5ff;
+        transition:transform .08s, background .2s;
+      }
+      .nav-item:hover{ background:rgba(255,255,255,.08); transform:translateX(2px); }
+      .nav-item.active{
+        background:rgba(111,168,220,.22);
+        box-shadow:inset 0 0 0 1px rgba(111,168,220,.5);
+        position:relative;
+      }
+      .nav-item.active::before{
+        content:''; position:absolute; left:-6px; top:10px; bottom:10px;
+        width:4px; border-radius:4px; background:var(--accent);
       }
 
-      .btn:hover {
-        background-color: #4a90c2 !important;
+      /* section headers (click to expand) */
+      .nav-section{
+        display:flex; align-items:center; gap:8px;
+        margin:14px 6px 6px; padding:10px; border-radius:8px;
+        font-weight:700; color:#dbe7ff; cursor:pointer;
+        transition:background .2s;
       }
+      .nav-section:hover{ background:rgba(255,255,255,.06); }
+      .nav-section .caret{ margin-left:auto; transition:transform .2s; opacity:.9; }
+      .nav-section.open .caret{ transform:rotate(180deg); }
 
-      a, a:hover {
-        color: #ffffff !important;
-        text-decoration: underline;
+      /* sub items */
+      .nav-sub{
+        padding:4px 6px 6px 14px; margin-left:6px;
+        border-left:1px dashed rgba(255,255,255,.15); display:none;
       }
+      .nav-sub-item{
+        display:flex; align-items:center; gap:8px;
+        margin:4px 0; padding:8px 10px; border-radius:8px;
+        font-size:15px; color:#eaf3ff; transition:background .2s, transform .08s;
+      }
+      .nav-sub-item:hover{ background:rgba(255,255,255,.06); transform:translateX(2px); }
+      .nav-sub-item.active{ background:rgba(111,168,220,.20); }
 
-      /* SIDEBAR OVERRIDES */
-      .main-sidebar {
-        background-color: #4a90c2 !important;
-      }
-
-      .main-sidebar,
-      .main-sidebar .nav-item,
-      .main-sidebar .nav-sub-item,
-      .main-sidebar a,
-      .main-sidebar .nav-section {
-        color: white !important;
-      }
-
-      .main-sidebar a:hover {
-        background-color: rgba(255, 255, 255, 0.1);
-        color: white !important;
-      }
-
-      #sidebar {
-        height: 100vh;
-        width: 280px;
-        min-width: 280px;
-        background-color: #4a90c2;
-        padding: 20px;
-        color: white;
-        overflow-y: auto;
-      }
-
-      .nav-item {
-        display: block;
-        margin: 10px 0;
-        padding: 10px 15px;
-        font-size: 17px;
-        font-weight: bold;
-        color: white;
-        background-color: transparent;
-        border-radius: 6px;
-        text-decoration: none;
-        transition: background 0.2s;
-      }
-
-      .nav-item:hover {
-        background-color: rgba(255, 255, 255, 0.1);
-        cursor: pointer;
-      }
-
-      .nav-sub-item {
-        margin-left: 10px;
-        margin-bottom: 6px;
-        padding: 6px 12px;
-        font-size: 15px;
-        font-weight: normal;
-        color: white;
-        text-decoration: none;
-        display: block;
-        border-radius: 4px;
-      }
-
-      .nav-sub-item:hover {
-        background-color: rgba(255, 255, 255, 0.1);
-        cursor: pointer;
-      }
-
-      .nav-item.active, .nav-sub-item.active {
-        background-color: #6fa8dc !important;
-        color: white !important;
-      }
-
-      .nav-section {
-        font-size: 18px;
-        font-weight: bold;
-        margin-top: 25px;
-        margin-bottom: 10px;
-        color: white;
-        padding-left: 5px;
-      }
-
-      #macro_section, 
-      #public_sector_section, 
-      #public_sector_workforce_section, 
-      #public_sector_wages_section,
-      #equity_public_sector_section {
-        padding-left: 15px;
-        display: none;
-      }
-    ")),
-      
-      tags$script(HTML("
-        function toggleSection(sectionId) {
-          var section = document.getElementById(sectionId);
-          section.style.display = section.style.display === 'none' ? 'block' : 'none';
-        }
-      "))
-    ),
+      .nav-item a, .nav-sub-item a{ color:inherit; text-decoration:none; width:100%; }
+    "))),
     
-    # Sidebar content
+    # ---------- Sidebar toggle JS ----------
+    tags$head(tags$script(HTML("
+      function toggleSection(id){
+        const sec = document.getElementById(id);
+        const hdr = document.querySelector('[data-target=\"'+id+'\"]');
+        if(!sec || !hdr) return;
+        const show = (sec.style.display === 'none' || sec.style.display === '');
+        sec.style.display = show ? 'block' : 'none';
+        hdr.classList.toggle('open', show);
+      }
+      document.addEventListener('click', function(e){
+        const top = e.target.closest('.nav-item');
+        const sub = e.target.closest('.nav-sub-item');
+        if(top){
+          document.querySelectorAll('.main-sidebar .nav-item').forEach(n=>n.classList.remove('active'));
+          top.classList.add('active');
+        }
+        if(sub){
+          document.querySelectorAll('.main-sidebar .nav-sub-item').forEach(n=>n.classList.remove('active'));
+          sub.classList.add('active');
+        }
+      }, true);
+    "))),
+    
+    
+    # ---------- Your custom sidebar content ----------
     div(class = "nav-item", actionLink("nav_dashboard", "Overview")),
     div(class = "nav-item", actionLink("nav_instructions", "Instructions")),
     div(class = "nav-item", actionLink("nav_metadata", "Metadata")),
     
-    div(class = "nav-section", onclick = "toggleSection('macro_section')", "Macro Fundamentals of the Public Sector"),
-    div(id = "macro_section",
+    div(class = "nav-section", `data-target`="macro_section",
+        span("Macro Fundamentals of the Public Sector"), span(class="caret","▾"),
+        onclick = "toggleSection('macro_section')"),
+    div(id = "macro_section", class="nav-sub",
         div(class = "nav-sub-item", actionLink("nav_wagebill", "Wage Bill Graphs")),
         div(class = "nav-sub-item", actionLink("nav_wagebill_gdp", "Wage Bill & GDP Graphs"))
     ),
     
-    div(class = "nav-section", onclick = "toggleSection('public_sector_section')", "Size and Characteristics of the Public Sector"),
-    div(id = "public_sector_section",
+    div(class = "nav-section", `data-target`="public_sector_section",
+        span("Size and Characteristics of the Public Sector"), span(class="caret","▾"),
+        onclick = "toggleSection('public_sector_section')"),
+    div(id = "public_sector_section", class="nav-sub",
         div(class = "nav-sub-item", actionLink("nav_public_graphs", "Public Employment")),
         div(class = "nav-sub-item", actionLink("nav_public_workforce", "Employment Distribution")),
         div(class = "nav-sub-item", actionLink("nav_education", "Tertiary Education"))
     ),
     
-    div(class = "nav-section", onclick = "toggleSection('public_sector_wages_section')", "Competitiveness of Public Sector Wages"),
-    div(id = "public_sector_wages_section",
+    div(class = "nav-section", `data-target`="public_sector_wages_section",
+        span("Competitiveness of Public Sector Wages"), span(class="caret","▾"),
+        onclick = "toggleSection('public_sector_wages_section')"),
+    div(id = "public_sector_wages_section", class="nav-sub",
         div(class = "nav-sub-item", actionLink("nav_wagepremium", "Wage Premium")),
         div(class = "nav-sub-item", actionLink("nav_public_educ", "Wage Premium by Education")),
         div(class = "nav-sub-item", actionLink("nav_pay_compression", "Pay Compression"))
     ),
     
-    div(class = "nav-section", onclick = "toggleSection('equity_public_sector_section')", "Equity in Public Sector"),
-    div(id = "equity_public_sector_section",
+    div(class = "nav-section", `data-target`="equity_public_sector_section",
+        span("Equity in Public Sector"), span(class="caret","▾"),
+        onclick = "toggleSection('equity_public_sector_section')"),
+    div(id = "equity_public_sector_section", class="nav-sub",
         div(class = "nav-sub-item", actionLink("nav_gender_workforce", "Female Employment")),
         div(class = "nav-sub-item", actionLink("nav_female_leadership", "Female Leadership")),
         div(class = "nav-sub-item", actionLink("nav_wagepremium_gender", "Wage Premium by Gender")),
