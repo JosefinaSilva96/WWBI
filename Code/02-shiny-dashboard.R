@@ -8,7 +8,7 @@ packages <- unique(c(
   "haven", "dplyr", "tidyr", "stringr", "labelled", "data.table",
   "ggplot2", "shiny", "shinythemes", "DT", "maps", "mapdata",
   "leaflet", "rnaturalearth", "sf", "plotly", "officer",
-  "viridis", "here", "glue", "colourpicker", "wbstats", "htmlwidgets",
+  "viridis", "here", "glue", "colourpicker", "htmlwidgets",
   "bs4Dash", "countrycode", "bslib", "ggthemes"
 ))
 
