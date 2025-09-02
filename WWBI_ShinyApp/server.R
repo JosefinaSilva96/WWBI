@@ -1,3 +1,4 @@
+# SERVER
 
 #Load data sets 
 
@@ -5160,7 +5161,6 @@ server <- function(input, output, session) {
   })
   
 }
-
 
 
 
