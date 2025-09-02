@@ -126,7 +126,7 @@ pay_compression_wide <- readRDS(file.path(data_path, "Data", "pay_compression_wi
 # ---------------------------
 
 ui <- dashboardPage(
-  skin = "#009FDA",
+  skin = "#356088",
   
   dashboardHeader(title = "WWBI Dashboard"),
   

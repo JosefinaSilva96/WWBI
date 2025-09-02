@@ -9,7 +9,7 @@ packages <- unique(c(
   "ggplot2", "shiny", "shinythemes", "DT", "maps", "mapdata",
   "leaflet", "rnaturalearth", "sf", "plotly", "officer",
   "viridis", "here", "glue", "colourpicker", "htmlwidgets",
-  "bs4Dash", "countrycode", "bslib", "ggthemes"
+  "bs4Dash", "countrycode", "bslib", "ggthemes", "bslib"
 ))
 
 # Function to check and install missing packages
@@ -131,8 +131,9 @@ pay_compression_wide <- readRDS(file.path(data_path, "Data", "pay_compression_wi
 # ---------------------------
 
 ui <- bootstrapPage(
-  theme = bs_theme(version = 5, bootswatch = 'sandstone'),
+  theme = bs_theme(version = 5, bootswatch = "sandstone"),
   
+  # ------- Your styles (unchanged) -------
   tags$style(HTML("
   /* General page background and text color */
   body, .container-fluid, .main-container, .content-wrapper, .flex-grow-1 {
@@ -159,88 +160,82 @@ ui <- bootstrapPage(
     background-color: #6fa8dc !important;
     border: none !important;
   }
-
-  .btn:hover {
-    background-color: #4a90c2 !important;
-  }
+  .btn:hover { background-color: #4a90c2 !important; }
 
   /* Link styling */
-  a, a:hover {
-    color: #ffffff !important;
-    text-decoration: underline;
-  }
+  a, a:hover { color: #ffffff !important; text-decoration: underline; }
 
   /* Sidebar styles */
   #sidebar {
     height: 100vh;
-     width: 280px; /* Increased width */
-     min-width: 280px;
-    background-color: #2b4c66; /* Adjusted to match main background */
+    width: 280px; min-width: 280px;
+    background-color: #2b4c66;
     padding: 20px;
     color: white;
     overflow-y: auto;
   }
-
   .nav-item {
-    display: block;
-    margin: 10px 0;
-    padding: 10px 15px;
-    font-size: 17px;
-    font-weight: bold;
-    color: white;
-    background-color: transparent;
-    border-radius: 6px;
-    text-decoration: none;
-    transition: background 0.2s;
+    display: block; margin: 10px 0; padding: 10px 15px;
+    font-size: 17px; font-weight: bold; color: white;
+    background-color: transparent; border-radius: 6px;
+    text-decoration: none; transition: background 0.2s;
   }
-
-  .nav-item:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    cursor: pointer;
-  }
+  .nav-item:hover { background-color: rgba(255,255,255,0.1); cursor: pointer; }
 
   .nav-sub-item {
-    margin-left: 10px;
-    margin-bottom: 6px;
-    padding: 6px 12px;
-    font-size: 15px;
-    font-weight: normal;
-    color: white;
-    text-decoration: none;
-    display: block;
-    border-radius: 4px;
+    margin-left: 10px; margin-bottom: 6px; padding: 6px 12px;
+    font-size: 15px; font-weight: normal; color: white;
+    text-decoration: none; display: block; border-radius: 4px;
   }
-
-  .nav-sub-item:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    cursor: pointer;
-  }
+  .nav-sub-item:hover { background-color: rgba(255,255,255,0.1); cursor: pointer; }
 
   .nav-item.active, .nav-sub-item.active {
-    background-color: #6fa8dc !important;
-    color: white !important;
+    background-color: #6fa8dc !important; color: white !important;
   }
 
   .nav-section {
-    font-size: 18px;
-    font-weight: bold;
-    margin-top: 25px;
-    margin-bottom: 10px;
-    color: white;
-    padding-left: 5px;
+    font-size: 18px; font-weight: bold; margin-top: 25px; margin-bottom: 10px;
+    color: white; padding-left: 5px;
   }
 
-  #macro_section, 
-  #public_sector_section, 
-  #public_sector_workforce_section, 
-  #public_sector_wages_section,
-  #equity_public_sector_section {
-    padding-left: 15px;
-    display: none;
+  #macro_section, #public_sector_section, #public_sector_workforce_section,
+  #public_sector_wages_section, #equity_public_sector_section {
+    padding-left: 15px; display: none;
   }
-")),
+  ")),
   
-  # JavaScript to toggle sections
+  # ------- Accordion styles to match your palette -------
+  tags$style(HTML("
+    .accordion-item {
+      background-color: #2b4c66;
+      border: 1px solid #6fa8dc;
+      border-radius: 12px !important;
+      margin-bottom: 14px;
+      overflow: hidden;
+      color: #fff;
+    }
+    .accordion-button {
+      background-color: #2b4c66;
+      color: #fff;
+      box-shadow: none;
+      font-size: 18px;
+      padding: 16px 20px;
+    }
+    .accordion-button:not(.collapsed) {
+      background-color: #356088;
+      color: #fff;
+    }
+    .accordion-button:focus { box-shadow: none; }
+    .accordion-body {
+      background-color: #356088;
+      color: #fff;
+      padding: 18px 22px;
+      border-top: 1px solid #6fa8dc;
+    }
+    .accordion-button::after { filter: invert(1); } /* white chevron */
+  ")),
+  
+  # ------- JS to toggle sidebar submenus (yours) -------
   tags$script(HTML("
     function toggleSection(sectionId) {
       var section = document.getElementById(sectionId);
@@ -248,36 +243,40 @@ ui <- bootstrapPage(
     }
   ")),
   
-  # Layout
+  # ------- Layout -------
   div(class = "d-flex",
-      # Sidebar
+      # --- Sidebar ---
       div(
         id = "sidebar",
         div(class = "nav-item", actionLink("nav_dashboard", "Overview")),
         div(class = "nav-item", actionLink("nav_instructions", "Instructions")),
         div(class = "nav-item", actionLink("nav_metadata", "Metadata")),
         
-        div(class = "nav-section", onclick = "toggleSection('macro_section')", "Macro Fundamentals of the Public Sector"),
+        div(class = "nav-section", onclick = "toggleSection('macro_section')",
+            "Macro Fundamentals of the Public Sector"),
         div(id = "macro_section",
             div(class = "nav-sub-item", actionLink("nav_wagebill", "Wage Bill Graphs")),
             div(class = "nav-sub-item", actionLink("nav_wagebill_gdp", "Wage Bill & GDP Graphs"))
         ),
         
-        div(class = "nav-section", onclick = "toggleSection('public_sector_section')", "Size and Characteristics of the Public Sector"),
+        div(class = "nav-section", onclick = "toggleSection('public_sector_section')",
+            "Size and Characteristics of the Public Sector"),
         div(id = "public_sector_section",
             div(class = "nav-sub-item", actionLink("nav_public_graphs", "Public Employment")),
             div(class = "nav-sub-item", actionLink("nav_public_workforce", "Employment Distribution")),
             div(class = "nav-sub-item", actionLink("nav_education", "Tertiary Education"))
         ),
         
-        div(class = "nav-section", onclick = "toggleSection('public_sector_wages_section')", "Competitiveness of Public Sector Wages"),
+        div(class = "nav-section", onclick = "toggleSection('public_sector_wages_section')",
+            "Competitiveness of Public Sector Wages"),
         div(id = "public_sector_wages_section",
             div(class = "nav-sub-item", actionLink("nav_wagepremium", "Wage Premium")),
             div(class = "nav-sub-item", actionLink("nav_public_educ", "Wage Premium by Education")),
             div(class = "nav-sub-item", actionLink("nav_pay_compression", "Pay Compression"))
         ),
         
-        div(class = "nav-section", onclick = "toggleSection('equity_public_sector_section')", "Equity in Public Sector"),
+        div(class = "nav-section", onclick = "toggleSection('equity_public_sector_section')",
+            "Equity in Public Sector"),
         div(id = "equity_public_sector_section",
             div(class = "nav-sub-item", actionLink("nav_gender_workforce", "Female Employment")),
             div(class = "nav-sub-item", actionLink("nav_female_leadership", "Female Leadership")),
@@ -288,10 +287,33 @@ ui <- bootstrapPage(
         div(class = "nav-item", actionLink("nav_download_all", "📥 Download All Graphs"))
       ),
       
-      # Main content area
+      # --- Main content with collapsible tabs (accordion) ---
       div(class = "flex-grow-1 p-4",
           h2("Worldwide Bureaucracy Indicators"),
-          uiOutput("main_content")
+          
+          # Expand/Collapse all controls (optional)
+          div(class = "mb-3 d-flex gap-2",
+              actionButton("acc_open",  "Expand all"),
+              actionButton("acc_close", "Collapse all")
+          ),
+          
+          accordion(id = "content_acc", multiple = TRUE, open = "Overview",
+                    accordion_panel("Overview",        uiOutput("panel_overview")),
+                    accordion_panel("Instructions",    uiOutput("panel_instructions")),
+                    accordion_panel("Metadata",        uiOutput("panel_metadata")),
+                    accordion_panel("Wage Bill Graphs",        uiOutput("panel_wagebill")),
+                    accordion_panel("Wage Bill & GDP Graphs",  uiOutput("panel_wagebill_gdp")),
+                    accordion_panel("Public Employment",       uiOutput("panel_public_graphs")),
+                    accordion_panel("Employment Distribution", uiOutput("panel_public_workforce")),
+                    accordion_panel("Tertiary Education",      uiOutput("panel_education")),
+                    accordion_panel("Wage Premium",            uiOutput("panel_wagepremium")),
+                    accordion_panel("Wage Premium by Education", uiOutput("panel_public_educ")),
+                    accordion_panel("Pay Compression",         uiOutput("panel_pay_compression")),
+                    accordion_panel("Female Employment",       uiOutput("panel_gender_workforce")),
+                    accordion_panel("Female Leadership",       uiOutput("panel_female_leadership")),
+                    accordion_panel("Wage Premium by Gender",  uiOutput("panel_wagepremium_gender")),
+                    accordion_panel("Gender Wage Premium by Industry", uiOutput("panel_gender_wage_premium"))
+          )
       )
   )
 )
@@ -305,6 +327,7 @@ server <- function(input, output, session) {
   # 1. Track the active tab via a reactive value  
   active_tab <- reactiveVal("dashboard")
   
+  # Update active_tab when each sidebar link is clicked
   # Update active_tab when each sidebar link is clicked
   observeEvent(input$nav_dashboard,         { active_tab("dashboard") })
   observeEvent(input$nav_instructions,         { active_tab("instructions") })
@@ -324,6 +347,23 @@ server <- function(input, output, session) {
   observeEvent(input$nav_pay_compression, { active_tab("pay_compression") })
   observeEvent(input$nav_download_all,      { active_tab("download_all") })
   
+  # Sidebar -> open panel
+  observeEvent(input$nav_dashboard,        accordion_open("content_acc","Overview"))
+  observeEvent(input$nav_instructions,     accordion_open("content_acc","Instructions"))
+  observeEvent(input$nav_metadata,         accordion_open("content_acc","Metadata"))
+  observeEvent(input$nav_wagebill,         accordion_open("content_acc","Wage Bill Graphs"))
+  observeEvent(input$nav_wagebill_gdp,     accordion_open("content_acc","Wage Bill & GDP Graphs"))
+  observeEvent(input$nav_public_graphs,    accordion_open("content_acc","Public Employment"))
+  observeEvent(input$nav_public_workforce, accordion_open("content_acc","Employment Distribution"))
+  observeEvent(input$nav_education,        accordion_open("content_acc","Tertiary Education"))
+  observeEvent(input$nav_wagepremium,      accordion_open("content_acc","Wage Premium"))
+  observeEvent(input$nav_public_educ,      accordion_open("content_acc","Wage Premium by Education"))
+  observeEvent(input$nav_pay_compression,  accordion_open("content_acc","Pay Compression"))
+  observeEvent(input$nav_gender_workforce, accordion_open("content_acc","Female Employment"))
+  observeEvent(input$nav_female_leadership,accordion_open("content_acc","Female Leadership"))
+  observeEvent(input$nav_wagepremium_gender, accordion_open("content_acc","Wage Premium by Gender"))
+  observeEvent(input$nav_gender_wage_premium, accordion_open("content_acc","Gender Wage Premium by Industry"))
+  
   # 2. Render the main dynamic UI based on active_tab
   output$main_content <- renderUI({
     tab <- active_tab()
@@ -339,23 +379,29 @@ server <- function(input, output, session) {
           )
         ),
         h3("Overview"),
-        fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              "The Worldwide Bureaucracy Indicators (WWBI) database is a unique cross-national dataset on public sector employment and wages that aims to fill an information gap, thereby helping researchers, development practitioners, and policymakers gain a better understanding of the personnel dimensions of state capability, the footprint of the public sector within the overall labor market, and the fiscal implications of the public sector wage bill. The dataset is derived from administrative data and household surveys, thereby complementing existing, expert perception-based approaches.")
-        ), 
-        fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              "Contact Information: Zahid Hasnain-zhasnain@worldbank.org and
-                                    Daniel Rogger-drogger@worldbank.org")
-        ), 
-        fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              "We kindly ask all users of the dashboard to cite it as follows: Source: Worldwide Bureaucracy Indicators (WWBI) Dashboard – World Bank.")
-        ), 
-        fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              "Disclaimer:The findings, interpretations, and conclusions presented in this dashboard are those of the World Bank staff and do not necessarily reflect the views of the World Bank, its affiliated organizations, the Executive Directors of the World Bank, or the governments they represent.
-              The boundaries, colors, denominations, and other information shown on this dashboard do not imply any judgment on the part of the World Bank concerning the legal status of any territory, or the endorsement or acceptance of such boundaries. The terms “country” or “economy,” as used in this dashboard, are used for statistical convenience and do not imply political independence.")
+        accordion(
+          id = "ov_acc",
+          multiple = TRUE,
+          open = character(0),   # start collapsed; use "About the WWBI" to start one open
+          
+          accordion_panel("About the WWBI",
+                          p("The Worldwide Bureaucracy Indicators (WWBI) database is a unique cross-national dataset on public sector employment and wages that aims to fill an information gap, thereby helping researchers, development practitioners, and policymakers gain a better understanding of the personnel dimensions of state capability, the footprint of the public sector within the overall labor market, and the fiscal implications of the public sector wage bill. The dataset is derived from administrative data and household surveys, thereby complementing existing, expert perception-based approaches.")
+          ),
+          
+          accordion_panel("Contact Information",
+                          tags$p(
+                            "Zahid Hasnain – ", tags$a(href="mailto:zhasnain@worldbank.org","zhasnain@worldbank.org"), br(),
+                            "Daniel Rogger – ", tags$a(href="mailto:drogger@worldbank.org","drogger@worldbank.org")
+                          )
+          ),
+          
+          accordion_panel("Citation",
+                          p("We kindly ask all users of the dashboard to cite it as follows: Source: Worldwide Bureaucracy Indicators (WWBI) Dashboard – World Bank.")
+          ),
+          
+          accordion_panel("Disclaimer",
+                          p("The findings, interpretations, and conclusions presented in this dashboard are those of the World Bank staff and do not necessarily reflect the views of the World Bank, its affiliated organizations, the Executive Directors of the World Bank, or the governments they represent. The boundaries, colors, denominations, and other information shown on this dashboard do not imply any judgment on the part of the World Bank concerning the legal status of any territory, or the endorsement or acceptance of such boundaries. The terms “country” or “economy,” as used in this dashboard, are used for statistical convenience and do not imply political independence.")
+          )
         ), 
         fluidRow(
           column(10,
@@ -5389,7 +5435,5 @@ shinyApp(ui = ui, server = server)
 
 
 # the end ##############################################
-
-
 
 
