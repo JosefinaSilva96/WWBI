@@ -135,15 +135,18 @@ ui <- bootstrapPage(
   
   # ------- Your styles (unchanged) -------
   tags$style(HTML("
+  :root { --accent: #6fa8dc; }
+
   /* General page background and text color */
+  html, body { height: 100%; }
   body, .container-fluid, .main-container, .content-wrapper, .flex-grow-1 {
-    background-color:#002244 !important;
-    color: white !important;
+    background-color: #002244 !important;
+    color: #ffffff !important;
   }
 
   /* Typography and panels */
   h1, h2, h3, h4, h5, h6, p, .well, .card, .panel, .info-box, .custom-info-box, .box {
-    color: white !important;
+    color: #ffffff !important;
     background-color: transparent !important;
     border: none !important;
   }
@@ -151,100 +154,176 @@ ui <- bootstrapPage(
   /* Panels and wells with a border */
   .well, .panel {
     background-color: #002244 !important;
-    border: 1px solid #6fa8dc !important;
+    border: 1px solid var(--accent) !important;
     border-radius: 8px;
   }
 
   /* Buttons */
   .btn, .btn-primary {
-    background-color: #6fa8dc !important;
+    background-color: var(--accent) !important;
     border: none !important;
   }
   .btn:hover { background-color: #4a90c2 !important; }
 
   /* Link styling */
-  a, a:hover { color: #ffffff !important; text-decoration: underline; }
+  a { color: #ffffff !important; text-decoration: none; }
+  a:hover { text-decoration: underline; }
 
-  /* Sidebar styles */
+  /* --- Sidebar container --- */
   #sidebar {
-    height: 200vh;
-    width: 280px; min-width: 280px;
-    background-color: #EBECF0;
-    padding: 20px;
-    color: white;
+    height: 100vh;
+    width: 290px; min-width: 290px;
+    background: linear-gradient(180deg, #2b4c66 0%, #253f57 100%);
+    padding: 18px 16px;
+    color: #e8f0fb;
     overflow-y: auto;
+    border-right: 1px solid rgba(255,255,255,0.08);
+    box-shadow: inset 0 0 12px rgba(0,0,0,.25);
+    position: sticky; top: 0;
   }
+
+  /* subtle custom scrollbar */
+  #sidebar::-webkit-scrollbar { width: 8px; }
+  #sidebar::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,.25);
+    border-radius: 8px;
+  }
+  #sidebar::-webkit-scrollbar-track { background: transparent; }
+
+  /* brand/title area (optional) */
+  .sidebar-brand {
+    display: flex; align-items: center; gap: 10px;
+    margin: 2px 6px 14px;
+    font-weight: 700; letter-spacing: .3px;
+    color: #fff;
+  }
+  .sidebar-brand .brand-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--accent); display: inline-block;
+  }
+
+  /* section headings (click to expand) */
+  .nav-section {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 16px; font-weight: 700;
+    padding: 10px 10px; margin: 12px 6px 4px;
+    color: #dbe7ff; border-radius: 8px;
+    transition: background .2s, color .2s;
+    cursor: pointer;
+  }
+  .nav-section:hover { background: rgba(255,255,255,.06); }
+  .nav-section::after {
+    content: '▾'; font-size: 14px; opacity: .8; margin-left: 8px;
+  }
+  .section-open::after { transform: rotate(180deg); }
+
+  /* links */
+  .nav-item a, .nav-sub-item a { color: inherit; text-decoration: none; }
+
+  /* top-level items */
   .nav-item {
-    display: block; margin: 10px 0; padding: 10px 15px;
-    font-size: 17px; font-weight: bold; color: white;
-    background-color: transparent; border-radius: 6px;
-    text-decoration: none; transition: background 0.2s;
+    display: flex; align-items: center; gap: 10px;
+    margin: 6px 6px; padding: 10px 12px;
+    font-size: 16px; font-weight: 600; color: #eef5ff;
+    border-radius: 10px; transition: transform .08s, background .2s;
   }
-  .nav-item:hover { background-color: rgba(255,255,255,0.1); cursor: pointer; }
+  .nav-item:hover { background: rgba(255,255,255,.08); transform: translateX(2px); }
+
+  /* active item with accent bar */
+  .nav-item.active {
+    background: rgba(111,168,220,.25);
+    box-shadow: inset 0 0 0 1px rgba(111,168,220,.5);
+    position: relative;
+  }
+  .nav-item.active::before {
+    content: ''; position: absolute; left: -6px; top: 10px; bottom: 10px;
+    width: 4px; border-radius: 4px; background: var(--accent);
+  }
+
+  /* sub-items (include all expandable sections) */
+  #macro_section,
+  #public_sector_section,
+  #public_sector_workforce_section,
+  #public_sector_wages_section,
+  #equity_public_sector_section {
+    padding: 4px 6px 6px 12px; display: none;
+    border-left: 1px dashed rgba(255,255,255,.15);
+    margin-left: 10px;
+  }
 
   .nav-sub-item {
-    margin-left: 10px; margin-bottom: 6px; padding: 6px 12px;
-    font-size: 15px; font-weight: normal; color: white;
-    text-decoration: none; display: block; border-radius: 4px;
+    display: flex; align-items: center; gap: 8px;
+    margin: 4px 0; padding: 8px 10px;
+    font-size: 15px; color: #eaf3ff; border-radius: 8px;
+    transition: background .2s, transform .08s;
   }
-  .nav-sub-item:hover { background-color: rgba(255,255,255,0.1); cursor: pointer; }
-
-  .nav-item.active, .nav-sub-item.active {
-    background-color: #6fa8dc !important; color: white !important;
-  }
-
-  .nav-section {
-    font-size: 18px; font-weight: bold; margin-top: 25px; margin-bottom: 10px;
-    color: white; padding-left: 5px;
-  }
-
-  #macro_section, #public_sector_section, #public_sector_workforce_section,
-  #public_sector_wages_section, #equity_public_sector_section {
-    padding-left: 15px; display: none;
-  }
-  ")),
+  .nav-sub-item:hover { background: rgba(255,255,255,.06); transform: translateX(2px); }
+  .nav-sub-item.active { background: rgba(111,168,220,.22); }
+")),
   
   # ------- Accordion styles to match your palette -------
   tags$style(HTML("
-    .accordion-item {
-      background-color: #2b4c66;
-      border: 1px solid #6fa8dc;
-      border-radius: 12px !important;
-      margin-bottom: 14px;
-      overflow: hidden;
-      color: #fff;
-    }
-    .accordion-button {
-      background-color: #2b4c66;
-      color: #fff;
-      box-shadow: none;
-      font-size: 18px;
-      padding: 16px 20px;
-    }
-    .accordion-button:not(.collapsed) {
-      background-color: #356088;
-      color: #fff;
-    }
-    .accordion-button:focus { box-shadow: none; }
-    .accordion-body {
-      background-color: #356088;
-      color: #fff;
-      padding: 18px 22px;
-      border-top: 1px solid #6fa8dc;
-    }
-    .accordion-button::after { filter: invert(1); } /* white chevron */
- .wb-logo {
-  max-height: 60px;   /* shrink overall size */
-  width: auto;        /* keep aspect ratio */
-} ")),
-  
+  /* Accordion appearance */
+  .accordion-item{
+    background-color:#2b4c66;
+    border:1px solid #6fa8dc;
+    border-radius:12px !important;
+    margin-bottom:14px;
+    overflow:hidden;
+    color:#fff;
+  }
+  .accordion-button{
+    background-color:#2b4c66;
+    color:#fff;
+    box-shadow:none !important;
+    font-size:18px;
+    padding:16px 20px;
+  }
+  .accordion-button:not(.collapsed){
+    background-color:#356088;
+    color:#fff;
+  }
+  .accordion-button:focus{
+    box-shadow:none !important;
+  }
+  .accordion-body{
+    background-color:#356088;
+    color:#fff;
+    padding:18px 22px;
+    border-top:1px solid #6fa8dc;
+  }
+  /* make the chevron white */
+  .accordion-button::after{
+    filter: invert(1);
+  }
+
+  /* Logo size */
+  .wb-logo{
+    max-height:60px;   /* shrink overall size */
+    width:auto;        /* keep aspect ratio */
+    height:auto;
+    display:inline-block;
+  }
+")),
   # ------- JS to toggle sidebar submenus (yours) -------
-  tags$script(HTML("
-    function toggleSection(sectionId) {
-      var section = document.getElementById(sectionId);
-      section.style.display = section.style.display === 'none' ? 'block' : 'none';
+  tags$script(HTML( "function toggleSection(id){
+    var section = document.getElementById(id);
+    section.style.display = (section.style.display === 'none' || section.style.display === '') ? 'block' : 'none';
+    var header = document.querySelector('[onclick=\"toggleSection(\\''+id+'\\')\"]');
+    if(header){ header.classList.toggle('section-open'); }
+  }
+  // highlight clicked items
+  document.addEventListener('click', function(e){
+    if(e.target.closest('.nav-item')){
+      document.querySelectorAll('#sidebar .nav-item').forEach(n=>n.classList.remove('active'));
+      e.target.closest('.nav-item').classList.add('active');
     }
-  ")),
+    if(e.target.closest('.nav-sub-item')){
+      document.querySelectorAll('#sidebar .nav-sub-item').forEach(n=>n.classList.remove('active'));
+      e.target.closest('.nav-sub-item').classList.add('active');
+    }
+  }, true);"
+  )),
   
   # ------- Layout -------
   div(class = "d-flex",
@@ -384,8 +463,8 @@ server <- function(input, output, session) {
           
           accordion_panel("Contact Information",
                           tags$p(
-                            "Zahid Hasnain – ", tags$a(href="mailto:zhasnain@worldbank.org","zhasnain@worldbank.org"), br(),
-                            "Daniel Rogger – ", tags$a(href="mailto:drogger@worldbank.org","drogger@worldbank.org")
+                            "Flavia Sacco – ", tags$a(href="mailto:fsaccocapurro@worldbank.org","fsaccocapurro@worldbank.org"), br(),
+                            "Josefina Silva – ", tags$a(href="mailto:jsilvafuentealba@worldbank.org","jsilvafuentealba@worldbank.org")
                           )
           ),
           
