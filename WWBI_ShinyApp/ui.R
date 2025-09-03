@@ -125,7 +125,6 @@ pay_compression_wide <- readRDS(file.path(data_path, "Data", "pay_compression_wi
 # UI
 # ---------------------------
 
-library(shinydashboard)
 
 ui <- dashboardPage(
   skin = "blue",  # shinydashboard accepts named skins only
