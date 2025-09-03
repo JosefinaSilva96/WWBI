@@ -248,21 +248,64 @@ ui <- dashboardPage(
 }
 @media (max-width: 1200px){ .hero-logos .wb-logo{ max-height:84px; } }
 @media (max-width:  768px){ .hero-logos .wb-logo{ max-height:68px; } }
-/* ---- BS3 collapse/accordion (shiny::bsCollapse) ---- */
-.panel-group .panel{
-  background-color:#2b4c66;
-  border:1px solid var(--accent);
-  border-radius:12px;
-  color:#fff;
-  margin-bottom:14px;
-  overflow:hidden;
+/* ---- Palette (accordion colors) ---- */
+:root{
+  --ov-panel:#2b4c66;
+  --ov-head:#356088;
+  --ov-accent:#6fa8dc;
+  --ov-text:#ffffff;
+  --ov-head-open:#3b6a95;
 }
-.panel-group .panel+.panel{margin-top:14px;}
-.panel-heading{background:#356088;border-bottom:1px solid rgba(255,255,255,.12);padding:14px 18px;}
-.panel-title a{display:block;color:#fff;text-decoration:none;font-size:18px;}
-.panel-title a:after{content:'▾';float:right;opacity:.9;transition:transform .2s;}
-.panel-title a.collapsed:after{transform:rotate(-90deg);}
-.panel-collapse .panel-body{background:#356088;color:#fff;padding:18px 22px;}")),
+
+/* Only target these two accordions */
+#ov_acc.panel-group .panel,
+#inst_acc.panel-group .panel{
+  background-color:var(--ov-panel) !important;
+  border:1px solid var(--ov-accent) !important;
+  border-radius:12px !important;
+  color:var(--ov-text) !important;
+  box-shadow:none !important;
+  overflow:hidden;
+  margin-bottom:14px;
+}
+
+#ov_acc .panel-heading,
+#inst_acc .panel-heading{
+  background:var(--ov-head) !important;
+  border-bottom:1px solid rgba(255,255,255,.12) !important;
+  padding:14px 18px !important;
+}
+
+#ov_acc .panel-title a,
+#inst_acc .panel-title a{
+  display:block;
+  color:var(--ov-text) !important;
+  text-decoration:none !important;
+  font-size:18px;
+}
+
+#ov_acc .panel-title a:not(.collapsed),
+#inst_acc .panel-title a:not(.collapsed){
+  background:var(--ov-head-open) !important;
+  border-radius:8px; padding:6px 8px;
+}
+
+#ov_acc .panel-body,
+#inst_acc .panel-body{
+  background:var(--ov-head) !important;
+  color:var(--ov-text) !important;
+  padding:18px 22px !important;
+}
+
+#ov_acc .panel-title a:after,
+#inst_acc .panel-title a:after{
+  content:'▸'; float:right; opacity:.9; transition:transform .2s;
+}
+#ov_acc .panel-title a:not(.collapsed):after,
+#inst_acc .panel-title a:not(.collapsed):after{
+  transform:rotate(90deg);
+}
+")),
       tags$script(HTML("
         function toggleSection(id){
           const sec = document.getElementById(id);
