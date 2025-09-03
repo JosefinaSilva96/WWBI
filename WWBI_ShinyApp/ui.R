@@ -28,6 +28,7 @@ library(bs4Dash)
 library(countrycode)
 library(bslib)
 library(ggthemes)
+library(shinyBS)
 
 ### Load data sets ----
 
@@ -246,7 +247,22 @@ ui <- dashboardPage(
   max-height:96px; width:auto; height:auto; display:block;
 }
 @media (max-width: 1200px){ .hero-logos .wb-logo{ max-height:84px; } }
-@media (max-width:  768px){ .hero-logos .wb-logo{ max-height:68px; } } ")),
+@media (max-width:  768px){ .hero-logos .wb-logo{ max-height:68px; } }
+/* ---- BS3 collapse/accordion (shiny::bsCollapse) ---- */
+.panel-group .panel{
+  background-color:#2b4c66;
+  border:1px solid var(--accent);
+  border-radius:12px;
+  color:#fff;
+  margin-bottom:14px;
+  overflow:hidden;
+}
+.panel-group .panel+.panel{margin-top:14px;}
+.panel-heading{background:#356088;border-bottom:1px solid rgba(255,255,255,.12);padding:14px 18px;}
+.panel-title a{display:block;color:#fff;text-decoration:none;font-size:18px;}
+.panel-title a:after{content:'▾';float:right;opacity:.9;transition:transform .2s;}
+.panel-title a.collapsed:after{transform:rotate(-90deg);}
+.panel-collapse .panel-body{background:#356088;color:#fff;padding:18px 22px;}")),
       tags$script(HTML("
         function toggleSection(id){
           const sec = document.getElementById(id);
