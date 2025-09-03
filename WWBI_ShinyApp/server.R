@@ -84,6 +84,18 @@ server <- function(input, output, session) {
   # 1. Track the active tab via a reactive value  
   active_tab <- reactiveVal("dashboard")
   
+  # put near the top of server()
+  safe_acc_open  <- function(id, panels) {
+    if (exists("accordion_open", envir=asNamespace("bslib"), inherits=FALSE)) {
+      bslib::accordion_open(id, panels)
+    }
+  }
+  safe_acc_close <- function(id, panels) {
+    if (exists("accordion_close", envir=asNamespace("bslib"), inherits=FALSE)) {
+      bslib::accordion_close(id, panels)
+    }
+  }
+  
   # Update active_tab when each sidebar link is clicked
   observeEvent(input$nav_dashboard,         { active_tab("dashboard") })
   observeEvent(input$nav_instructions,         { active_tab("instructions") })
@@ -102,39 +114,62 @@ server <- function(input, output, session) {
   observeEvent(input$nav_gender_wage_premium, { active_tab("gender_wage_premium") })
   observeEvent(input$nav_pay_compression, { active_tab("pay_compression") })
   observeEvent(input$nav_download_all,      { active_tab("download_all") })
+  observeEvent(input$acc_open, {
+    if (active_tab() == "dashboard")
+      safe_acc_open("ov_acc",
+                    c("About the WWBI","Contact Information","Citation","Disclaimer"))
+  })
+  
+  observeEvent(input$acc_close, {
+    if (active_tab() == "dashboard")
+      safe_acc_close("ov_acc",
+                     c("About the WWBI","Contact Information","Citation","Disclaimer"))
+  })
   
   # 2. Render the main dynamic UI based on active_tab
   output$main_content <- renderUI({
     tab <- active_tab()
     
-    if(tab == "dashboard") {
-      tagList(
-        fluidRow(
-          column(6, align = "center",
-                 tags$img(src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/wbg_dec_logo.png", height = "80px")
-          ),
-          column(6, align = "center",
-                 tags$img(src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/wbg_institutions_logo.png", height = "80px")
-          )
+    if (tab == "dashboard") {
+      tagList(   # wrap everything in tagList
+        fluidRow(class = "mb-3",
+                 column(6, align = "center",
+                        tags$img(
+                          src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/wbg_dec_logo.png",
+                          class = "wb-logo"
+                        )
+                 ),
+                 column(6, align = "center",
+                        tags$img(
+                          src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/wbg_institutions_logo.png",
+                          class = "wb-logo"
+                        )
+                 )
         ),
         h3("Overview"),
-        fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              "The Worldwide Bureaucracy Indicators (WWBI) database is a unique cross-national dataset on public sector employment and wages that aims to fill an information gap, thereby helping researchers, development practitioners, and policymakers gain a better understanding of the personnel dimensions of state capability, the footprint of the public sector within the overall labor market, and the fiscal implications of the public sector wage bill. The dataset is derived from administrative data and household surveys, thereby complementing existing, expert perception-based approaches.")
-        ), 
-        fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              "Contact Information: Zahid Hasnain-zhasnain@worldbank.org and
-                                    Daniel Rogger-drogger@worldbank.org")
-        ), 
-        fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              "We kindly ask all users of the dashboard to cite it as follows: Source: Worldwide Bureaucracy Indicators (WWBI) Dashboard – World Bank.")
-        ), 
-        fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              "Disclaimer:The findings, interpretations, and conclusions presented in this dashboard are those of the World Bank staff and do not necessarily reflect the views of the World Bank, its affiliated organizations, the Executive Directors of the World Bank, or the governments they represent.
-              The boundaries, colors, denominations, and other information shown on this dashboard do not imply any judgment on the part of the World Bank concerning the legal status of any territory, or the endorsement or acceptance of such boundaries. The terms “country” or “economy,” as used in this dashboard, are used for statistical convenience and do not imply political independence.")
+        accordion(
+          id = "ov_acc",
+          multiple = TRUE,
+          open = character(0),   # start collapsed; use "About the WWBI" to start one open
+          
+          accordion_panel("About the WWBI",
+                          p("The Worldwide Bureaucracy Indicators (WWBI) database is a unique cross-national dataset on public sector employment and wages that aims to fill an information gap, thereby helping researchers, development practitioners, and policymakers gain a better understanding of the personnel dimensions of state capability, the footprint of the public sector within the overall labor market, and the fiscal implications of the public sector wage bill. The dataset is derived from administrative data and household surveys, thereby complementing existing, expert perception-based approaches.")
+          ),
+          
+          accordion_panel("Contact Information",
+                          tags$p(
+                            "Flavia Sacco – ", tags$a(href="mailto:fsaccocapurro@worldbank.org","fsaccocapurro@worldbank.org"), br(),
+                            "Josefina Silva – ", tags$a(href="mailto:jsilvafuentealba@worldbank.org","jsilvafuentealba@worldbank.org")
+                          )
+          ),
+          
+          accordion_panel("Citation",
+                          p("We kindly ask all users of the dashboard to cite it as follows: Source: Worldwide Bureaucracy Indicators (WWBI) Dashboard – World Bank.")
+          ),
+          
+          accordion_panel("Disclaimer",
+                          p("The findings, interpretations, and conclusions presented in this dashboard are those of the World Bank staff and do not necessarily reflect the views of the World Bank, its affiliated organizations, the Executive Directors of the World Bank, or the governments they represent. The boundaries, colors, denominations, and other information shown on this dashboard do not imply any judgment on the part of the World Bank concerning the legal status of any territory, or the endorsement or acceptance of such boundaries. The terms “country” or “economy,” as used in this dashboard, are used for statistical convenience and do not imply political independence.")
+          )
         ), 
         fluidRow(
           column(10,
@@ -166,56 +201,57 @@ server <- function(input, output, session) {
     } else if (tab == "instructions") {
       tagList(
         h3("📘 Instruction Manual"),
-        fluidRow(
-          wellPanel(
-            style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px; color: white;",
-            
-            p("This Dashboard is a product of the Bureaucracy Lab, a joint initiative between the Governance Global Practice and the Development Impact Evaluation (DIME) Department of the Research Group at the World Bank."),
-            
-            p("The dashboard allows users to explore key indicators from the Worldwide Bureaucracy Indicators (WWBI) through a variety of interactive visualizations, which can also be exported into a Word report for further use and analysis."),
-            
-            p("Each section of the dashboard presents a set of graphs designed to facilitate benchmarking of state capacity measures across countries, regions, and income groups. Below is a brief overview of each section:"),
-            
-            tags$ul(
-              tags$li(tags$b("Macro-Fundamentals of the Public Sector:"), 
-                      "This section shows the trends in the size of the public wage bill, expressed as a percentage of both total public expenditure and GDP. It also includes cross-country comparisons of these indicators by income level (measured by GDP per capita)."),
-              tags$li(tags$b("Size and Characteristics of the Public Sector:"), 
-                      "In this section, users can examine the size of public sector employment within the overall labor market, the distribution of the public workforce by sector (industry), and the educational attainment of public sector workers compared to private sector employees."),
-              tags$li(tags$b("Competitiveness of Public Sector Wages:"), 
-                      "This section presents the public sector wage premium or the difference in wages between public and private sector workers, adjusted for characteristics such as gender, education, and location. It also shows how this premium varies by education level and compares wage compression ratios for both public and private sector across countries."),
-              tags$li(tags$b("Equity in the Public Sector:"), 
-                      "This section provides insights into gender equity in public employment. The visualizations compare the representation of women in the public and private sectors, examines occupational segregation, and highlights gender wage gaps across industries within the public sector."),
-              tags$li(tags$b("Download Graph Report:"), 
-                      "This tab allows users to download a complete report containing all visualizations from the dashboard or create a custom report by selecting specific sections and their corresponding graphs. The reports are generated in .doc format and include prefilled text to support interpretation and analysis.")
-            ),
-            
-            h4("🧭 How to Use the Dashboard"),
-            tags$ol(
-              tags$li("In each tab, select a country of interest and choose comparator countries, regions, or income groups."),
-              tags$li("To check the availability of each indicator by country, users can navigate to the “Metadata” section. By selecting the indicator of interest, the map will display the countries for which data is available and the corresponding value for that indicator."),
-              tags$li("In all visualization sections, the dropdown menus for country, region, or income group only display options with available data for the selected indicator. If an indicator is not available for a specific country or group, it will not appear in the dropdown list."),
-              tags$li("The first country selected will appear first in the graphs and will serve as the reference point for benchmark comparisons."),
-              tags$li("Each tab presents different sets of graphs, which can be downloaded individually using the Download Report in Word option."),
-              tags$li("Alternatively, users may choose their country and comparators across all tabs and then go to the final tab, “Download All Graphs,” to export all selected visualizations into a comprehensive, pre-formatted Word report.")
-            ),
-            p("For detailed information on how indicators are constructed, data sources, and the list of countries and surveys included in the dataset, please refer to the WWBI Codebook, accessible through the button below.")
-          )
-        ),
         
-        # Button to download the PDF
-        downloadButton("download_pdf", "📥 Download Codebook"), 
-        
-        fluidRow(
-          wellPanel(
-            style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px; color: white;",
-            
-            p("GitHub Repository: ", 
-              tags$a(href = "https://github.com/worldbank/Worldwide-Bureaucracy-Indicators", 
-                     "https://github.com/worldbank/Worldwide-Bureaucracy-Indicators", target = "_blank")),
-            
-            p("Data Catalog: ", 
-              tags$a(href = "https://datacatalog.worldbank.org/int/home", 
-                     "https://datacatalog.worldbank.org/int/home", target = "_blank"))
+        accordion(
+          id = "inst_acc",
+          multiple = TRUE,
+          open = "About this dashboard",  # or character(0) to start fully collapsed
+          
+          accordion_panel("About this dashboard",
+                          p("This Dashboard is a product of the Bureaucracy Lab, a joint initiative between the Governance Global Practice and the Development Impact Evaluation (DIME) Department of the Research Group at the World Bank."),
+                          p("The dashboard allows users to explore key indicators from the Worldwide Bureaucracy Indicators (WWBI) through a variety of interactive visualizations, which can also be exported into a Word report for further use and analysis."),
+                          p("Each section of the dashboard presents a set of graphs designed to facilitate benchmarking of state capacity measures across countries, regions, and income groups.")
+          ),
+          
+          accordion_panel("What each section contains",
+                          tags$ul(
+                            tags$li(tags$b("Macro-Fundamentals of the Public Sector:"), 
+                                    " This section shows the trends in the size of the public wage bill, expressed as a percentage of both total public expenditure and GDP. It also includes cross-country comparisons of these indicators by income level (measured by GDP per capita)."),
+                            tags$li(tags$b("Size and Characteristics of the Public Sector:"), 
+                                    " Examine public sector employment within the overall labor market, workforce distribution by industry, and educational attainment vs. private sector employees."),
+                            tags$li(tags$b("Competitiveness of Public Sector Wages:"), 
+                                    " Public sector wage premium vs. private workers, how it varies by education level, and pay compression in public and private sectors."),
+                            tags$li(tags$b("Equity in the Public Sector:"), 
+                                    " Female employment and leadership, occupational segregation, and gender wage gaps across public-sector industries."),
+                            tags$li(tags$b("Download Graph Report:"), 
+                                    " Download a full report with all visualizations or create a custom report by selecting sections/graphs (DOC format with prefilled text).")
+                          )
+          ),
+          
+          accordion_panel("How to use the dashboard",
+                          tags$ol(
+                            tags$li("In each tab, select a country of interest and choose comparator countries, regions, or income groups."),
+                            tags$li("To check indicator availability, go to “Metadata”. Select an indicator to see which countries have data and their values."),
+                            tags$li("Dropdowns only list options with available data for the chosen indicator."),
+                            tags$li("The first selected country appears first in graphs and acts as the benchmark."),
+                            tags$li("Each tab offers different graphs; download them individually if you like."),
+                            tags$li("Or set selections across tabs, then use “Download All Graphs” to export a comprehensive, pre-formatted Word report.")
+                          )
+          ),
+          
+          accordion_panel("Resources & links",
+                          tags$p(
+                            "GitHub Repository: ",
+                            tags$a(href="https://github.com/worldbank/Worldwide-Bureaucracy-Indicators",
+                                   "https://github.com/worldbank/Worldwide-Bureaucracy-Indicators", target="_blank")
+                          ),
+                          tags$p(
+                            "Data Catalog: ",
+                            tags$a(href="https://datacatalog.worldbank.org/int/home",
+                                   "https://datacatalog.worldbank.org/int/home", target="_blank")
+                          ),
+                          div(style="margin-top:8px;",
+                              downloadButton("download_pdf", "📥 Download Codebook"))
           )
         )
       )
