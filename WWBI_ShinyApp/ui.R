@@ -237,7 +237,16 @@ ui <- dashboardPage(
         .box.box-solid>.box-header{ background-color:#2b4c66; color:#fff; }
         .box.box-solid{ border:1px solid var(--accent); border-radius:12px; }
         .box { box-shadow:none; }
-      ")),
+     /* --- Hero logos (top of Overview) --- */
+.hero-logos{
+  display:flex; align-items:center; justify-content:center;
+  gap:24px; flex-wrap:wrap; margin-bottom:10px;
+}
+.hero-logos .wb-logo{
+  max-height:96px; width:auto; height:auto; display:block;
+}
+@media (max-width: 1200px){ .hero-logos .wb-logo{ max-height:84px; } }
+@media (max-width:  768px){ .hero-logos .wb-logo{ max-height:68px; } } ")),
       tags$script(HTML("
         function toggleSection(id){
           const sec = document.getElementById(id);

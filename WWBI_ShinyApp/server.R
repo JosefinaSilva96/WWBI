@@ -132,19 +132,15 @@ server <- function(input, output, session) {
     
     if (tab == "dashboard") {
       tagList(   # wrap everything in tagList
-        fluidRow(class = "mb-3",
-                 column(6, align = "center",
-                        tags$img(
-                          src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/wbg_dec_logo.png",
-                          class = "wb-logo"
-                        )
-                 ),
-                 column(6, align = "center",
-                        tags$img(
-                          src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/wbg_institutions_logo.png",
-                          class = "wb-logo"
-                        )
-                 )
+        div(class = "hero-logos",
+            tags$img(
+              src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/wbg_dec_logo.png",
+              class = "wb-logo", alt = "World Bank Group"
+            ),
+            tags$img(
+              src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/wbg_institutions_logo.png",
+              class = "wb-logo", alt = "WBG Institutions"
+            )
         ),
         h3("Overview"),
         accordion(
