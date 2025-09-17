@@ -304,6 +304,21 @@ ui <- bootstrapPage(
     height:auto;
     display:inline-block;
   }
+  /* shared look for both buttons */
+    .dl-btn {
+      font-size: 18px;
+      padding: 14px 22px;
+      border-radius: 12px;
+      background-color: #76A9D6;   /* match your blue */
+      border-color: #76A9D6;
+      color: #fff;
+    }
+    .dl-btn:hover {
+      background-color: #669bd0;
+      border-color: #669bd0;
+      color:#fff;
+    }
+  
 ")),
   # ------- JS to toggle sidebar submenus (yours) -------
   tags$script(HTML( "function toggleSection(id){
@@ -620,7 +635,18 @@ server <- function(input, output, session) {
               textOutput("note_wagebill"))
         ),
         fluidRow(
-          downloadButton("downloadWord", "Download Report in Word")
+          downloadButton("downloadWord", "Download Report in Word", 
+                         class="dl-btn w-100")
+        ),
+        fluidRow(
+          column(
+            width = 8,
+            plotlyOutput("plotwagebill")
+          ),
+          column(
+            width = 4,
+            downloadButton("dl_csv",  "Download data (CSV)",  class = "dl-btn w-100")
+          )
         )
       )
       
@@ -1330,6 +1356,18 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
+  output$dl_csv <- downloadHandler(
+    filename = function() {
+      type <- if (input$graph_choice == "GDP") "gdp" else "publicexp"
+      paste0("wagebill_", type, "_", paste(input$countries, collapse = "-"), ".csv")
+    },
+    content = function(file) {
+      d <- selected_data() %>% arrange(country_name, year)
+      validate(need(nrow(d) > 0, "No data to download"))
+      readr::write_csv(d, file)
+    }
+  )
+  
   generate_wage_bill_analysis_section <- function(doc, selected_countries) {
     # ✅ Extract first selected country
     first_country <- selected_countries[1] %||% "Unknown Country"
@@ -1752,6 +1790,17 @@ server <- function(input, output, session) {
     return(ppt)
   }
 
+  output$dl_dot_csv <- downloadHandler(
+    filename = function() {
+      paste0("wagebill_vs_gdp_", paste(input$countries_first, collapse = "-"), "_", Sys.Date(), ".csv")
+    },
+    content = function(file) {
+      d <- dot_data()
+      req(!is.null(d), nrow(d) > 0)
+      out <- d %>% dplyr::select(country_name, year, indicator_value, log_gdp)
+      write.csv(out, file, row.names = FALSE)
+    }
+  )
   
   #Workforce graphs 
   
