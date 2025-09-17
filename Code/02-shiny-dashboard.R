@@ -676,6 +676,16 @@ server <- function(input, output, session) {
           div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               textOutput("note_dotplot")
           )
+        ), 
+        fluidRow(
+          column(
+            width = 8,
+            plotlyOutput("dot_plot")
+          ),
+          column(
+            width = 4,
+            downloadButton("dl_csv_gdp",  "Download data (CSV)",  class = "dl-btn w-100")
+          )
         )
       )
       
