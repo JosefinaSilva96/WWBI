@@ -299,17 +299,27 @@ ui <- bootstrapPage(
   .logos-row { display:flex; align-items:center; }
   .logo-wrap { display:flex; justify-content:center; }
 
-  img.wb-logo{
-    height:64px;            /* fixed equal height for both */
-    width:auto;             /* keep aspect ratio */
-    display:inline-block;
-    object-fit:contain;
-  }
-  /* Optional: if one file has big transparent padding, nudge it a bit */
-  img.wb-logo.wb-logo--padfix{
-    transform: scale(1.08);
-    transform-origin: center;
-  }
+  /* Base size (left logo) */
+img.wb-logo {
+  height: 64px;
+  width: auto;
+  display: inline-block;
+  object-fit: contain;
+}
+
+/* Optional nudge if a logo has extra transparent padding */
+img.wb-logo.wb-logo--padfix {
+  transform: scale(1.08);
+  transform-origin: center;
+}
+
+/* Make the RIGHT logo a bit bigger */
+img.wb-logo--right {
+  height: 74px;   /* tweak this (70–78px) to taste */
+}
+
+/* Optional: keep them aligned nicely */
+.logos-row img { vertical-align: middle; }
 ")),
   
   # ------- Accordion styles to match your palette -------
@@ -515,7 +525,7 @@ server <- function(input, output, session) {
                    6, div(class = "logo-wrap",
                           tags$img(
                             src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/wbg_institutions_logo.png",
-                            class = "wb-logo wb-logo--padfix"   # optional nudge if it looks smaller
+                            class = "wb-logo wb-logo--right"   
                         ))
                  )
         ),
