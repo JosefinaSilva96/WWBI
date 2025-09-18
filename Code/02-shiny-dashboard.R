@@ -901,13 +901,13 @@ server <- function(input, output, session) {
         ), 
         fluidRow(
           div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              textOutput("note_dotplot")
+              textOutput("dot_plot_gdp")
           )
         ), 
         fluidRow(
           column(
             width = 8,
-            plotlyOutput("dot_plot")
+            plotlyOutput("dot_plot_gdp")
           ),
           column(
             width = 4,
@@ -1827,7 +1827,7 @@ server <- function(input, output, session) {
   }
   
   
-  output$dot_plot <- renderPlotly({
+  output$dot_plot_gdp <- renderPlotly({
     req(input$countries_first)
     
     filtered_data_df <- merged_data %>% 
@@ -1886,14 +1886,11 @@ server <- function(input, output, session) {
         paper_bgcolor = "white"
       )
   })
-  
   output$note_dotplot_gdp <- renderText({
     "Note: This graph shows the relationship between the wage bill (expressed as a share of total expenditure) and the income level of countries. It offers a clearer understanding of whether wage bill spending is consistent with countries’ respective income levels."
   })
   
-  output$note_dotplot <- renderText({
-    "Note: This graph shows the relationship between the wage bill (expressed as a share of total expenditure) and the income level of countries. It offers a clearer understanding of whether wage bill spending is consistent with countries’ respective income levels."
-  })
+ 
   output$downloadGDPDoc <- downloadHandler(
     filename = function() { paste0("Wage_Bill_vs_GDP_Report_", Sys.Date(), ".docx") },
     content = function(file) {
@@ -5231,7 +5228,7 @@ server <- function(input, output, session) {
   })
   
   
-    output$note_dotplot <- renderText({
+    output$note_dotplot_pay <- renderText({
       "Note: This graph compares pay compression ratios in the public and private sectors. The trendline provides a visual reference for overall patterns across countries."
     })
     output$downloadPayCompressionDoc <- downloadHandler(
