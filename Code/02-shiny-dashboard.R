@@ -909,30 +909,32 @@ server <- function(input, output, session) {
           )
         ),
         
-        # Plot + CSV button pinned to the bottom of the right column
+        # Plot (full width)
+        fluidRow(
+          column(12, plotlyOutput("dot_plot_gdp", height = "500px"))
+        ),
+        
+        # Note (full width)
         fluidRow(
           column(
-            width = 8,
-            plotlyOutput("dot_plot_gdp", height = "500px")
-          ),
-          column(
-            width = 4,
-            div(class = "d-flex flex-column justify-content-end", style = "height: 500px;",
-                downloadButton("dl_csv_gdp", "Download data (CSV)", class = "dl-btn w-100")
+            12,
+            div(
+              style = "background-color: rgba(255,255,255,0.05);
+                   border: 1px solid white; border-radius: 10px; padding: 20px;",
+              textOutput("note_dotplot_gdp")
             )
           )
         ),
         
-        # Note
+        # Download button BELOW the note, right-aligned
         fluidRow(
-          div(
-            style = "background-color: rgba(255,255,255,0.05);
-                 border: 1px solid white; border-radius: 10px; padding: 20px;",
-            textOutput("note_dotplot_gdp")
+          column(
+            12,
+            div(class = "text-end mt-3",
+                downloadButton("dl_csv_gdp", "Download data (CSV)", class = "dl-btn"))
           )
         )
       )
-    
     
     } else if(tab == "public_workforce") {
       tagList(
