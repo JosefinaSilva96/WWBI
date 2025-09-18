@@ -872,50 +872,68 @@ server <- function(input, output, session) {
         )
       )
       
-    } else if(tab == "wagebill_gdp") {
+    } else if (tab == "wagebill_gdp") {
       tagList(
         h3("Wage Bill & GDP Graphs"),
+        
+        # Short intro box
         fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              "This graph shows the relationship between the size of the wage bill and GDP per capita.")
+          div(
+            style = "background-color: rgba(255,255,255,0.05);
+                 border: 1px solid white; border-radius: 10px; padding: 20px;",
+            "This graph shows the relationship between the size of the wage bill and GDP per capita."
+          )
         ),
+        
+        # Controls
         fluidRow(
           column(
             width = 7,
             selectInput(
-              "countries",
+              "countries_gdp",
               "Select country(ies)/region(s)/income group(s) – Your first selection will be treated as the reference point in both the graph and the output report",
               choices  = sort(unique(data_wwbi_long$country_name)),
               multiple = TRUE,
-              width    = "100%"       # fill this column
+              width    = "100%"
             ),
-                 downloadButton("downloadGDPDoc", "Download GDP Analysis Report")
+            br(),
+            downloadButton("downloadGDPDoc", "Download GDP Analysis Report",
+                           class = "dl-btn w-100")
           ),
-          column(4,
-                 radioButtons("label_type", "Choose Label Type", 
-                              choices = c("Country", "Region"), selected = "Country")
+          column(
+            width = 5,
+            tags$label(class = "form-label fw-semibold", "Choose label type"),
+            radioButtons("label_type", label = NULL,
+                         choices = c("Country", "Region"),
+                         selected = "Country")
           )
         ),
-        fluidRow(
-          plotlyOutput("dot_plot_gdp", height = "500px"), 
-        ), 
-        fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              textOutput("dot_plot_gdp")
-          )
-        ), 
+        
+        # Plot + CSV button pinned to the bottom of the right column
         fluidRow(
           column(
             width = 8,
-            plotlyOutput("dot_plot_gdp")
+            plotlyOutput("dot_plot_gdp", height = "500px")
           ),
           column(
             width = 4,
-            downloadButton("dl_csv_gdp",  "Download data (CSV)",  class = "dl-btn w-100")
+            div(class = "d-flex flex-column justify-content-end", style = "height: 500px;",
+                downloadButton("dl_csv_gdp", "Download data (CSV)", class = "dl-btn w-100")
+            )
+          )
+        ),
+        
+        # Note
+        fluidRow(
+          div(
+            style = "background-color: rgba(255,255,255,0.05);
+                 border: 1px solid white; border-radius: 10px; padding: 20px;",
+            textOutput("note_dotplot_gdp")
           )
         )
       )
-      
+    
+    
     } else if(tab == "public_workforce") {
       tagList(
         h3("Distribution of Public Sector Employment"),
@@ -1826,71 +1844,57 @@ server <- function(input, output, session) {
     return(ppt)
   }
   
-  
   output$dot_plot_gdp <- renderPlotly({
-    req(input$countries_first)
+    req(input$countries_gdp)
     
-    filtered_data_df <- merged_data %>% 
-      filter(country_name %in% input$countries_first)
+    d <- merged_data %>%
+      dplyr::filter(country_name %in% input$countries_gdp)
     
-    if (nrow(filtered_data_df) == 0) {
-      return(plotly_empty(type = "scatter", mode = "markers") %>%
-               layout(
+    if (nrow(d) == 0) {
+      return(plotly::plotly_empty(type = "scatter", mode = "markers") %>%
+               plotly::layout(
                  title = "No data available",
                  annotations = list(
                    text = "No data available for the selected country/countries.",
-                   xref = "paper",
-                   yref = "paper",
-                   showarrow = FALSE,
-                   font = list(size = 16),
-                   x = 0.5,
-                   y = 0.5
+                   xref = "paper", yref = "paper", showarrow = FALSE,
+                   font = list(size = 16), x = 0.5, y = 0.5
                  ),
-                 plot_bgcolor = "white",
-                 paper_bgcolor = "white"
+                 plot_bgcolor = "white", paper_bgcolor = "white"
                ))
     }
     
-    # If there's data, continue with the normal plot
-    filtered_data_df <- filtered_data_df %>%
-      mutate(color = ifelse(country_name == input$countries_first[1], "#B3242B", "#003366"))
+    first_sel <- input$countries_gdp[1]
+    d <- d %>% dplyr::mutate(color = ifelse(country_name == first_sel, "#B3242B", "#003366"))
     
-    trendline_model <- lm(indicator_value ~ log_gdp, data = filtered_data_df)
-    trendline_values <- predict(trendline_model, newdata = filtered_data_df)
+    # Choose label column safely (Region if present & selected, else Country)
+    region_col <- intersect(c("region","region_name","Region"), names(d))[1]
+    label_vec  <- if (!is.na(region_col) && identical(input$label_type, "Region")) d[[region_col]] else d$country_name
     
-    plot_ly() %>%
-      add_trace(
-        data = filtered_data_df,
-        x = ~log_gdp,
-        y = ~indicator_value,
-        type = "scatter",
-        mode = "markers+text",
-        text = ~country_name,
-        textposition = "top center",
-        marker = list(size = 10, color = ~color, opacity = 0.7)
-      ) %>%
-      add_trace(
-        x = filtered_data_df$log_gdp,
-        y = trendline_values,
-        type = "scatter",
-        mode = "lines",
-        line = list(color = "gray", dash = "dash"),
-        name = "Trendline"
-      ) %>%
-      layout(
+    m    <- lm(indicator_value ~ log_gdp, data = d)
+    pred <- predict(m, newdata = d)
+    
+    plotly::plot_ly(d,
+                    x = ~log_gdp, y = ~indicator_value,
+                    type = "scatter", mode = "markers+text",
+                    text = label_vec, textposition = "top center",
+                    marker = list(size = 10, color = ~color, opacity = 0.7)) %>%
+      plotly::add_trace(x = d$log_gdp, y = pred, inherit = FALSE,
+                        type = "scatter", mode = "lines",
+                        line = list(color = "gray", dash = "dash"),
+                        showlegend = FALSE) %>%
+      plotly::layout(
         title = "Wage Bill vs. Log(GDP per Capita)",
         xaxis = list(title = "Log(GDP per Capita, 2015)"),
         yaxis = list(title = "Wage Bill"),
         showlegend = FALSE,
-        plot_bgcolor = "white",
-        paper_bgcolor = "white"
+        plot_bgcolor = "white", paper_bgcolor = "white"
       )
   })
+  
   output$note_dotplot_gdp <- renderText({
     "Note: This graph shows the relationship between the wage bill (expressed as a share of total expenditure) and the income level of countries. It offers a clearer understanding of whether wage bill spending is consistent with countries’ respective income levels."
   })
   
- 
   output$downloadGDPDoc <- downloadHandler(
     filename = function() { paste0("Wage_Bill_vs_GDP_Report_", Sys.Date(), ".docx") },
     content = function(file) {
@@ -2028,7 +2032,7 @@ server <- function(input, output, session) {
     return(ppt)
   }
 
-  output$dl_dot_csv <- downloadHandler(
+  output$dl_csv_gdp <- downloadHandler(
     filename = function() {
       paste0("wagebill_vs_gdp_", paste(input$countries_first, collapse = "-"), "_", Sys.Date(), ".csv")
     },
