@@ -321,55 +321,82 @@ img.wb-logo.wb-logo--right.padfix {
 }
 /* Optional: keep them aligned nicely */
 .logos-row img { vertical-align: middle; }
- /* Smaller infoBox with blue square (robust to theme overrides) */
+ /* ===== Compact KPI tiles with proper alignment ===== */
 .custom-infobox .info-box{
-  --tile: 72px;            /* size of the blue square */
+  --tile: 72px;            /* blue square size */
   --gap: 14px;             /* space between square and text */
-  min-height: var(--tile);
-  padding: 8px 10px;
+
+  display: flex;           /* align icon + text horizontally */
+  align-items: center;     /* vertical centering relative to square */
+  gap: var(--gap);
+
   background: transparent !important;
   border: 0 !important;
-  position: relative;
+  min-height: var(--tile);
+  padding: 6px 6px;
 }
 
 /* Blue square */
 .custom-infobox .info-box-icon{
-  width: var(--tile);
+  flex: 0 0 var(--tile);           /* fixed square width */
   height: var(--tile);
   border-radius: 12px;
   background-color: #00BFE5 !important;
   color: #fff !important;
 
-  /* Proper centering */
+  /* center the icon inside the square */
   display: flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;
+
+  /* undo shinydashboard's float if present */
+  float: none !important;
 }
 
 /* Icon inside the square */
 .custom-infobox .info-box-icon i,
 .custom-infobox .info-box-icon .glyphicon{
-  font-size: 28px !important;   /* icon size */
+  font-size: 24px !important;      /* smaller icon */
+  line-height: 1;
 }
 
-/* Text block to the right of the square */
+/* Text block */
 .custom-infobox .info-box-content{
-  margin-left: calc(var(--tile) + var(--gap));
-  padding: 6px 0;
+  margin: 0 !important;            /* we use flex gap now */
+  padding: 0;
 }
 
-.custom-infobox .info-box-text   { font-size: 18px; }
-.custom-infobox .info-box-number { font-size: 28px; }
+/* Make text smaller and tighter */
+.custom-infobox .info-box-text{
+  font-size: 15px !important;      /* label */
+  line-height: 1.2;
+  letter-spacing: .2px;
+  margin: 0;
+}
 
-/* Compact sizes on small screens */
+.custom-infobox .info-box-number{
+  font-size: 22px !important;      /* value */
+  font-weight: 600;
+  line-height: 1.1;
+  margin-top: 2px;
+}
+
+/* --- Responsive tweaks --- */
+@media (max-width: 992px){
+  .custom-infobox .info-box{ --tile: 64px; }
+  .custom-infobox .info-box-icon i{ font-size: 22px !important; }
+  .custom-infobox .info-box-text{  font-size: 14px !important; }
+  .custom-infobox .info-box-number{ font-size: 20px !important; }
+}
+
 @media (max-width: 768px){
-  .custom-infobox .info-box{
-    --tile: 60px;
-    --gap: 10px;
-  }
-  .custom-infobox .info-box-text   { font-size: 16px; }
-  .custom-infobox .info-box-number { font-size: 24px; }
+  .custom-infobox .info-box{ --tile: 56px; --gap: 10px; padding: 6px 4px; }
+  .custom-infobox .info-box-icon i{ font-size: 20px !important; }
+  .custom-infobox .info-box-text{  font-size: 13px !important; }
+  .custom-infobox .info-box-number{ font-size: 18px !important; }
+}
+ #graph_choice .form-check { margin-bottom: .25rem; }
+
 ")),
   
   # ------- Accordion styles to match your palette -------
@@ -430,6 +457,59 @@ img.wb-logo.wb-logo--right.padfix {
       color:#fff;
     }
   li i.fa, li i.fas, li i.fa-solid { margin: 0 6px; color: #fff; }
+  /* Let the label have a wider line so it doesn't stack to 3–4 lines */
+.custom-infobox .info-box{
+  --tile: 72px;          /* your square size */
+  --gap: 14px;           /* space between square and text */
+  --label-min: 280px;    /* <<< width for the text block; bump to 250–280 if needed */
+}
+
+/* The text area (to the right of the square) gets some minimum width */
+.custom-infobox .info-box-content{
+  flex: 1 0 var(--label-min);   /* at least --label-min wide, can grow */
+  max-width: 100%;
+  margin: 0 !important;
+  padding: 0;
+  white-space: normal;          /* ensure it can wrap */
+}
+
+/* Keep the label to about ~2 lines by limiting the line length */
+.custom-infobox .info-box-text{
+  max-width: 22ch;              /* ≈ two lines for “Temporal Coverage (Annual)” */
+  font-size: 15px !important;
+  line-height: 1.2;
+}
+
+/* Value size */
+.custom-infobox .info-box-number{
+  font-size: 22px !important;
+  line-height: 1.1;
+  margin-top: 2px;
+}
+/* Keep the group left-aligned */
+#graph_choice { text-align: left; }
+
+/* Title aligned with the radio *dots* */
+#graph_choice .rb-title{
+  display: block;
+  font-weight: 700;
+  font-size: 1.1rem;
+  line-height: 1.2;
+  margin: 0 0 .25rem 0;
+  padding-left: 0;           /* no indent */
+  margin-left: -1.9 rem;     /* pull left to match the dots; tweak 1.9–2.2rem */
+}
+
+/* Optional: tweak on small screens */
+@media (max-width: 768px){
+  #graph_choice .rb-title{
+    font-size: 1.0rem;
+    padding-left: 1.9rem;
+  }
+}
+
+/* (optional) tighten radio item spacing a bit */
+#graph_choice .form-check { margin-bottom: .3rem; }
 ")),
   # ------- JS to toggle sidebar submenus (yours) -------
   tags$script(HTML( "function toggleSection(id){
@@ -744,17 +824,29 @@ server <- function(input, output, session) {
               "This visualization explores the wage bill over time for selected countries.")
         ),
         fluidRow(
-          column(4,
-                 selectInput("countries", "Select Countries:",
-                             choices = unique(data_wwbi_long$country_name),
-                             selected = NULL,  # No default; user must select one or more
-                             multiple = TRUE)
+          # LEFT: wide selector
+          column(
+            width = 7,
+            selectInput(
+              "countries",
+              "Select country(ies)/region(s)/income group(s) – Your first selection will be treated as the reference point in both the graph and the output report",
+              choices  = sort(unique(data_wwbi_long$country_name)),
+              multiple = TRUE,
+              width    = "100%"       # fill this column
+            )
           ),
-          column(4,
-                 radioButtons("graph_choice", "Choose a measure of wage bill:",
-                              choices = c("Wage Bill as % of Public Expenditure" = "Public",
-                                          "Wage Bill as % of GDP" = "GDP"),
-                              selected = "Public")
+          
+          # RIGHT: radio buttons
+          column(
+            width = 5,
+            radioButtons(
+              "graph_choice",
+              label = tags$span(class = "rb-title", "Choose wage-bill measure:"),
+              choices  = c("Wage Bill as % of Public Expenditure" = "Public",
+                           "Wage Bill as % of GDP"                  = "GDP"),
+              selected = "Public",
+              inline   = FALSE
+            )
           )
         ),
         fluidRow(
@@ -785,15 +877,19 @@ server <- function(input, output, session) {
         h3("Wage Bill & GDP Graphs"),
         fluidRow(
           div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              "This graph shows the relationship between the size of the wage bill and GDP per capita.")
+              "This graph shows the relationship between the wage bill (expressed as a share of total expenditure) and the income level of countries. It offers a clearer understanding of whether wage bill spending is consistent with countries’ respective income levels.")
         ),
         fluidRow(
-          column(4,
-                 selectInput("countries_first", "Select Countries:", 
-                             choices = unique(data_wwbi_long$country_name), 
-                             multiple = TRUE, width = "100%"),
+          column(
+            width = 7,
+            selectInput(
+              "countries",
+              "Select country(ies)/region(s)/income group(s) – Your first selection will be treated as the reference point in both the graph and the output report",
+              choices  = sort(unique(data_wwbi_long$country_name)),
+              multiple = TRUE,
+              width    = "100%" ,      # fill this column
                  downloadButton("downloadGDPDoc", "Download GDP Analysis Report")
-          ),
+          )),
           column(4,
                  radioButtons("label_type", "Choose Label Type", 
                               choices = c("Country", "Region"), selected = "Country")
