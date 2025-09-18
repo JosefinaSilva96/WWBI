@@ -259,6 +259,57 @@ ui <- bootstrapPage(
   }
   .nav-sub-item:hover { background: rgba(255,255,255,.06); transform: translateX(2px); }
   .nav-sub-item.active { background: rgba(111,168,220,.22); }
+
+  /* =========================
+     Accordion (Bootstrap 5)
+     ========================= */
+  .accordion-item{
+    background-color:#2b4c66;
+    border:1px solid #6fa8dc;
+    border-radius:12px !important;
+    margin-bottom:14px;
+    overflow:hidden;
+    color:#fff;
+  }
+  .accordion-button{
+    background-color:#2b4c66;
+    color:#fff;
+    box-shadow:none !important;
+    font-size:18px;
+    padding:16px 20px;
+  }
+  .accordion-button:not(.collapsed){
+    background-color:#356088;
+    color:#fff;
+  }
+  .accordion-button:focus{
+    box-shadow:none !important;
+  }
+  .accordion-body{
+    background-color:#356088;
+    color:#fff;
+    padding:18px 22px;
+    border-top:1px solid #6fa8dc;
+  }
+  .accordion-button::after{ filter: invert(1); }  /* white chevron */
+
+  /* =========================
+     Logos: force same visual size
+     ========================= */
+  .logos-row { display:flex; align-items:center; }
+  .logo-wrap { display:flex; justify-content:center; }
+
+  img.wb-logo{
+    height:64px;            /* fixed equal height for both */
+    width:auto;             /* keep aspect ratio */
+    display:inline-block;
+    object-fit:contain;
+  }
+  /* Optional: if one file has big transparent padding, nudge it a bit */
+  img.wb-logo.wb-logo--padfix{
+    transform: scale(1.08);
+    transform-origin: center;
+  }
 ")),
   
   # ------- Accordion styles to match your palette -------
@@ -452,18 +503,20 @@ server <- function(input, output, session) {
     
     if (tab == "dashboard") {
       tagList(   # wrap everything in tagList
-        fluidRow(class = "mb-3",
-                 column(6, align = "center",
-                        tags$img(
-                          src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/wbg_dec_logo.png",
-                          class = "wb-logo"
-                        )
+        fluidRow(class = "mb-3 logos-row",
+                 column(
+                   6, div(class = "logo-wrap",
+                          tags$img(
+                            src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/wbg_dec_logo.png",
+                            class = "wb-logo"
+                        ))
                  ),
-                 column(6, align = "center",
-                        tags$img(
-                          src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/wbg_institutions_logo.png",
-                          class = "wb-logo"
-                        )
+                 column(
+                   6, div(class = "logo-wrap",
+                          tags$img(
+                            src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/wbg_institutions_logo.png",
+                            class = "wb-logo wb-logo--padfix"   # optional nudge if it looks smaller
+                        ))
                  )
         ),
         h3("Overview"),
