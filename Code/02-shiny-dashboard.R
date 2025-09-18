@@ -637,17 +637,22 @@ server <- function(input, output, session) {
           
           accordion_panel("Resources & links",
                           tags$p(
-                            "GitHub Repository: ",
+                            "GitHub Repository:The construction files for all indicators included in the dataset can be accessed in the repository:",
                             tags$a(href="https://github.com/worldbank/Worldwide-Bureaucracy-Indicators",
                                    "https://github.com/worldbank/Worldwide-Bureaucracy-Indicators", target="_blank")
                           ),
                           tags$p(
-                            "Data Catalog: ",
+                            "Data Catalog: The full WWBI dataset, available in multiple file formats, can be accessed at:",
                             tags$a(href="https://datacatalog.worldbank.org/int/home",
                                    "https://datacatalog.worldbank.org/int/home", target="_blank")
                           ),
-                          div(style="margin-top:8px;",
-                              downloadButton("download_pdf", "📥 Download Codebook"))
+                          accordion_panel(
+                            "Codebook",
+                            p("Further details on the dataset, along with definitions of the indicators and their construction, can be found in the codebook below."),
+                            div(style = "margin-top: 8px;",
+                                downloadButton("download_pdf", "📥 Download Codebook", class = "btn btn-primary")
+                            )
+                          )
           )
         )
       )
