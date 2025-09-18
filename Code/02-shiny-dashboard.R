@@ -630,7 +630,7 @@ server <- function(input, output, session) {
                             tags$li("To check indicator availability, go to “Metadata”. Select an indicator to see which countries have data and their values."),
                             tags$li("Dropdowns only list options with available data for the chosen indicator."),
                             tags$li("The first selected country appears first in graphs and acts as the benchmark."),
-                            tags$li("Each tab offers different graphs; download them individually if you like."),
+                            tags$li("Each tab provides downloadable graphs. To download, select the icon content may be incorrect.icon in the top-right corner of each visualization"),
                             tags$li("Or set selections across tabs, then use “Download All Graphs” to export a comprehensive, pre-formatted Word report.")
                           )
           ),
