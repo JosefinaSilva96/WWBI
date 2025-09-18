@@ -321,6 +321,55 @@ img.wb-logo.wb-logo--right.padfix {
 }
 /* Optional: keep them aligned nicely */
 .logos-row img { vertical-align: middle; }
+ /* Smaller infoBox with blue square (robust to theme overrides) */
+.custom-infobox .info-box{
+  --tile: 72px;            /* size of the blue square */
+  --gap: 14px;             /* space between square and text */
+  min-height: var(--tile);
+  padding: 8px 10px;
+  background: transparent !important;
+  border: 0 !important;
+  position: relative;
+}
+
+/* Blue square */
+.custom-infobox .info-box-icon{
+  width: var(--tile);
+  height: var(--tile);
+  border-radius: 12px;
+  background-color: #00BFE5 !important;
+  color: #fff !important;
+
+  /* Proper centering */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* Icon inside the square */
+.custom-infobox .info-box-icon i,
+.custom-infobox .info-box-icon .glyphicon{
+  font-size: 28px !important;   /* icon size */
+}
+
+/* Text block to the right of the square */
+.custom-infobox .info-box-content{
+  margin-left: calc(var(--tile) + var(--gap));
+  padding: 6px 0;
+}
+
+.custom-infobox .info-box-text   { font-size: 18px; }
+.custom-infobox .info-box-number { font-size: 28px; }
+
+/* Compact sizes on small screens */
+@media (max-width: 768px){
+  .custom-infobox .info-box{
+    --tile: 60px;
+    --gap: 10px;
+  }
+  .custom-infobox .info-box-text   { font-size: 16px; }
+  .custom-infobox .info-box-number { font-size: 24px; }
 ")),
   
   # ------- Accordion styles to match your palette -------
