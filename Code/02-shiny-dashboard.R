@@ -299,25 +299,26 @@ ui <- bootstrapPage(
   .logos-row { display:flex; align-items:center; }
   .logo-wrap { display:flex; justify-content:center; }
 
-  /* Base size (left logo) */
+  /* Base: left logo (and general) */
 img.wb-logo {
-  height: 64px;
+  height: 64px;          /* base size */
+  max-height: none;      /* remove earlier caps */
   width: auto;
   display: inline-block;
   object-fit: contain;
 }
 
-/* Optional nudge if a logo has extra transparent padding */
-img.wb-logo.wb-logo--padfix {
-  transform: scale(1.08);
+/* Make the RIGHT logo bigger */
+img.wb-logo.wb-logo--right {
+  height: 80px !important;   /* override any previous rules */
+  max-height: none !important;
+}
+
+/* If the right PNG has a lot of transparent padding, add a small scale bump */
+img.wb-logo.wb-logo--right.padfix {
+  transform: scale(1.12);
   transform-origin: center;
 }
-
-/* Make the RIGHT logo a bit bigger */
-img.wb-logo--right {
-  height: 74px;   /* tweak this (70–78px) to taste */
-}
-
 /* Optional: keep them aligned nicely */
 .logos-row img { vertical-align: middle; }
 ")),
