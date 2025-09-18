@@ -877,7 +877,7 @@ server <- function(input, output, session) {
         h3("Wage Bill & GDP Graphs"),
         fluidRow(
           div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              "This graph shows the relationship between the wage bill (expressed as a share of total expenditure) and the income level of countries. It offers a clearer understanding of whether wage bill spending is consistent with countries’ respective income levels.")
+              "This graph shows the relationship between the size of the wage bill and GDP per capita.")
         ),
         fluidRow(
           column(
@@ -887,16 +887,17 @@ server <- function(input, output, session) {
               "Select country(ies)/region(s)/income group(s) – Your first selection will be treated as the reference point in both the graph and the output report",
               choices  = sort(unique(data_wwbi_long$country_name)),
               multiple = TRUE,
-              width    = "100%" ,      # fill this column
+              width    = "100%"       # fill this column
+            ),
                  downloadButton("downloadGDPDoc", "Download GDP Analysis Report")
-          )),
+          ),
           column(4,
                  radioButtons("label_type", "Choose Label Type", 
                               choices = c("Country", "Region"), selected = "Country")
           )
         ),
         fluidRow(
-          plotlyOutput("dot_plot", height = "500px"), 
+          plotlyOutput("dot_plot_gdp", height = "500px"), 
         ), 
         fluidRow(
           div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
@@ -1886,8 +1887,12 @@ server <- function(input, output, session) {
       )
   })
   
+  output$note_dotplot_gdp <- renderText({
+    "Note: This graph shows the relationship between the wage bill (expressed as a share of total expenditure) and the income level of countries. It offers a clearer understanding of whether wage bill spending is consistent with countries’ respective income levels."
+  })
+  
   output$note_dotplot <- renderText({
-    "Note: This indicator represents the relationship between wage bill and log(GDP per capita). The trendline provides a visual reference for the overall pattern."
+    "Note: This graph shows the relationship between the wage bill (expressed as a share of total expenditure) and the income level of countries. It offers a clearer understanding of whether wage bill spending is consistent with countries’ respective income levels."
   })
   output$downloadGDPDoc <- downloadHandler(
     filename = function() { paste0("Wage_Bill_vs_GDP_Report_", Sys.Date(), ".docx") },
@@ -1900,14 +1905,14 @@ server <- function(input, output, session) {
       title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
       doc <- doc %>% body_add_fpar(fpar(ftext(report_title, prop = title_style)))
       doc <- doc %>% body_add_par("Introduction", style = "heading 2") %>% 
-        body_add_par("This note presents evidence on public sector employment and compensation practices...", style = "Normal")
+        body_add_par("This section shows the relationship between the wage bill (expressed as a share of total expenditure) and the income level of countries. It offers a clearer understanding of whether wage bill spending is consistent with countries’ respective income levels.", style = "Normal")
       plot <- ggplot(filtered_data_df, aes(x = log_gdp, y = indicator_value, color = country_name)) +
         geom_point(size = 3) +
         geom_smooth(method = "lm", color = "gray", linetype = "dashed") +
         labs(title = "Wage Bill vs. Log(GDP per Capita)", x = "Log(GDP per Capita, 2015)", y = "Wage Bill") +
         theme_minimal()
       doc <- doc %>% body_add_gg(value = plot, style = "centered") %>% 
-        body_add_par("Note: This indicator represents the relationship between wage bill and log(GDP per capita). The trendline provides a visual reference for the overall pattern.", 
+        body_add_par("Note:This graph shows the relationship between the wage bill (expressed as a share of total expenditure) and the income level of countries. It offers a clearer understanding of whether wage bill spending is consistent with countries’ respective income levels", 
                      style = "Normal")
       print(doc, target = file)
     }
@@ -1980,7 +1985,7 @@ server <- function(input, output, session) {
     
     doc <- doc %>%
       body_add_img(src = img_path, width = 6, height = 4) %>%
-      body_add_par("Note: This indicator represents the relationship between wage bill and log(GDP per capita). The trendline provides a visual reference for the overall pattern.", style = "Normal") %>%
+      body_add_par("Note: This graph shows the relationship between the wage bill (expressed as a share of total expenditure) and the income level of countries. It offers a clearer understanding of whether wage bill spending is consistent with countries’ respective income levels", style = "Normal") %>%
       body_add_par(interpretation_text, style = "Normal")
     
     return(doc)
