@@ -536,9 +536,21 @@ server <- function(input, output, session) {
           multiple = TRUE,
           open = character(0),   # start collapsed; use "About the WWBI" to start one open
           
-          accordion_panel("About the WWBI",
-                          p("The Worldwide Bureaucracy Indicators (WWBI) database is a unique cross-national dataset on public sector employment and wages that aims to fill an information gap, thereby helping researchers, development practitioners, and policymakers gain a better understanding of the personnel dimensions of state capability, the footprint of the public sector within the overall labor market, and the fiscal implications of the public sector wage bill. The dataset is derived from administrative data and household surveys, thereby complementing existing, expert perception-based approaches.")
-          ),
+          accordion_panel(
+            "About the WWBI",
+            tagList(
+              p("The Worldwide Bureaucracy Indicators (WWBI) database is a unique cross-national dataset on public sector employment and wages that aims to fill an information gap, thereby helping researchers, development practitioners, and policymakers gain a better understanding of the personnel dimensions of state capability, the footprint of the public sector within the overall labor market, and the fiscal implications of the public sector wage bill. The dataset is derived from administrative data and household surveys, thereby complementing existing, expert perception-based approaches."),
+              p("The dataset provides answers to some of the most important questions on the level and distribution of employment and wages. A few key indicators include:"),
+              tags$ul(
+                tags$li("Size of the public and private sector workforce"),
+                tags$li("Demographics of public and private sector employment: distributions by gender, age, education, and industry"),
+                tags$li("Gender equity in public and private sectors"),
+                tags$li("Public sector wage premiums"),
+                tags$li("Distributions of public sector wage premiums by education, occupation, industry, and gender"),
+                tags$li("Gender wage gaps in the public and private sectors"),
+                tags$li("Pay compression ratios in public and private sectors (ratio of 90th to 10th percentile earners)"),
+                tags$li("The relative size of the public sector wage bill")
+              ))),
           
           accordion_panel("Contact Information",
                           tags$p(
