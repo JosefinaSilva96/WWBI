@@ -2033,17 +2033,37 @@ server <- function(input, output, session) {
     
     return(ppt)
   }
-
+  dot_data_gdp <- reactive({
+    req(input$countries_gdp)
+    d <- merged_data %>%
+      dplyr::filter(country_name %in% input$countries_gdp)
+    
+    req(nrow(d) > 0)
+    
+    # pick a region column if it exists
+    region_col <- intersect(c("region","region_name","wb_region","Region"), names(d))[1]
+    
+    d %>%
+      dplyr::mutate(
+        label = if (!is.na(region_col) && identical(input$label_type, "Region"))
+          .data[[region_col]] else country_name
+      ) %>%
+      # keep only the columns that exist in your data
+      dplyr::select(dplyr::any_of(c("country_name", "label", "year",
+                                    "indicator_value", "log_gdp")))
+  })
+  
   output$dl_csv_gdp <- downloadHandler(
     filename = function() {
-      paste0("wagebill_vs_gdp_", paste(input$countries_first, collapse = "-"), "_", Sys.Date(), ".csv")
+      who <- if (length(input$countries_gdp)) paste(input$countries_gdp, collapse = "-") else "all"
+      paste0("wagebill_vs_gdp_", who, "_", Sys.Date(), ".csv")
     },
     content = function(file) {
-      d <- dot_data()
-      req(!is.null(d), nrow(d) > 0)
-      out <- d %>% dplyr::select(country_name, year, indicator_value, log_gdp)
-      write.csv(out, file, row.names = FALSE)
-    }
+      d <- dot_data_gdp()
+      req(nrow(d) > 0)
+      utils::write.csv(d, file, row.names = FALSE)
+    },
+    contentType = "text/csv"     # avoids “.htm” save dialog
   )
   
   #Workforce graphs 
