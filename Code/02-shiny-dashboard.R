@@ -1127,7 +1127,7 @@ server <- function(input, output, session) {
           column(
             width = 7,
             selectInput(
-              "countries_gdp",
+              "countries_first",
               "Select country(ies)/region(s)/income group(s) – Your first selection will be treated as the reference point in both the graph and the output report",
               choices  = sort(unique(data_wwbi_long$country_name)),
               multiple = TRUE,
@@ -3591,7 +3591,7 @@ server <- function(input, output, session) {
   
   
   output$note_firstGraphpublic <- renderText({
-    "Note: This indicator represents public sector employment as a percentage of total employment for the most recent year available in each country."
+    "Note:This visualization shows the relative size of public sector employment in the labor market, measured by its share of formal, paid, and total employment for the latest available year. "
   })
   
   # Second Graph - Single-Country Line Plot
@@ -3642,68 +3642,114 @@ server <- function(input, output, session) {
   
   
   output$note_secondGraphpublic <- renderText({
-    "Note: This indicator represents the trend in public sector employment over time, showing how employment levels have evolved across different years."
+    "Note: This visualization shows the evolution of public sector employment in the labor market of the selected country, expressed as its share of formal, paid, and total employment."
   })
   
   
   # Download Handler - Save Graphs to Word Document
   output$downloadGraphsWord <- downloadHandler(
-    filename = function() {
-      paste0("Public_Sector_Employment_", Sys.Date(), ".docx")
-    },
+    filename = function() paste0("Public_Sector_Employment_", Sys.Date(), ".docx"),
     content = function(file) {
-      doc <- read_docx()
       
-      # Title
-      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
-      doc <- doc %>% body_add_fpar(fpar(ftext("Public Sector Employment Analysis", prop = title_style)))
+      req(input$countries_first, length(input$countries_first) > 0, input$country_second)
       
-      # Intro Text
-      doc <- doc %>% body_add_par("This report presents the analysis of public sector employment across selected countries and its trend over time.", style = "Normal")
+      first_sel <- input$countries_first[1]
       
-      # First Graph - Save as Image
-      first_graph <- ggplot(public_sector_emp_temp_last %>% filter(country_name %in% input$countries_first), 
-                            aes(x = country_name, y = value_percentage, color = indicator_label)) +
-        geom_point(size = 4) +
-        scale_color_manual(values = c(
-          "as a share of formal employment" = "#E69F00",  # Orange
-          "as a share of paid employment"   = "#56B4E9",  # Sky Blue
-          "as a share of total employment"  = "#009E73"   # Bluish Green
-        )) +
-        labs(
-          title = "Public Sector Employment (Last Year Available)", 
-          x = "Country", 
-          y = "Value", 
-          color = "Sector"
-        ) +
-        theme_minimal()
+      # --- data (unchanged) ---
+      d1 <- public_sector_emp_temp_last %>%
+        dplyr::filter(country_name %in% input$countries_first) %>%
+        dplyr::mutate(
+          indicator_label = factor(indicator_label, levels = c(
+            "as a share of formal employment",
+            "as a share of paid employment",
+            "as a share of total employment"
+          )),
+          country_name = factor(country_name, levels = input$countries_first)
+        )
+      req(nrow(d1) > 0, cancelOutput = TRUE)
       
-      img_path1 <- tempfile(fileext = ".png")
-      ggsave(img_path1, plot = first_graph, width = 8, height = 6)
+      d2 <- public_sector_emp_temp %>%
+        dplyr::filter(country_name == input$country_second) %>%
+        dplyr::mutate(
+          indicator_label = factor(indicator_label, levels = c(
+            "as a share of formal employment",
+            "as a share of paid employment",
+            "as a share of total employment"
+          ))
+        )
+      req(nrow(d2) > 0, cancelOutput = TRUE)
       
-      doc <- doc %>% body_add_par("Public Sector Employment - Last Year Available", style = "heading 2")
-      doc <- doc %>% body_add_img(src = img_path1, width = 6, height = 4)
+      # --- doc start ---
+      doc <- officer::read_docx()
       
-      # Second Graph - Save as Image
-      second_graph <- ggplot(public_sector_emp_temp %>% filter(country_name == input$country_second), 
-                             aes(x = year, y = value_percentage, color = indicator_label)) +
-        geom_line(size = 1.2) +
-        geom_point(size = 3) +
-        labs(title = "Public Sector Employment Over Time", x = "Year", y = "Value") +
-        theme_minimal()
+      # 1. Title with rule under it
+      h1_txt <- paste0("1. Public Sector Employment — ", first_sel)
+      h1_fmt <- officer::fp_text(font.size = 20, bold = TRUE)
+      rule   <- officer::fp_border(color = "#000000", width = 1)
+      p_rule <- officer::fp_par(border.bottom = rule, padding.bottom = 4)
       
-      img_path2 <- tempfile(fileext = ".png")
-      ggsave(img_path2, plot = second_graph, width = 8, height = 6)
+      doc <- doc |>
+        officer::body_add_fpar(officer::fpar(officer::ftext(h1_txt, h1_fmt))) |>
+        officer::body_add_fpar(officer::fpar(officer::ftext(""), fp_p = p_rule))
       
-      doc <- doc %>% body_add_par("Public Sector Employment Over Time", style = "heading 2")
-      doc <- doc %>% body_add_img(src = img_path2, width = 6, height = 4)
+      # 1.1 Introduction  —— your “This report …” text goes here
+      h2_fmt <- officer::fp_text(font.size = 14, bold = TRUE)
+      doc <- doc |>
+        officer::body_add_fpar(officer::fpar(officer::ftext("1.1 Introduction", h2_fmt))) |>
+        officer::body_add_par(
+          "This report presents the analysis of public sector employment across selected countries and its trend over time.",
+          style = "Normal"
+        )
       
-      # Save the Document
+      # 1.2 Size and Characteristics of the Public Sector (before graphs)
+      doc <- doc |>
+        officer::body_add_fpar(
+          officer::fpar(officer::ftext("1.2 Size and Characteristics of the Public Sector", h2_fmt))
+        )
+      
+      # ---- Graph 1 + note ----
+      p1 <- ggplot2::ggplot(d1, ggplot2::aes(x = country_name, y = value_percentage, color = indicator_label)) +
+        ggplot2::geom_point(size = 4) +
+        ggplot2::scale_color_manual(values = c(
+          "as a share of formal employment" = "#E69F00",
+          "as a share of paid employment"   = "#56B4E9",
+          "as a share of total employment"  = "#009E73"
+        ), drop = FALSE, name = "Indicator") +
+        ggplot2::labs(title = "Public Sector Employment (Last Year Available)", x = "Country", y = "Value (%)") +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+      
+      img1 <- tempfile(fileext = ".png"); ggplot2::ggsave(img1, plot = p1, width = 8, height = 6, dpi = 300)
+      doc <- doc |>
+        officer::body_add_img(src = img1, width = 6.5, height = 4.8) |>
+        officer::body_add_par(
+          "Note: This visualization shows the relative size of public sector employment in the labor market, measured by its share of formal, paid, and total employment for the latest available year.",
+          style = "Normal"
+        )
+      
+      # ---- Graph 2 + note ----
+      p2 <- ggplot2::ggplot(d2, ggplot2::aes(x = year, y = value_percentage, color = indicator_label, group = indicator_label)) +
+        ggplot2::geom_line(size = 1.1) +
+        ggplot2::geom_point(size = 2.8) +
+        ggplot2::scale_color_manual(values = c(
+          "as a share of formal employment" = "#E69F00",
+          "as a share of paid employment"   = "#56B4E9",
+          "as a share of total employment"  = "#009E73"
+        ), drop = FALSE, name = "Indicator") +
+        ggplot2::labs(title = paste0("Public Sector Employment Over Time — ", input$country_second), x = "Year", y = "Value (%)") +
+        ggplot2::theme_minimal()
+      
+      img2 <- tempfile(fileext = ".png"); ggplot2::ggsave(img2, plot = p2, width = 8, height = 6, dpi = 300)
+      doc <- doc |>
+        officer::body_add_img(src = img2, width = 6.5, height = 4.8) |>
+        officer::body_add_par(
+          "Note: This visualization shows the evolution of public sector employment in the labor market of the selected country, expressed as its share of formal, paid, and total employment.",
+          style = "Normal"
+        )
+      
       print(doc, target = file)
     }
   )
-  
-  
   generate_public_sector_employment_section <- function(doc, selected_countries) {
     # Add Section Title and Intro
     doc <- doc %>% 
