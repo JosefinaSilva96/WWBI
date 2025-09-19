@@ -1124,9 +1124,15 @@ server <- function(input, output, session) {
         
         # Multi-Country Selection for First Graph
         fluidRow(
-          selectInput("countries_first", "Select Countries for First Graph", 
-                      choices = unique(data_wwbi_long$country_name), multiple = TRUE)
-        ),
+          column(
+            width = 7,
+            selectInput(
+              "countries_gdp",
+              "Select country(ies)/region(s)/income group(s) – Your first selection will be treated as the reference point in both the graph and the output report",
+              choices  = sort(unique(data_wwbi_long$country_name)),
+              multiple = TRUE,
+              width    = "100%"
+            )),
         
         # Dot Plot Output
         fluidRow(
@@ -1138,7 +1144,7 @@ server <- function(input, output, session) {
         ),
         # Single-Country Selection for Line Graph
         fluidRow(
-          selectInput("country_second", "Select Country for Second Graph", 
+          selectInput("country_second", "Select country/region/income group", 
                       choices = unique(data_wwbi_long$country_name), multiple = FALSE)
         ),
         
@@ -1154,6 +1160,7 @@ server <- function(input, output, session) {
         fluidRow(
           downloadButton("downloadGraphsWord", "Download Graphs as Word File")
         )
+      )
       )
     } else if(tab == "gender_workforce") {
       tagList(
@@ -1893,7 +1900,6 @@ server <- function(input, output, session) {
       )
   })
   
- 
   output$downloadGDPDoc <- downloadHandler(
     filename = function() paste0("Wage_Bill_vs_GDP_Report_", Sys.Date(), ".docx"),
     content = function(file) {
@@ -1906,7 +1912,7 @@ server <- function(input, output, session) {
       first_sel    <- input$countries_gdp[1]
       report_title <- paste("Wage Bill vs. GDP Analysis Report –", first_sel)
       
-      # choose label: Region if user selected that and a region column exists; else country
+      # choose label (Region if selected & available, else Country)
       region_col <- intersect(c("region","region_name","Region"), names(filtered_data_df))[1]
       label_vec  <- if (!is.na(region_col) && identical(input$label_type, "Region")) {
         filtered_data_df[[region_col]]
@@ -1914,6 +1920,7 @@ server <- function(input, output, session) {
         filtered_data_df$country_name
       }
       
+      # build doc
       doc <- officer::read_docx()
       doc <- doc |>
         officer::body_add_par(report_title, style = "heading 1") |>
@@ -1925,29 +1932,37 @@ server <- function(input, output, session) {
         officer::body_add_par("Macro Fundamentals of the Public Sector", style = "heading 2") |>
         officer::body_add_par("", style = "Normal")
       
+      # data for plot (first selection red, others blue)
+      d_plot <- filtered_data_df |>
+        dplyr::mutate(
+          highlight = ifelse(country_name == first_sel, "Selected country", "Other countries"),
+          label = label_vec
+        )
       
-      # plot with labels
-      p <- ggplot2::ggplot(d_plot, aes(x = log_gdp, y = indicator_value)) +
-        ggplot2::geom_point(aes(color = highlight), size = 3, alpha = 0.9) +
+      # plot — labels black, NO LEGEND
+      p <- ggplot2::ggplot(d_plot, ggplot2::aes(x = log_gdp, y = indicator_value)) +
+        ggplot2::geom_point(ggplot2::aes(color = highlight), size = 3, alpha = 0.9, show.legend = FALSE) +
         ggrepel::geom_text_repel(
-          aes(label = label),          
-          color = "black",             
-          size = 3, max.overlaps = 30, box.padding = 0.4, point.padding = 0.5,
+          ggplot2::aes(label = label),
+          color = "black", size = 3, max.overlaps = 30, box.padding = 0.4, point.padding = 0.5,
           show.legend = FALSE
         ) +
         ggplot2::geom_smooth(method = "lm", color = "gray50", linetype = "dashed", se = FALSE) +
         ggplot2::scale_color_manual(
-          values = c("Selected country" = "#B3242B", "Other countries" = "#003366")
+          values = c("Selected country" = "#B3242B", "Other countries" = "#003366"),
+          guide = "none"                                  # <- hide legend
         ) +
         ggplot2::labs(
           title = "Wage Bill vs. Log(GDP per Capita)",
           x = "Log(GDP per Capita, 2015)",
-          y = "Wage Bill (% of Public Expenditure)",
-          color = NULL
+          y = "Wage Bill (% of Public Expenditure)"
         ) +
         ggplot2::theme_minimal() +
-        ggplot2::coord_cartesian(clip = "off") +                      # avoid trimmed labels
-        ggplot2::theme(plot.margin = margin(10, 40, 10, 10))          # room for labels
+        ggplot2::coord_cartesian(clip = "off") +
+        ggplot2::theme(
+          legend.position = "none",                        # <- extra safeguard
+          plot.margin = ggplot2::margin(10, 40, 10, 10)
+        )
       
       doc <- doc |>
         officer::body_add_gg(value = p, width = 6.5, height = 4.5) |>
@@ -1957,8 +1972,9 @@ server <- function(input, output, session) {
         )
       
       print(doc, target = file)
-    })
-
+    }
+  )
+  
   generate_gdp_analysis_section <- function(doc, selected_countries) {
     filtered_data_df <- merged_data %>% dplyr::filter(country_name %in% selected_countries)
     if (nrow(filtered_data_df) == 0) {
