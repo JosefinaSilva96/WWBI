@@ -1893,105 +1893,132 @@ server <- function(input, output, session) {
       )
   })
   
-  output$note_dotplot_gdp <- renderText({
-    "Note: This graph shows the relationship between the wage bill (expressed as a share of total expenditure) and the income level of countries. It offers a clearer understanding of whether wage bill spending is consistent with countries’ respective income levels."
-  })
-  
+ 
   output$downloadGDPDoc <- downloadHandler(
-    filename = function() { paste0("Wage_Bill_vs_GDP_Report_", Sys.Date(), ".docx") },
+    filename = function() paste0("Wage_Bill_vs_GDP_Report_", Sys.Date(), ".docx"),
     content = function(file) {
-      filtered_data_df <- merged_data %>% filter(country_name %in% input$countries_first)
+      req(input$countries_gdp)
+      
+      filtered_data_df <- merged_data %>%
+        dplyr::filter(country_name %in% input$countries_gdp)
       req(nrow(filtered_data_df) > 0)
-      countries <- if (!is.null(input$countries) & length(input$countries) > 0) input$countries[1] else "Unknown Country"
-      report_title <- paste("Wage Bill vs. GDP Analysis Report -", countries)
-      doc <- read_docx()
-      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
-      doc <- doc %>% body_add_fpar(fpar(ftext(report_title, prop = title_style)))
-      doc <- doc %>% body_add_par("Introduction", style = "heading 2") %>% 
-        body_add_par("This section shows the relationship between the wage bill (expressed as a share of total expenditure) and the income level of countries. It offers a clearer understanding of whether wage bill spending is consistent with countries’ respective income levels.", style = "Normal")
-      plot <- ggplot(filtered_data_df, aes(x = log_gdp, y = indicator_value, color = country_name)) +
-        geom_point(size = 3) +
-        geom_smooth(method = "lm", color = "gray", linetype = "dashed") +
-        labs(title = "Wage Bill vs. Log(GDP per Capita)", x = "Log(GDP per Capita, 2015)", y = "Wage Bill") +
-        theme_minimal()
-      doc <- doc %>% body_add_gg(value = plot, style = "centered") %>% 
-        body_add_par("Note:This graph shows the relationship between the wage bill (expressed as a share of total expenditure) and the income level of countries. It offers a clearer understanding of whether wage bill spending is consistent with countries’ respective income levels", 
-                     style = "Normal")
+      
+      first_sel    <- input$countries_gdp[1]
+      report_title <- paste("Wage Bill vs. GDP Analysis Report –", first_sel)
+      
+      # choose label: Region if user selected that and a region column exists; else country
+      region_col <- intersect(c("region","region_name","Region"), names(filtered_data_df))[1]
+      label_vec  <- if (!is.na(region_col) && identical(input$label_type, "Region")) {
+        filtered_data_df[[region_col]]
+      } else {
+        filtered_data_df$country_name
+      }
+      
+      doc <- officer::read_docx()
+      doc <- doc |>
+        officer::body_add_par(report_title, style = "heading 1") |>
+        officer::body_add_par("Introduction", style = "heading 2") |>
+        officer::body_add_par(
+          "This section shows the relationship between the wage bill (expressed as a share of total expenditure) and the income level of countries. It offers a clearer understanding of whether wage bill spending is consistent with countries’ respective income levels.",
+          style = "Normal"
+        ) |>
+        officer::body_add_par("Macro Fundamentals of the Public Sector", style = "heading 2") |>
+        officer::body_add_par("", style = "Normal")
+      
+      
+      # plot with labels
+      p <- ggplot2::ggplot(d_plot, aes(x = log_gdp, y = indicator_value)) +
+        ggplot2::geom_point(aes(color = highlight), size = 3, alpha = 0.9) +
+        ggrepel::geom_text_repel(
+          aes(label = label),          
+          color = "black",             
+          size = 3, max.overlaps = 30, box.padding = 0.4, point.padding = 0.5,
+          show.legend = FALSE
+        ) +
+        ggplot2::geom_smooth(method = "lm", color = "gray50", linetype = "dashed", se = FALSE) +
+        ggplot2::scale_color_manual(
+          values = c("Selected country" = "#B3242B", "Other countries" = "#003366")
+        ) +
+        ggplot2::labs(
+          title = "Wage Bill vs. Log(GDP per Capita)",
+          x = "Log(GDP per Capita, 2015)",
+          y = "Wage Bill (% of Public Expenditure)",
+          color = NULL
+        ) +
+        ggplot2::theme_minimal() +
+        ggplot2::coord_cartesian(clip = "off") +                      # avoid trimmed labels
+        ggplot2::theme(plot.margin = margin(10, 40, 10, 10))          # room for labels
+      
+      doc <- doc |>
+        officer::body_add_gg(value = p, width = 6.5, height = 4.5) |>
+        officer::body_add_par(
+          "Note: This graph shows the relationship between the wage bill (expressed as a share of total expenditure) and the income level of countries. It offers a clearer understanding of whether wage bill spending is consistent with countries’ respective income levels.",
+          style = "Normal"
+        )
+      
       print(doc, target = file)
-    }
-  )
+    })
+
   generate_gdp_analysis_section <- function(doc, selected_countries) {
-    # Filter data
-    filtered_data_df <- merged_data %>% filter(country_name %in% selected_countries)
-    
-    # Return message if empty
+    filtered_data_df <- merged_data %>% dplyr::filter(country_name %in% selected_countries)
     if (nrow(filtered_data_df) == 0) {
-      doc <- doc %>% body_add_par("No data available for Wage Bill vs. GDP analysis.", style = "Normal")
-      return(doc)
+      return(doc %>% officer::body_add_par("No data available for Wage Bill vs. GDP analysis.", style = "Normal"))
     }
     
-    # Use first selected country
     first_country <- selected_countries[1]
     
-    # Summarize country-level indicators
     country_summary <- filtered_data_df %>%
-      group_by(country_name) %>%
-      summarise(
+      dplyr::group_by(country_name) %>%
+      dplyr::summarise(
         wage_bill = round(mean(indicator_value, na.rm = TRUE), 0),
-        gdp_per_capita = round(exp(mean(log_gdp, na.rm = TRUE)), 0)
+        gdp_per_capita = round(exp(mean(log_gdp, na.rm = TRUE)), 0),
+        .groups = "drop"
       )
     
-    # Get values for first country
-    first_country_values <- country_summary %>% filter(country_name == first_country)
-    first_country_wage_bill <- first_country_values$wage_bill %||% NA
-    first_country_gdp <- first_country_values$gdp_per_capita %||% NA
+    first_country_values <- country_summary %>% dplyr::filter(country_name == first_country)
+    first_country_wage_bill <- if (nrow(first_country_values) == 0) NA_real_ else first_country_values$wage_bill
+    first_country_gdp <- if (nrow(first_country_values) == 0) NA_real_ else first_country_values$gdp_per_capita
     
-    # Get regional averages
     regional_avg <- filtered_data_df %>%
-      summarise(
+      dplyr::summarise(
         avg_wage_bill = round(mean(indicator_value, na.rm = TRUE), 0),
         avg_gdp_per_capita = round(exp(mean(log_gdp, na.rm = TRUE)), 0)
       )
     
-    # Text interpretation
     interpretation_text <- paste0(
       "Figure 1.3 illustrates the relationship between the wage bill as a percentage of public expenditure ",
       "and GDP per capita across selected countries. The selected countries have an average wage bill of ",
       regional_avg$avg_wage_bill, "%, with a GDP per capita of $",
       format(regional_avg$avg_gdp_per_capita, big.mark = ","), ".\n\n",
-      "For ", first_country, ", the wage bill represents ", first_country_wage_bill, 
+      "For ", first_country, ", the wage bill represents ", first_country_wage_bill,
       "% of public expenditure, with a GDP per capita of $",
       format(first_country_gdp, big.mark = ","), "."
     )
     
-    # Section title and intro
-    doc <- doc %>%
-      body_add_par("Wage bill (% of public expenditure) and GDP per capita in the region", style = "heading 2") %>%
-      body_add_par("This note presents evidence on public sector employment and compensation practices in relation to GDP per capita.", style = "Normal")
-    
-    # Plot
-    plot <- ggplot(filtered_data_df, aes(x = log_gdp, y = indicator_value, color = country_name)) +
-      geom_point(size = 3) +
-      geom_smooth(method = "lm", color = "gray", linetype = "dashed") +
-      labs(
-        title = "Wage Bill vs. Log(GDP per Capita)", 
-        x = "Log(GDP per Capita, 2015)", 
+    p <- ggplot2::ggplot(filtered_data_df, ggplot2::aes(x = log_gdp, y = indicator_value, color = country_name)) +
+      ggplot2::geom_point(size = 3) +
+      ggplot2::geom_smooth(method = "lm", color = "gray50", linetype = "dashed", se = FALSE) +
+      ggplot2::labs(
+        title = "Wage Bill vs. Log(GDP per Capita)",
+        x = "Log(GDP per Capita, 2015)",
         y = "Wage Bill (% of Public Expenditure)",
         color = "Country"
       ) +
-      theme_minimal() +
-      scale_color_manual(values = scales::hue_pal()(length(unique(filtered_data_df$country_name))))
+      ggplot2::theme_minimal() +
+      ggplot2::scale_color_manual(values = scales::hue_pal()(length(unique(filtered_data_df$country_name))))
     
-    # Save and insert
     img_path <- tempfile(fileext = ".png")
-    ggsave(filename = img_path, plot = plot, width = 8, height = 6, dpi = 300)
+    ggplot2::ggsave(filename = img_path, plot = p, width = 8, height = 6, dpi = 300)
     
-    doc <- doc %>%
-      body_add_img(src = img_path, width = 6, height = 4) %>%
-      body_add_par("Note: This graph shows the relationship between the wage bill (expressed as a share of total expenditure) and the income level of countries. It offers a clearer understanding of whether wage bill spending is consistent with countries’ respective income levels", style = "Normal") %>%
-      body_add_par(interpretation_text, style = "Normal")
-    
-    return(doc)
+    doc %>%
+      officer::body_add_par("Wage bill (% of public expenditure) and GDP per capita in the region", style = "heading 2") %>%
+      officer::body_add_par("This note presents evidence on public sector employment and compensation practices in relation to GDP per capita.", style = "Normal") %>%
+      officer::body_add_img(src = img_path, width = 6, height = 4) %>%
+      officer::body_add_par(
+        "Note: This graph shows the relationship between the wage bill (expressed as a share of total expenditure) and the income level of countries. It offers a clearer understanding of whether wage bill spending is consistent with countries’ respective income levels.",
+        style = "Normal"
+      ) %>%
+      officer::body_add_par(interpretation_text, style = "Normal")
   }
   
   #Slides
