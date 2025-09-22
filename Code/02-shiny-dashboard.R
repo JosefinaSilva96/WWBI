@@ -1172,35 +1172,49 @@ server <- function(input, output, session) {
         )
         
       )
-    
-    } else if(tab == "public_educ") {
+    } else if (tab == "public_educ") {
       tagList(
         h3("Public Sector Wage Premium by Education Level"),
         
-        # Description Box
+        # --- Description box
         fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              "This visualization explores the public sector wage premium by education level, compared to private formal workers.")
+          div(
+            style = "background-color: rgba(255, 255, 255, 0.05);
+                 border: 1px solid white; border-radius: 10px; padding: 20px;",
+            "This visualization explores the public sector wage premium by education level, compared to private formal workers."
+          )
         ),
         
-        # Country Selection
+        # --- Controls (GDP-style: select + full-width download)
         fluidRow(
-          selectInput("selected_country", "Select Country for Graph", 
-                      choices = unique(data_wwbi_long$country_name), 
-                      multiple = FALSE)
+          column(
+            width = 7,
+            selectInput(
+              "selected_country",
+              "Select country/region/income group – Your selection will be used as the reference in the graph and report",
+              choices  = sort(unique(data_wwbi_long$country_name)),
+              multiple = FALSE,     # set TRUE if you want multi-select
+              width    = "100%"
+            ),
+            br(),
+            downloadButton(
+              "downloadEducationWagePremium",
+              "Download Public Sector Wage Premium by Education Level Report",
+              class = "dl-btn w-100"
+            )
+          )
         ),
         
-        # Bar Plot Output
+        # --- Plot + note
         fluidRow(
           plotlyOutput("education_wage_premium_plot", height = "600px")
         ),
         fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              textOutput("note_education_wage_premium"))
-        ),
-        # Download Button
-        fluidRow(
-          downloadButton("downloadEducationWagePremium", "Download Public Sector Wage premium by Education Level Report")
+          div(
+            style = "background-color: rgba(255, 255, 255, 0.05);
+                 border: 1px solid white; border-radius: 10px; padding: 20px;",
+            textOutput("note_education_wage_premium")
+          )
         )
       )
     } else if(tab == "public_graphs") {
@@ -3555,62 +3569,89 @@ server <- function(input, output, session) {
   })
   
   output$downloadEducationWagePremium <- downloadHandler(
-    filename = function() {
-      paste0("Public_Sector_Wage_Premium_Education Level_", Sys.Date(), ".docx")
-    },
-    content = function(file) {
+    filename = function() paste0("Public_Sector_Wage_Premium_Education_Level_", Sys.Date(), ".docx"),
+    content  = function(file) {
+      req(input$selected_country)
       
-      # Create Word Document
-      doc <- read_docx()
+      # ---- Filter and validate data ----
+      filtered_df <- public_wage_premium_educ %>%
+        dplyr::filter(country_name == input$selected_country) %>%
+        tidyr::drop_na(value_percentage)
       
-      # Define Title Style
-      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
-      doc <- doc %>% body_add_fpar(fpar(ftext("Public Sector Wage Premium by Education Level", prop = title_style)))
+      req(nrow(filtered_df) > 0)
       
-      # Add Introduction
-      doc <- doc %>% body_add_par(
-        paste0("This report presents an analysis of public sector wage premiums based on different education levels for ", 
-               input$selected_country, ". The comparison is made against private sector formal workers."), 
-        style = "Normal"
-      )
-      
-      # Filter Data
-      filtered_data <- public_wage_premium_educ %>%
-        filter(country_name == input$selected_country) %>%
-        drop_na(value_percentage)
-      
-      # Ensure data exists
-      if (nrow(filtered_data) == 0) {
-        doc <- doc %>% body_add_par("No data available for the selected country.", style = "Normal")
-        print(doc, target = file)
-        return()
+      # Ensure numeric (in case it was character)
+      if (!is.numeric(filtered_df$value_percentage)) {
+        suppressWarnings({
+          filtered_df$value_percentage <- as.numeric(filtered_df$value_percentage)
+        })
       }
       
-      # Save Bar Plot as Image
-      img_path <- tempfile(fileext = ".png")
+      # ---- Title text (selected country) ----
+      report_title <- paste0("Public Sector Wage Premium by Education Level – ", input$selected_country)
       
-      ggplot_obj <- ggplot(filtered_data, aes(x = indicator_name, y = value_percentage, fill = indicator_name)) +
-        geom_bar(stat = "identity", position = "dodge") +
-        scale_fill_manual(values = c(
-          "No Education"       = "#E69F00",  # Orange
-          "Primary Education"  = "#56B4E9",  # Sky Blue
-          "Secondary Education"= "#009E73",  # Bluish Green
-          "Tertiary Education" = "#D55E00"   # Vermillion
-        )) +
-        labs(
+      # ---- Create the Word doc and add title + sections (same style as other reports) ----
+      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
+      doc <- read_docx()
+      
+      doc <- doc %>%
+        body_add_fpar(fpar(ftext(report_title, prop = title_style))) %>%
+        body_add_par("", style = "Normal") %>%   # spacer
+        body_add_par("Introduction", style = "heading 2") %>%
+        body_add_par(
+          paste0(
+            "This section presents the public sector wage premium—the percentage difference in wages ",
+            "between public sector workers and their private formal counterparts—by education level for ",
+            input$selected_country, "."
+          ),
+          style = "Normal"
+        ) %>%
+        body_add_par("Size and Characteristics of the public sector", style = "heading 2") %>%
+        body_add_par("", style = "Normal")       # spacer before plot
+      
+      # ---- Order levels for a pleasant left-to-right (optional) ----
+      edu_order <- c("No Education", "Primary Education", "Secondary Education", "Tertiary Education")
+      if ("indicator_name" %in% names(filtered_df)) {
+        filtered_df$indicator_name <- factor(filtered_df$indicator_name,
+                                             levels = intersect(edu_order, unique(filtered_df$indicator_name)))
+      }
+      
+      # ---- Plot (bar by education level; keep legend visible) ----
+      p <- ggplot2::ggplot(
+        filtered_df,
+        ggplot2::aes(x = indicator_name, y = value_percentage, fill = indicator_name)
+      ) +
+        ggplot2::geom_col(width = 0.7) +
+        ggplot2::scale_fill_manual(
+          values = c(
+            "No Education"        = "#E69F00",  # Orange
+            "Primary Education"   = "#56B4E9",  # Sky Blue
+            "Secondary Education" = "#009E73",  # Bluish Green
+            "Tertiary Education"  = "#D55E00"   # Vermillion
+          ),
+          name = NULL
+        ) +
+        ggplot2::labs(
           title = "Public Sector Wage Premium by Education Level",
           x = "Education Level",
-          y = "Wage Premium (%)",
-          fill = "Education Level"
+          y = "Wage Premium (%)"
         ) +
-        theme_minimal()
+        ggplot2::theme_minimal() +
+        ggplot2::coord_cartesian(clip = "off") +
+        ggplot2::theme(
+          legend.position = "right",
+          plot.margin = ggplot2::margin(10, 40, 10, 10)
+        )
       
-      ggsave(img_path, plot = ggplot_obj, width = 8, height = 6)
+      # ---- Add plot + note (same pattern as your other reports) ----
+      doc <- doc %>%
+        officer::body_add_gg(value = p, width = 6.5, height = 4.5) %>%
+        body_add_par(
+          "Note: Estimates reflect the public sector wage premium relative to private formal workers, by education level, controlling for observable characteristics where available.",
+          style = "Normal"
+        )
       
-      # Add Image to Word Document
-      doc <- doc %>% body_add_img(src = img_path, width = 6, height = 4)
-      
-      # Save the Word Document
+      # ---- Write the file ----
       print(doc, target = file)
     }
   )
