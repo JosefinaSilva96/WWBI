@@ -936,43 +936,82 @@ server <- function(input, output, session) {
         )
       )
     
-    } else if(tab == "public_workforce") {
+    } else if (tab == "public_workforce") {
       tagList(
         h3("Distribution of Public Sector Employment"),
+        
+        # -- Intro note
         fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              "This visualization shows the distribution of the public sector workforce across the three main industries (public administration, health and education).")
+          div(
+            style = "background-color: rgba(255, 255, 255, 0.05);
+                 border: 1px solid white; border-radius: 10px; padding: 20px;",
+            "This visualization shows the distribution of the public sector workforce across the three main industries (public administration, health and education)."
+          )
         ),
+        
+        # -- Controls row (GDP-style layout)
         fluidRow(
-          selectInput("countries_workforce", "Select Countries for Workforce Graph",
-                      choices = unique(data_wwbi_long$country_name), multiple = TRUE)
+          column(
+            width = 7,
+            selectInput(
+              "countries_workforce",
+              "Select country(ies)/region(s)/income group(s) – Your first selection will be treated as the reference point in both the graph and the output report",
+              choices  = sort(unique(data_wwbi_long$country_name)),
+              multiple = TRUE,
+              width    = "100%"
+            )
+          ),
+          column(
+            width = 5,
+            checkboxGroupInput(
+              "selected_graphs_public",
+              "Select Graphs to Download",
+              choices  = c("Multi-Country Graph" = "firstGraph",
+                           "Single-Country Graph" = "secondGraph"),
+              selected = c("firstGraph", "secondGraph")
+            ),
+            # full-width download button (same ID you already use)
+            downloadButton("downloadGraphsWordworkforce",
+                           "Download Selected Graphs in Word",
+                           class = "dl-btn w-100")
+          )
         ),
+        
+        # -- First graph + note
         fluidRow(
           plotlyOutput("stackedBarGraph", height = "600px")
         ),
         fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              textOutput("note_stackedBarGraph"))
+          div(
+            style = "background-color: rgba(255, 255, 255, 0.05);
+                 border: 1px solid white; border-radius: 10px; padding: 20px;",
+            textOutput("note_stackedBarGraph")
+          )
         ),
+        
+        # -- Second graph selector + plot + note
         fluidRow(
-          selectInput("selected_country", "Select Country for Second Graph",
-                      choices = unique(data_wwbi_long$country_name), multiple = FALSE)
+          selectInput(
+            "selected_country",
+            "Select country/region/income group",
+            choices  = sort(unique(data_wwbi_long$country_name)),
+            multiple = FALSE,
+            width    = "100%"
+          )
         ),
         fluidRow(
           plotlyOutput("horizontalStackedBar", height = "600px")
         ),
         fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              textOutput("note_horizontalStackedBar"))
-        ),
-        fluidRow(
-          checkboxGroupInput("selected_graphs_public", "Select Graphs to Download", 
-                             choices = c("Multi-Country Graph" = "firstGraph", "Single-Country Graph" = "secondGraph"), 
-                             selected = c("firstGraph", "secondGraph")),
-          downloadButton("downloadGraphsWordworkforce", "Download Selected Graphs in Word")
+          div(
+            style = "background-color: rgba(255, 255, 255, 0.05);
+                 border: 1px solid white; border-radius: 10px; padding: 20px;",
+            textOutput("note_horizontalStackedBar")
+          )
         )
+        
       )
-      
+    
     } else if(tab == "education") {
       tagList(
         h3("Workers with Tertiary Education"),
