@@ -2926,86 +2926,89 @@ server <- function(input, output, session) {
   })
 
   output$note_wage_premium <- renderText({
-    "Note: This indicator represents the public sector wage premium compared to all private sector employees. A positive value indicates that public sector workers earn more than their private-sector counterparts, on average."
+    "Note: This visualization shows the estimated public sector wage premium, compared to private sector counterparts, after controlling for characteristics including gender, education, tenure, and geographic location."
   })
 
   # Download the Report as a Word Document
   output$downloadWagePremiumReport <- downloadHandler(
-    filename = function() { paste0("Public_Sector_Wage_Premium_", Sys.Date(), ".docx") },
-    content = function(file) {
+    filename = function() paste0("Public_Sector_Wage_Premium_", Sys.Date(), ".docx"),
+    content  = function(file) {
+      req(input$countries_wage_premium)
       
-      # Create Word Document
+      # ---- Filter and validate data ----
+      filtered_df <- public_wage_premium %>%
+        dplyr::filter(country_name %in% input$countries_wage_premium) %>%
+        tidyr::drop_na(value_percentage)
+      
+      req(nrow(filtered_df) > 0)
+      
+      # Ensure numeric
+      if (!is.numeric(filtered_df$value_percentage)) {
+        suppressWarnings({
+          filtered_df$value_percentage <- as.numeric(filtered_df$value_percentage)
+        })
+      }
+      
+      # ---- Title text (first selected country) ----
+      first_sel    <- input$countries_wage_premium[1]
+      report_title <- paste0("Public Sector Wage Premium – ", first_sel)
+      
+      # ---- Create the Word doc and add title + intro sections (same style) ----
+      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
       doc <- read_docx()
       
-      # Define Title Style
-      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
-      doc <- doc %>% body_add_fpar(fpar(ftext("Public Sector Wage Premium Analysis", prop = title_style)))
+      doc <- doc %>%
+        body_add_fpar(fpar(ftext(report_title, prop = title_style))) %>%
+        body_add_par("", style = "Normal") %>%   # spacer
+        body_add_par("Introduction", style = "heading 2") %>%
+        body_add_par(
+          "This section presents the public sector wage premium—the percentage difference in wages between public sector workers and all private sector employees—across the selected countries.",
+          style = "Normal"
+        ) %>%
+        body_add_par("Size and Characteristics of the public sector", style = "heading 2") %>%
+        body_add_par("", style = "Normal")       # spacer before plot
       
-      # Introduction
-      doc <- doc %>% body_add_par("This report presents an analysis of public sector wage premium compared to all private sector employees across selected countries.", style = "Normal")
+      # ---- Plot data (highlight first selection, same color scheme & margins) ----
+      d_plot <- filtered_df %>%
+        dplyr::mutate(
+          highlight = ifelse(country_name == first_sel, "Selected country", "Other countries"),
+          country_name = factor(country_name,
+                                levels = c(first_sel, sort(setdiff(unique(country_name), first_sel))))
+        )
       
-      # Filter Data for Selected Countries
-      filtered_data <- public_wage_premium %>% 
-        filter(country_name %in% input$countries_wage_premium) %>%
-        drop_na(value_percentage)  # Remove NA values
+      p <- ggplot2::ggplot(
+        d_plot,
+        ggplot2::aes(x = country_name, y = value_percentage, color = highlight)
+      ) +
+        ggplot2::geom_point(size = 4.5, alpha = 0.95, show.legend = FALSE) +
+        ggplot2::scale_color_manual(
+          values = c("Selected country" = "#B3242B",  # red
+                     "Other countries"  = "#003366")   # dark blue
+        ) +
+        ggplot2::labs(
+          title = "Public Sector Wage Premium by Country",
+          x = "Country",
+          y = "Wage Premium (%)"
+        ) +
+        ggplot2::theme_minimal() +
+        ggplot2::coord_cartesian(clip = "off") +
+        ggplot2::theme(
+          plot.margin = ggplot2::margin(10, 40, 10, 10)
+        )
       
+      # ---- Add plot + note (same pattern as Education) ----
+      doc <- doc %>%
+        officer::body_add_gg(value = p, width = 6.5, height = 4.5) %>%
+        body_add_par(
+          "Note: This visualization shows the estimated public sector wage premium, compared to private sector counterparts, after controlling for characteristics including gender, education, tenure, and geographic location",
+          style = "Normal"
+        )
       
-      # Ensure the data exists
-      if (nrow(filtered_data) == 0) {
-        doc <- doc %>% body_add_par("No data available for the selected countries.", style = "Normal")
-        print(doc, target = file)
-        return()
-      }
-      
-      # Check if the dataset is empty BEFORE proceeding
-      if (nrow(filtered_data) == 0) {
-        warning("No data available for selected countries in public wage premium.")
-        
-        # Assign default values to avoid errors
-        avg_wage_premium <- NA
-        highest_country <- "N/A"
-        lowest_country <- "N/A"
-      } else {
-        # Convert to numeric safely
-        filtered_data$value_percentage <- as.numeric(filtered_data$value_percentage)
-        
-        # Calculate key statistics safely
-        avg_wage_premium <- round(mean(filtered_data$value_percentage, na.rm = TRUE), 1)
-        
-        highest_country <- filtered_data %>%
-          filter(value_percentage == max(value_percentage, na.rm = TRUE)) %>%
-          pull(country_name)
-        
-        lowest_country <- filtered_data %>%
-          filter(value_percentage == min(value_percentage, na.rm = TRUE)) %>%
-          pull(country_name)
-      }
-      
-      # Convert value_percentage to numeric (just in case)
-      filtered_data$value_percentage <- as.numeric(filtered_data$value_percentage)
-      
-      # Assign Colors: First Selected Country = Red, Others = Dark Blue
-      filtered_data <- filtered_data %>%
-        mutate(color = ifelse(country_name == input$countries_wage_premium[1], "#B3242B", "#003366"))
-      
-      # Create the Dot Plot with Different Colors
-      ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, color = color)) +
-        geom_point(size = 5) +
-        scale_color_identity() +  # Use assigned colors directly
-        labs(title = "Public Sector Wage Premium by Country", x = "Country", y = "Wage Premium (%)") +
-        theme_minimal()
-      
-      # Save Dot Plot as Image
-      img_path <- tempfile(fileext = ".png")
-      ggsave(img_path, plot = ggplot_obj, width = 8, height = 6)
-      
-      # Add Image to Word Document
-      doc <- doc %>% body_add_img(src = img_path, width = 6, height = 4)
-      
-      # Save the Word Document
+      # ---- Write the file ----
       print(doc, target = file)
     }
   )
+  
   generate_wage_premium_report_section <- function(doc, selected_countries) {
     # Add Section Title and Intro
     doc <- doc %>%
