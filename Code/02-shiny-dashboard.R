@@ -3606,7 +3606,7 @@ server <- function(input, output, session) {
           ),
           style = "Normal"
         ) %>%
-        body_add_par("Size and Characteristics of the public sector", style = "heading 2") %>%
+        body_add_par("Competitiveness of public sector", style = "heading 2") %>%
         body_add_par("", style = "Normal")       # spacer before plot
       
       # ---- Order levels for a pleasant left-to-right (optional) ----
@@ -3624,23 +3624,25 @@ server <- function(input, output, session) {
         ggplot2::geom_col(width = 0.7) +
         ggplot2::scale_fill_manual(
           values = c(
-            "No Education"        = "#E69F00",  # Orange
-            "Primary Education"   = "#56B4E9",  # Sky Blue
-            "Secondary Education" = "#009E73",  # Bluish Green
-            "Tertiary Education"  = "#D55E00"   # Vermillion
+            "No Education"        = "#E69F00",
+            "Primary Education"   = "#56B4E9",
+            "Secondary Education" = "#009E73",
+            "Tertiary Education"  = "#D55E00"
           ),
           name = NULL
         ) +
         ggplot2::labs(
           title = "Public Sector Wage Premium by Education Level",
-          x = "Education Level",
+          x = NULL,                      # remove axis title
           y = "Wage Premium (%)"
         ) +
         ggplot2::theme_minimal() +
         ggplot2::coord_cartesian(clip = "off") +
         ggplot2::theme(
           legend.position = "right",
-          plot.margin = ggplot2::margin(10, 40, 10, 10)
+          plot.margin = ggplot2::margin(10, 40, 10, 10),
+          axis.text.x  = ggplot2::element_blank(),   # <-- hide labels
+          axis.ticks.x = ggplot2::element_blank()    # <-- hide tick marks
         )
       
       # ---- Add plot + note (same pattern as your other reports) ----
