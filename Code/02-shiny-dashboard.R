@@ -1012,26 +1012,60 @@ server <- function(input, output, session) {
         
       )
     
-    } else if(tab == "education") {
+    } else if (tab == "education") {
       tagList(
         h3("Workers with Tertiary Education"),
+        
+        # --- Intro note
         fluidRow(
-          fluidRow(
-            div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-                "This visualization shows the proportion of workers with tertiary education in the public and private sectors.")
-          ),
-          selectInput("selected_countries", "Select Countries", 
-                      choices = unique(data_wwbi_long$country_name), multiple = TRUE)
+          div(
+            style = "background-color: rgba(255, 255, 255, 0.05);
+                 border: 1px solid white; border-radius: 10px; padding: 20px;",
+            "This visualization shows the proportion of workers with tertiary education in the public and private sectors."
+          )
         ),
+        
+        # --- Controls (GDP-style layout)
+        fluidRow(
+          column(
+            width = 7,
+            selectInput(
+              "selected_countries",
+              "Select country(ies)/region(s)/income group(s) – Your first selection will be treated as the reference point in both the graph and the output report",
+              choices  = sort(unique(data_wwbi_long$country_name)),
+              multiple = TRUE,
+              width    = "100%"
+            ),
+            br(),
+            downloadButton(
+              "downloadGraphsWordEducation",
+              "Download Tertiary Education Report",
+              class = "dl-btn w-100"
+            )
+          ),
+          column(
+            width = 5,
+            tags$label(class = "form-label fw-semibold", "Choose label type"),
+            radioButtons(
+              "label_type_edu",                # new ID to avoid clashes with GDP tab
+              label   = NULL,
+              choices = c("Country", "Region"),
+              selected = "Country",
+              inline  = TRUE
+            )
+          )
+        ),
+        
+        # --- Plot + note
         fluidRow(
           plotlyOutput("barPlot", height = "600px")
         ),
         fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              textOutput("note_tertiaryEducation"))
-        ),
-        fluidRow(
-          downloadButton("downloadGraphsWordEducation", "Download Tertiary Education Report")
+          div(
+            style = "background-color: rgba(255, 255, 255, 0.05);
+                 border: 1px solid white; border-radius: 10px; padding: 20px;",
+            textOutput("note_tertiaryEducation")
+          )
         )
       )
     } else if(tab == "female_leadership") {
@@ -2261,12 +2295,34 @@ server <- function(input, output, session) {
     filename = function() paste0("Employment_Distribution_Analysis_", Sys.Date(), ".docx"),
     content  = function(file) {
       
-      # ---- Word doc + title ----
-      doc <- read_docx()
-      title_style  <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
-      doc <- doc %>% body_add_fpar(fpar(ftext("Employment Distribution Analysis", prop = title_style)))
+      # ---- Build the dynamic title (first selected country as reference) ----
+      ref_country <- if (!is.null(input$countries_workforce) &&
+                         length(input$countries_workforce) > 0) {
+        input$countries_workforce[[1]]
+      } else {
+        "Selected Countries"
+      }
+      report_title <- paste0("Employment Distribution Analysis – ", ref_country)
       
-      # ---- First graph (multi-country) ----
+      # ---- Create the Word doc and add title + intro sections ----
+      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
+      doc <- read_docx()
+      
+      # Styled title line
+      doc <- doc %>%
+        body_add_fpar(fpar(ftext(report_title, prop = title_style))) %>%
+        body_add_par("", style = "Normal") %>%  # spacer
+        body_add_par("Introduction", style = "heading 2") %>%
+        body_add_par(
+          "This section shows the employment distribution of countries.",
+          style = "Normal"
+        ) %>%
+        body_add_par("Size and Characteristics of the public sector", style = "heading 2") %>%
+        body_add_par("", style = "Normal")  # spacer before first graph
+      
+      # =========================
+      # First graph: multi-country
+      # =========================
       first_graph_data <- filtered_workforce_data() %>%
         dplyr::filter(country_name %in% input$countries_workforce)
       
@@ -2275,8 +2331,12 @@ server <- function(input, output, session) {
                      aes(x = country_name, y = value_percentage, fill = indicator_name)) +
           geom_bar(stat = "identity", position = "stack") +
           scale_fill_viridis_d(option = "D") +
-          labs(title = "Employment distribution by country",
-               x = "Country", y = "Employment distribution (%)", fill = "Sector") +
+          labs(
+            title = "Employment distribution by country",
+            x = "Country",
+            y = "Employment distribution (%)",
+            fill = "Sector"
+          ) +
           theme_minimal()
         
         img1 <- tempfile("first_graph_", fileext = ".png")
@@ -2285,25 +2345,43 @@ server <- function(input, output, session) {
         doc <- doc %>%
           body_add_par("First Graph: Public Workforce Distribution by Country", style = "heading 1") %>%
           body_add_img(src = img1, width = 6, height = 4) %>%
-          body_add_par("This graph shows the public workforce distribution across multiple countries.", style = "Normal")
+          body_add_par(
+            "This graph shows the public workforce distribution across multiple countries.",
+            style = "Normal"
+          )
       } else {
-        doc <- doc %>% body_add_par("No data available for the selected countries.", style = "Normal")
+        doc <- doc %>%
+          body_add_par("No data available for the selected countries.", style = "Normal")
       }
       
-      # ---- Second graph (selected country: first vs last year) ----
+      # =========================
+      # Second graph: single country (first vs last year)
+      # =========================
       filtered_data <- public_sector_workforce %>%
         dplyr::filter(country_name == input$selected_country)
       
       if (nrow(filtered_data) >= 2) {
+        # ensure year is numeric/integer for min/max
+        # (skip if already numeric)
+        if (!is.numeric(filtered_data$year)) {
+          suppressWarnings({
+            filtered_data$year <- as.integer(filtered_data$year)
+          })
+        }
+        
         first_year <- suppressWarnings(min(filtered_data$year, na.rm = TRUE))
         last_year  <- suppressWarnings(max(filtered_data$year, na.rm = TRUE))
         
         if (is.finite(first_year) && is.finite(last_year)) {
-          # build the missing object
+          
+          # Build second_graph_data (only first & last year)
           second_graph_data <- filtered_data %>%
             dplyr::filter(year %in% c(first_year, last_year)) %>%
             dplyr::group_by(year, indicator_name) %>%
-            dplyr::summarise(value_percentage = sum(value_percentage, na.rm = TRUE), .groups = "drop")
+            dplyr::summarise(
+              value_percentage = sum(value_percentage, na.rm = TRUE),
+              .groups = "drop"
+            )
           
           if (nrow(second_graph_data) > 0) {
             p2 <- ggplot(second_graph_data,
@@ -2313,8 +2391,12 @@ server <- function(input, output, session) {
               geom_bar(stat = "identity", position = "stack") +
               coord_flip() +
               scale_fill_viridis_d(option = "D") +
-              labs(title = paste("Sectoral distribution of employment in", input$selected_country),
-                   x = "Percentage (%)", y = "Year", fill = "Sector") +
+              labs(
+                title = paste("Sectoral distribution of employment in", input$selected_country),
+                x = "Percentage (%)",
+                y = "Year",
+                fill = "Sector"
+              ) +
               theme_minimal()
             
             img2 <- tempfile("second_graph_", fileext = ".png")
@@ -2323,17 +2405,24 @@ server <- function(input, output, session) {
             doc <- doc %>%
               body_add_par("Second Graph: Employment Distribution", style = "heading 1") %>%
               body_add_img(src = img2, width = 6, height = 4) %>%
-              body_add_par("This graph shows the sectoral distribution of public sector workforce for the selected country.", style = "Normal")
+              body_add_par(
+                "This graph shows the sectoral distribution of public sector workforce for the selected country.",
+                style = "Normal"
+              )
           } else {
-            doc <- doc %>% body_add_par("No sectoral data found for the selected years.", style = "Normal")
+            doc <- doc %>%
+              body_add_par("No sectoral data found for the selected years.", style = "Normal")
           }
         } else {
-          doc <- doc %>% body_add_par("Invalid year data for the selected country.", style = "Normal")
+          doc <- doc %>%
+            body_add_par("Invalid year data for the selected country.", style = "Normal")
         }
       } else {
-        doc <- doc %>% body_add_par("Not enough data available for the selected country to create the second graph.", style = "Normal")
+        doc <- doc %>%
+          body_add_par("Not enough data available for the selected country to create the second graph.", style = "Normal")
       }
       
+      # ---- Write the file ----
       print(doc, target = file)
     }
   )
@@ -2486,7 +2575,7 @@ server <- function(input, output, session) {
   
   
   
-  #Workers with tertiary education
+  #Tertiary education
   
   output$barPlot <- renderPlotly({
     req(input$selected_countries)
@@ -2543,40 +2632,94 @@ server <- function(input, output, session) {
   })
   
   output$downloadGraphsWordEducation <- downloadHandler(
-    filename = function() { paste0("Workers_Tertiary_Education_Report_", Sys.Date(), ".docx") },
-    content = function(file) {
+    filename = function() paste0("Workers_Tertiary_Education_Report_", Sys.Date(), ".docx"),
+    content  = function(file) {
+      req(input$selected_countries)
       
-      # Create Word Document
+      # ---- Filter data ----
+      filtered_df <- tertiary_education %>%
+        dplyr::filter(country_name %in% input$selected_countries)
+      req(nrow(filtered_df) > 0)
+      
+      # ---- Title text (first selected country) ----
+      first_sel    <- input$selected_countries[1]
+      report_title <- paste0("Tertiary Education Analysis – ", first_sel)
+      
+      # ---- Create the Word doc and add title + intro sections ----
+      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
       doc <- read_docx()
       
-      # Title Style
-      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
-      doc <- doc %>% body_add_fpar(fpar(ftext("Tertiary Education Analysis", prop = title_style)))
+      doc <- doc %>%
+        # Styled title (Officer fpar/ftext as you requested)
+        body_add_fpar(fpar(ftext(report_title, prop = title_style))) %>%
+        body_add_par("", style = "Normal") %>%  # spacer
+        body_add_par("Introduction", style = "heading 2") %>%
+        body_add_par(
+          "This section represents the proportion of individuals with tertiary education in the public and private sectors across selected countries.",
+          style = "Normal"
+        ) %>%
+        body_add_par("Size and Characteristics of the public sector", style = "heading 2") %>%
+        body_add_par("", style = "Normal")  # spacer before plot
       
-      # Introduction
-      doc <- doc %>% body_add_par("This report presents an analysis of tertiary education among public and private sector employees across selected countries.", style = "Normal")
+      # ---- Choose data label (Region if selected & available, else Country) ----
+      region_col <- intersect(c("region", "region_name", "Region"), names(filtered_df))[1]
+      label_vec  <- if (!is.na(region_col) && identical(input$label_type_edu, "Region")) {
+        filtered_df[[region_col]]
+      } else {
+        filtered_df$country_name
+      }
       
-      # Save Bar Plot as an Image
-      filtered_data <- tertiary_education %>% 
-        filter(country_name %in% input$selected_countries)
+      # ---- Plot (highlight first selection, no legend, black labels) ----
+      d_plot <- filtered_df %>%
+        dplyr::mutate(
+          highlight = ifelse(country_name == first_sel, "Selected country", "Other countries"),
+          label     = label_vec,
+          country_name = factor(
+            country_name,
+            levels = c(first_sel, sort(setdiff(unique(country_name), first_sel)))
+          )
+        )
       
-      ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
-        geom_bar(stat = "identity", position = "dodge") +
-        scale_fill_manual(values = c("as a share of private paid employees" = "#0072B2", 
-                                     "as a share of public paid employees" = "#D55E00")) +
-        labs(title = "Tertiary Education by Sector and Country", x = "Country", y = "Tertiary Education (%)") +
-        theme_minimal()
+      p <- ggplot(
+        d_plot,
+        aes(x = country_name, y = value_percentage, fill = indicator_name)
+      ) +
+        geom_col(                   # same as geom_bar(stat="identity")
+          position = position_dodge(width = 0.8),
+          width = 0.7
+        ) +
+        scale_fill_manual(
+          values = c(
+            "as a share of private paid employees" = "#0072B2",
+            "as a share of public paid employees"  = "#D55E00"
+          )                                    # <- keep legend visible
+        ) +
+        labs(
+          title = "Tertiary Education by Sector and Country",
+          x = "Country",
+          y = "Tertiary Education (%)",
+          fill = NULL
+        ) +
+        theme_minimal() +
+        theme(
+          legend.position = "right",
+          plot.margin = margin(10, 40, 10, 10)
+        )
       
-      img_path <- tempfile(fileext = ".png")
-      ggsave(img_path, plot = ggplot_obj, width = 8, height = 6)
+      # ---- Add plot to Word + note ----
+      doc <- doc %>%
+        officer::body_add_gg(value = p, width = 6.5, height = 4.5) %>%
+        body_add_par(
+          "Note: This graph compares the share of workers with tertiary education in the public and private sectors across the selected countries. The first country you selected is highlighted.",
+          style = "Normal"
+        )
       
-      # Add Image to Word
-      doc <- doc %>% body_add_img(src = img_path, width = 6, height = 4)
-      
-      # Save the Word Document
+      # ---- Write the file ----
       print(doc, target = file)
     }
   )
+  
+
   generate_tertiary_education_section <- function(doc, selected_countries) {
     # Add Section Title and Introduction
     doc <- doc %>%
