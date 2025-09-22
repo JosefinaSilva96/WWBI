@@ -1136,25 +1136,43 @@ server <- function(input, output, session) {
           downloadButton("downloadGraphsWordGenderWagePremium", "Download Public Sector Wage Premium by Gender Report")
         )
       )
-      
-    } else if(tab == "wagepremium") {
+    } else if (tab == "wagepremium") {
       tagList(
         h3("Public Sector Wage Premium"),
+        
+        # --- Controls (GDP-style)
         fluidRow(
-          selectInput("countries_wage_premium", "Select Countries for First Graph", 
-                      choices = unique(data_wwbi_long$country_name), multiple = TRUE)
+          column(
+            width = 7,
+            selectInput(
+              "countries_wage_premium",
+              "Select country(ies)/region(s)/income group(s) – Your first selection will be treated as the reference point in both the graph and the output report",
+              choices  = sort(unique(data_wwbi_long$country_name)),
+              multiple = TRUE,
+              width    = "100%"
+            ),
+            br(),
+            downloadButton(
+              "downloadWagePremiumReport",
+              "Download Public Sector Wage Premium Report",
+              class = "dl-btn w-100"
+            )
+          )
         ),
+        
+        # --- Plot + note
         fluidRow(
           plotlyOutput("dotPlot", height = "500px")
         ),
         fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              textOutput("note_wage_premium"))
-        ),
-        fluidRow(
-          downloadButton("downloadWagePremiumReport", "Download Public Sector Wage Premium Report")
+          div(
+            style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
+            textOutput("note_wage_premium")
+          )
         )
+        
       )
+    
     } else if(tab == "public_educ") {
       tagList(
         h3("Public Sector Wage Premium by Education Level"),
