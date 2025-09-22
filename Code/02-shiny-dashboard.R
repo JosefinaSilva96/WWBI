@@ -971,7 +971,7 @@ server <- function(input, output, session) {
               selected = c("firstGraph", "secondGraph")
             ),
             # full-width download button (same ID you already use)
-            downloadButton("downloadGraphsWordworkforce",
+            downloadButton("downloadGraphsemploymentdist",
                            "Download Selected Graphs in Word",
                            class = "dl-btn w-100")
           )
@@ -2148,7 +2148,7 @@ server <- function(input, output, session) {
     contentType = "text/csv"     # avoids “.htm” save dialog
   )
   
-  #Workforce graphs 
+  #Employment distribution
   
   filtered_workforce_data <- reactive({
     req(input$countries_workforce)
@@ -2257,63 +2257,88 @@ server <- function(input, output, session) {
            " for the earliest and latest available years in the dataset. It highlights the changes in sectoral employment over time.")
   })
   
-  output$downloadGraphsWordworkforce <- downloadHandler(
-    filename = function() { paste0("Public_Sector_Analysis_", Sys.Date(), ".docx") },
-    content = function(file) {
-      doc <- read_docx()
-      report_title <- "Public Sector Workforce Analysis"
-      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
-      doc <- doc %>% body_add_fpar(fpar(ftext(report_title, prop = title_style)))
-      first_graph_data <- filtered_workforce_data() %>% filter(country_name %in% input$countries_workforce)
-      first_graph_ggplot <- ggplot(first_graph_data, aes(x = country_name, y = value_percentage, fill = indicator_name)) +
-        geom_bar(stat = "identity", position = "stack") +
-        scale_fill_viridis_d(option = "D") +  # Color-blind friendly discrete palette
-        labs(
-          title = "Public Workforce Distribution by Country",
-          x = "Country",
-          y = "Workforce Distribution (%)",
-          fill = "Sector"
-        ) +
-        theme_minimal()
-      ggsave("first_graph.png", plot = first_graph_ggplot, width = 6, height = 4)
-      doc <- doc %>% body_add_par("First Graph: Public Workforce Distribution by Country", style = "heading 1") %>% 
-        body_add_img(src = "first_graph.png", width = 6, height = 4) %>% 
-        body_add_par("This graph shows the public workforce distribution across multiple countries.", style = "Normal")
+  output$downloadGraphsemploymentdist <- downloadHandler(
+    filename = function() paste0("Employment_Distribution_Analysis_", Sys.Date(), ".docx"),
+    content  = function(file) {
       
-      filtered_data <- public_sector_workforce %>% filter(country_name == input$selected_country)
-      if(nrow(filtered_data) < 2) {
-        doc <- doc %>% body_add_par("Not enough data available for the selected country to create the graph.", style = "Normal")
+      # ---- Word doc + title ----
+      doc <- read_docx()
+      title_style  <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
+      doc <- doc %>% body_add_fpar(fpar(ftext("Employment Distribution Analysis", prop = title_style)))
+      
+      # ---- First graph (multi-country) ----
+      first_graph_data <- filtered_workforce_data() %>%
+        dplyr::filter(country_name %in% input$countries_workforce)
+      
+      if (nrow(first_graph_data) > 0) {
+        p1 <- ggplot(first_graph_data,
+                     aes(x = country_name, y = value_percentage, fill = indicator_name)) +
+          geom_bar(stat = "identity", position = "stack") +
+          scale_fill_viridis_d(option = "D") +
+          labs(title = "Employment distribution by country",
+               x = "Country", y = "Employment distribution (%)", fill = "Sector") +
+          theme_minimal()
+        
+        img1 <- tempfile("first_graph_", fileext = ".png")
+        ggsave(img1, plot = p1, width = 6, height = 4, dpi = 300)
+        
+        doc <- doc %>%
+          body_add_par("First Graph: Public Workforce Distribution by Country", style = "heading 1") %>%
+          body_add_img(src = img1, width = 6, height = 4) %>%
+          body_add_par("This graph shows the public workforce distribution across multiple countries.", style = "Normal")
       } else {
-        first_year <- min(filtered_data$year, na.rm = TRUE)
-        last_year <- max(filtered_data$year, na.rm = TRUE)
-        if(!is.finite(first_year) || !is.finite(last_year)) {
-          doc <- doc %>% body_add_par("Invalid year data for the selected country.", style = "Normal")
-        } else {
-          second_graph_ggplot <- ggplot(second_graph_data, aes(
-            x = value_percentage,
-            y = factor(year, levels = c(last_year, first_year)),
-            fill = indicator_name
-          )) +
-            geom_bar(stat = "identity", position = "stack", orientation = "horizontal") +
-            scale_fill_viridis_d(option = "D") +  # Color-blind friendly discrete palette
-            labs(
-              title = paste("Sectoral Distribution of Public Sector Workforce in", input$selected_country),
-              x = "Percentage (%)",
-              y = "Year",
-              fill = "Sector"
-            ) +
-            theme_minimal()
-          ggsave("second_graph.png", plot = second_graph_ggplot, width = 6, height = 4)
-          doc <- doc %>% body_add_par("Second Graph: Sectoral Distribution of Public Sector Workforce", style = "heading 1") %>% 
-            body_add_img(src = "second_graph.png", width = 6, height = 4) %>% 
-            body_add_par("This graph shows the sectoral distribution of public sector workforce for the selected country.", style = "Normal")
-        }
+        doc <- doc %>% body_add_par("No data available for the selected countries.", style = "Normal")
       }
+      
+      # ---- Second graph (selected country: first vs last year) ----
+      filtered_data <- public_sector_workforce %>%
+        dplyr::filter(country_name == input$selected_country)
+      
+      if (nrow(filtered_data) >= 2) {
+        first_year <- suppressWarnings(min(filtered_data$year, na.rm = TRUE))
+        last_year  <- suppressWarnings(max(filtered_data$year, na.rm = TRUE))
+        
+        if (is.finite(first_year) && is.finite(last_year)) {
+          # build the missing object
+          second_graph_data <- filtered_data %>%
+            dplyr::filter(year %in% c(first_year, last_year)) %>%
+            dplyr::group_by(year, indicator_name) %>%
+            dplyr::summarise(value_percentage = sum(value_percentage, na.rm = TRUE), .groups = "drop")
+          
+          if (nrow(second_graph_data) > 0) {
+            p2 <- ggplot(second_graph_data,
+                         aes(x = value_percentage,
+                             y = factor(year, levels = c(last_year, first_year)),
+                             fill = indicator_name)) +
+              geom_bar(stat = "identity", position = "stack") +
+              coord_flip() +
+              scale_fill_viridis_d(option = "D") +
+              labs(title = paste("Sectoral distribution of employment in", input$selected_country),
+                   x = "Percentage (%)", y = "Year", fill = "Sector") +
+              theme_minimal()
+            
+            img2 <- tempfile("second_graph_", fileext = ".png")
+            ggsave(img2, plot = p2, width = 6, height = 4, dpi = 300)
+            
+            doc <- doc %>%
+              body_add_par("Second Graph: Employment Distribution", style = "heading 1") %>%
+              body_add_img(src = img2, width = 6, height = 4) %>%
+              body_add_par("This graph shows the sectoral distribution of public sector workforce for the selected country.", style = "Normal")
+          } else {
+            doc <- doc %>% body_add_par("No sectoral data found for the selected years.", style = "Normal")
+          }
+        } else {
+          doc <- doc %>% body_add_par("Invalid year data for the selected country.", style = "Normal")
+        }
+      } else {
+        doc <- doc %>% body_add_par("Not enough data available for the selected country to create the second graph.", style = "Normal")
+      }
+      
       print(doc, target = file)
     }
   )
   generate_public_sector_workforce_section <- function(doc, selected_countries) {
-    doc <- doc %>% body_add_par("Public Sector Workforce Analysis", style = "heading 1")
+    doc <- doc %>% body_add_par("Employment Distribution Analysis", style = "heading 1")
     
     doc <- doc %>% body_add_par(
       "This section presents an analysis of public workforce distribution across different sectors and countries.", 
