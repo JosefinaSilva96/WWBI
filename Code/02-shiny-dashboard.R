@@ -4745,65 +4745,122 @@ server <- function(input, output, session) {
   # Download Handler - Save Graphs to Word Document
   
   output$downloadGraphsWordGender <- downloadHandler(
-    filename = function() {
-      paste0("Female share of employment_Analysis_", Sys.Date(), ".docx")
-    },
-    content = function(file) {
-      doc <- read_docx()
+    filename = function() paste0("Female_Share_of_Employment_", Sys.Date(), ".docx"),
+    content  = function(file) {
       
-      # Title
-      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
-      doc <- doc %>% body_add_fpar(fpar(ftext("Gender Workforce Analysis", prop = title_style)))
+      req(input$countries_gender, length(input$countries_gender) > 0, input$country_gender)
       
-      # Intro Text
-      doc <- doc %>% body_add_par("This report presents the analysis of female employment in the public and private sectors across selected countries.", style = "Normal")
+      # -------- Data --------
+      # d1: multi-country, last year available per country & sector
+      d1 <- gender_workforce %>%
+        dplyr::filter(country_name %in% input$countries_gender) %>%
+        dplyr::group_by(country_name, indicator_name) %>%
+        dplyr::arrange(year, .by_group = TRUE) %>%
+        dplyr::slice_tail(n = 1) %>%
+        dplyr::ungroup() %>%
+        dplyr::mutate(
+          indicator_name = factor(
+            indicator_name,
+            levels = c("as a share of private paid employees",
+                       "as a share of public paid employees")
+          ),
+          country_name = factor(country_name, levels = input$countries_gender)
+        )
+      req(nrow(d1) > 0, cancelOutput = TRUE)
       
-      # First Graph - Save as Image
-      first_graph <- ggplot(gender_workforce %>% filter(country_name %in% input$countries_gender), 
-                            aes(x = country_name, y = value_percentage, fill = indicator_name)) +
-        geom_bar(stat = "identity", position = "dodge") +
-        scale_fill_manual(values = c(
+      # d2: single country over time
+      d2 <- gender_workforce %>%
+        dplyr::filter(country_name == input$country_gender) %>%
+        dplyr::mutate(
+          indicator_name = factor(
+            indicator_name,
+            levels = c("as a share of private paid employees",
+                       "as a share of public paid employees")
+          )
+        )
+      req(nrow(d2) > 0, cancelOutput = TRUE)
+      
+      # -------- Document (match style) --------
+      doc <- officer::read_docx()
+      
+      # H1 with rule under it
+      first_sel <- input$countries_gender[1]
+      h1_txt <- paste0("1. Female Share of Employment — ", first_sel)
+      h1_fmt <- officer::fp_text(font.size = 20, bold = TRUE)
+      rule   <- officer::fp_border(color = "#000000", width = 1)
+      p_rule <- officer::fp_par(border.bottom = rule, padding.bottom = 4)
+      
+      doc <- doc |>
+        officer::body_add_fpar(officer::fpar(officer::ftext(h1_txt, h1_fmt))) |>
+        officer::body_add_fpar(officer::fpar(officer::ftext(""), fp_p = p_rule))
+      
+      # 1.1 Introduction
+      h2_fmt <- officer::fp_text(font.size = 14, bold = TRUE)
+      doc <- doc |>
+        officer::body_add_fpar(officer::fpar(officer::ftext("1.1 Introduction", h2_fmt))) |>
+        officer::body_add_par(
+          "This report presents the female share of employment in the public and private sectors across selected countries and over time for a selected country.",
+          style = "Normal"
+        )
+      
+      # 1.2 Size and Characteristics of the Public Sector
+      doc <- doc |>
+        officer::body_add_fpar(
+          officer::fpar(officer::ftext("1.2 Size and Characteristics of the Public Sector", h2_fmt))
+        )
+      
+      # -------- Graph 1 (last year available, by country) + note --------
+      p1 <- ggplot2::ggplot(
+        d1, ggplot2::aes(x = country_name, y = value_percentage, fill = indicator_name)
+      ) +
+        ggplot2::geom_col(position = ggplot2::position_dodge(width = 0.8), width = 0.7) +
+        ggplot2::scale_fill_manual(values = c(
           "as a share of private paid employees" = "#E69F00",  # Orange
-          "as a share of public paid employees" = "#56B4E9"    # Sky Blue
-        )) +
-        labs(
-          title = "Female Employment by Sector (Last Year Available)", 
-          x = "Country", y = "Employment (%)", fill = "Sector"
+          "as a share of public paid employees"  = "#56B4E9"   # Sky Blue
+        ), drop = FALSE, name = "Sector") +
+        ggplot2::labs(
+          title = "Female Employment by Sector (Last Year Available)",
+          x = "Country", y = "Employment (%)"
         ) +
-        theme_minimal()
+        ggplot2::theme_minimal() +
+        ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
       
+      img1 <- tempfile(fileext = ".png"); ggplot2::ggsave(img1, plot = p1, width = 8, height = 6, dpi = 300)
+      doc <- doc |>
+        officer::body_add_img(src = img1, width = 6.5, height = 4.8) |>
+        officer::body_add_par(
+          "Note: For each country, bars show the latest available estimate of the female share of employment in the public and private sectors.",
+          style = "Normal"
+        )
       
-      img_path1 <- tempfile(fileext = ".png")
-      ggsave(img_path1, plot = first_graph, width = 8, height = 6)
-      doc <- doc %>% body_add_par("Female Employment by Sector (Last Year Available)", style = "heading 2")
-      doc <- doc %>% body_add_img(src = img_path1, width = 6, height = 4)
-      
-      # Second Graph - Save as Image
-      second_graph <- ggplot(gender_workforce %>% filter(country_name == input$country_gender), 
-                             aes(x = year, y = value_percentage, color = indicator_name)) +
-        geom_line(size = 1.2) +
-        geom_point(size = 3) +
-        scale_color_manual(values = c(
-          "as a share of private paid employees" = "#E69F00",  # orange
-          "as a share of public paid employees" = "#56B4E9"    # sky blue
-        )) +
-        labs(
-          title = paste("Female Employment by Sector Over Time in", input$country_gender), 
-          x = "Year", y = "Female Employment (%)", color = "Sector"
+      # -------- Graph 2 (time series for selected country) + note --------
+      p2 <- ggplot2::ggplot(
+        d2, ggplot2::aes(x = year, y = value_percentage, color = indicator_name, group = indicator_name)
+      ) +
+        ggplot2::geom_line(size = 1.1) +
+        ggplot2::geom_point(size = 2.8) +
+        ggplot2::scale_color_manual(values = c(
+          "as a share of private paid employees" = "#E69F00",
+          "as a share of public paid employees"  = "#56B4E9"
+        ), drop = FALSE, name = "Sector") +
+        ggplot2::labs(
+          title = paste0("Female Employment Over Time — ", input$country_gender),
+          x = "Year", y = "Employment (%)"
         ) +
-        theme_minimal()
+        ggplot2::theme_minimal()
       
-      img_path2 <- tempfile(fileext = ".png")
-      ggsave(img_path2, plot = second_graph, width = 8, height = 6)
-      doc <- doc %>% body_add_par("Female Employment by Sector Over Time", style = "heading 2")
-      doc <- doc %>% body_add_img(src = img_path2, width = 6, height = 4)
+      img2 <- tempfile(fileext = ".png"); ggplot2::ggsave(img2, plot = p2, width = 8, height = 6, dpi = 300)
+      doc <- doc |>
+        officer::body_add_img(src = img2, width = 6.5, height = 4.8) |>
+        officer::body_add_par(
+          "Note: This figure shows the evolution of the female share of employment in the public and private sectors for the selected country.",
+          style = "Normal"
+        )
       
-   
-      # Save the Document
+      # -------- Write file --------
       print(doc, target = file)
     }
   )
-  
   generate_gender_workforce_section <- function(doc, selected_countries) {
     # Add Section Title
     doc <- doc %>% body_add_par("Gender Workforce Analysis", style = "heading 1")
