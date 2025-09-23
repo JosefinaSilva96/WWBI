@@ -1322,40 +1322,49 @@ server <- function(input, output, session) {
           downloadButton("downloadGenderWagePremium", "Download Gender Wage premium in Public Sector by Industry Report")
         )
       )
-    } else if(tab == "pay_compression") {
+    } else if (tab == "pay_compression") {
       tagList(
         h3("Pay Compression Ratios"),
         
-        # Section Description
+        # --- Section description
         fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              "This visualization explores pay compression in the public and private sectors across selected countries.")
+          div(
+            style = "background-color: rgba(255, 255, 255, 0.05);
+                 border: 1px solid white; border-radius: 10px; padding: 20px;",
+            "This visualization explores pay compression in the public and private sectors across selected countries."
+          )
         ),
         
-        # Country Selection
+        # --- Controls (GDP-style layout)
         fluidRow(
-          selectInput(
-            inputId = "countries_first",
-            label = "Select countries",
-            choices = unique(data_wwbi_long$country_name),
-            multiple = TRUE
-          )# Default country selected
+          column(
+            width = 7,
+            selectInput(
+              inputId = "countries_first",
+              label   = "Select country(ies)/region(s)/income group(s) – Your first selection will be treated as the reference point in both the graph and the output report",
+              choices = sort(unique(data_wwbi_long$country_name)),
+              multiple = TRUE,
+              width    = "100%"
+            ),
+            br(),
+            downloadButton(
+              "downloadPayCompressionDoc",
+              "Download Pay Compression Ratios Report",
+              class = "dl-btn w-100"
+            )
+          )
         ),
         
-        # Scatter Plot Output (Fix: Use plotlyOutput instead of plotOutput)
+        # --- Plot + note
         fluidRow(
           plotlyOutput("paycompression_plot", height = "600px")
         ),
-        
-        # Note/Explanation
         fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              textOutput("note_dotplot"))
-        ),
-        
-        # Download Button for Report
-        fluidRow(
-          downloadButton("downloadPayCompressionDoc", "Download Pay Compression Ratios Report")
+          div(
+            style = "background-color: rgba(255, 255, 255, 0.05);
+                 border: 1px solid white; border-radius: 10px; padding: 20px;",
+            textOutput("note_dotplot")
+          )
         )
       )
     } else if(tab == "download_all") {
