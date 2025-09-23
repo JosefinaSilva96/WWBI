@@ -1280,7 +1280,16 @@ server <- function(input, output, session) {
           )
         ),
         
-        # --- Controls (left column only: multi-select + download)
+        # === FIRST GRAPH NOTE (before selector and graph)
+        fluidRow(
+          div(
+            style = "background-color: rgba(255, 255, 255, 0.05);
+                 border: 1px solid white; border-radius: 10px; padding: 20px;",
+            textOutput("note_firstGraphGenderWorkforce")
+          )
+        ),
+        
+        # --- Controls (multi-select + download)
         fluidRow(
           column(
             width = 7,
@@ -1300,19 +1309,21 @@ server <- function(input, output, session) {
           )
         ),
         
-        # --- First graph + note
+        # --- First graph
         fluidRow(
           plotlyOutput("firstGraphGenderWorkforce", height = "600px")
         ),
+        
+        # === SECOND GRAPH NOTE (before selector and graph)
         fluidRow(
           div(
             style = "background-color: rgba(255, 255, 255, 0.05);
                  border: 1px solid white; border-radius: 10px; padding: 20px;",
-            textOutput("note_firstGraphGenderWorkforce")
+            textOutput("note_secondGraphGenderWorkforce")
           )
         ),
         
-        # --- Single-country selector placed BEFORE the second graph
+        # --- Single-country selector (now after its note, before its graph)
         fluidRow(
           selectInput(
             "country_gender",
@@ -1323,18 +1334,12 @@ server <- function(input, output, session) {
           )
         ),
         
-        # --- Second graph + note
+        # --- Second graph
         fluidRow(
           plotlyOutput("secondGraphGenderWorkforce", height = "600px")
-        ),
-        fluidRow(
-          div(
-            style = "background-color: rgba(255, 255, 255, 0.05);
-                 border: 1px solid white; border-radius: 10px; padding: 20px;",
-            textOutput("note_secondGraphGenderWorkforce")
-          )
         )
       )
+    
     } else if(tab == "gender_wage_premium") {
       tagList(
         h3("Gender Wage Premium in Public Sector by Industry"),
@@ -3252,6 +3257,10 @@ server <- function(input, output, session) {
   output$note_female_employment <- renderText({
     "Note: This indicator represents female employment as a percentage of paid employees in the public and private sectors. Public sector data is displayed as bars, while private sector data is represented as scatter points."
   })
+  
+  output$note_female_employment_time <- renderText({
+    "Note: This visualization explores female employment in the public and private sectors over time for the selected country"
+  })
   output$employment_plot_overtime <- renderPlotly({
     filtered_data <- gender_workforce %>% filter(country_name == input$selected_country)
     if(nrow(filtered_data) == 0) return(NULL)
@@ -3331,7 +3340,7 @@ server <- function(input, output, session) {
         ggsave(graph_path2, plot = second_graph_wage_premium_gender, width = 6, height = 4)
         doc <- doc %>% body_add_par("Second Graph: Public Sector Employment (Single Country)", style = "heading 1") %>% 
           body_add_img(src = graph_path2, width = 6, height = 4) %>% 
-          body_add_par("This graph shows the wage premium by gender trends over time for the selected country.", style = "Normal")
+          body_add_par("This visualization explores female employment in the public and private sectors over time for the selected country", style = "Normal")
       }
       print(doc, target = file)
     }
@@ -4730,7 +4739,7 @@ server <- function(input, output, session) {
   })
   
   output$note_secondGraphGenderWorkforce <- renderText({
-    "Note: This indicator represents the trend of female employment in the public and private sectors over time, allowing for a comparison of sectoral changes."
+    "Note: This visualization explores female employment in the public and private sectors over time for the selected country"
   })
   
   # Download Handler - Save Graphs to Word Document
