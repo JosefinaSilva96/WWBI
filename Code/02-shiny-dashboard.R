@@ -5624,7 +5624,7 @@ server <- function(input, output, session) {
   
   
     output$note_dotplot_pay <- renderText({
-      "Note: This graph compares pay compression ratios in the public and private sectors. The trendline provides a visual reference for overall patterns across countries."
+      "Note: This visualization explores pay compression in the public and private sectors across selected countries. Compression ratios are calculated based on the ratio of incomes at the 90th to the 10th percentile."
     })
     output$downloadPayCompressionDoc <- downloadHandler(
       filename = function() { paste0("Pay_Compression_Ratios_Report_", Sys.Date(), ".docx") },
@@ -5674,8 +5674,7 @@ server <- function(input, output, session) {
         doc <- doc %>% body_add_gg(value = plot, style = "centered") 
         
         # **Add explanatory note**
-        doc <- doc %>% body_add_par("Note: This graph compares pay compression ratios in the public and private sectors. 
-                                  The trendline provides a visual reference for overall patterns across countries.", style = "Normal")
+        doc <- doc %>% body_add_par("Note: This visualization explores pay compression in the public and private sectors across selected countries. Compression ratios are calculated based on the ratio of incomes at the 90th to the 10th percentile.", style = "Normal")
         
         # **Save document**
         print(doc, target = file)
