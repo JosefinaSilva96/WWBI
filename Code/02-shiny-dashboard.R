@@ -1068,72 +1068,144 @@ server <- function(input, output, session) {
           )
         )
       )
-    } else if(tab == "female_leadership") {
-        tagList(
-          h3("Female Leadership Occupations and Sector"),
-          fluidRow(
-            div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-                "This visualization shows the share of females in various occupational groups (Managers/Clerks) in the public and private sectors across selected countries.")
-          ),
-          fluidRow(
-            selectInput("selected_countries", "Select Countries", 
-                        choices = unique(data_wwbi_long$country_name), multiple = TRUE)
-          ),
-          fluidRow(
+    } else if (tab == "female_leadership") {
+      tagList(
+        h3("Female Leadership: Occupations and Sector"),
+        
+        # Intro note (keeps your translucent card style)
+        fluidRow(
+          column(
+            width = 12,
+            div(
+              style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
+              "This visualization shows the share of females in various occupational groups (Managers/Clerks) in the public and private sectors across selected countries."
+            )
+          )
+        ),
+        
+        # --- Controls (GDP-style layout)
+        fluidRow(
+          column(
+            width = 7,
+            selectInput(
+              "selected_countries",
+              "Select country(ies)/region(s)/income group(s) – Your first selection will be treated as the reference point in both the graph and the output report",
+              choices  = sort(unique(data_wwbi_long$country_name)),
+              multiple = TRUE,
+              width    = "100%"
+            ),
+            br(),
+            downloadButton(
+              "downloadGraphsWordfemale",
+              "Download Female Leadership Occupations Report",
+              class = "dl-btn w-100"
+            )
+          )
+          # (Optional) add another column here for extra filters/help if needed
+          # , column(width = 5, ...)
+        ),
+        
+        # Plot
+        fluidRow(
+          column(
+            width = 12,
             plotlyOutput("barPlotwomen", height = "600px")
-          ),
-          fluidRow(
-            div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-                textOutput("note_barPlotwomen"))
-          ),
-          fluidRow(
-            downloadButton("downloadGraphsWordfemale", "Download Female Leadership Occupations Report")
+          )
+        ),
+        
+        # Footer note (keeps your translucent card style)
+        fluidRow(
+          column(
+            width = 12,
+            div(
+              style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
+              textOutput("note_barPlotwomen")
+            )
           )
         )
-    } else if(tab == "wagepremium_gender") {
+      )
+    } else if (tab == "wagepremium_gender") {
       tagList(
         h3("Public Sector Wage Premium by Gender"),
         
-        # Description Box
+        # Description (card style)
         fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              "This visualization explores the public sector wage premium by gender across selected countries and its trend over time.")
+          column(
+            width = 12,
+            div(
+              style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
+              "This visualization explores the public sector wage premium by gender across selected countries and its trend over time."
+            )
+          )
         ),
         
-        # Multi-Country Selection for First Graph
+        # --- Controls (GDP-style layout): first selector + download
         fluidRow(
-          selectInput("countries_first", "Select Countries for First Graph", 
-                      choices = unique(data_wwbi_long$country_name), 
-                      multiple = TRUE)
+          column(
+            width = 7,
+            selectInput(
+              "countries_first",
+              "Select country(ies)/region(s)/income group(s) for the first graph – Your first selection will be treated as the reference point in both the graph and the output report",
+              choices  = sort(unique(data_wwbi_long$country_name)),
+              multiple = TRUE,
+              width    = "100%"
+            ),
+            br(),
+            downloadButton(
+              "downloadGraphsWordGenderWagePremium",
+              "Download Public Sector Wage Premium by Gender Report",
+              class = "dl-btn w-100"
+            )
+          )
+          # , column(width = 5, ...) # optional extras
         ),
         
-        # First Graph Output - Multi-Country Dot Plot
+        # First graph: multi-country dot plot + note
         fluidRow(
-          plotlyOutput("firstGraphGenderWagePremium", height = "600px")
+          column(
+            width = 12,
+            plotlyOutput("firstGraphGenderWagePremium", height = "600px")
+          )
         ),
         fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              textOutput("note_firstGraphGenderWagePremium"))
-        ),
-        # Single-Country Selection for Second Graph
-        fluidRow(
-          selectInput("country_second", "Select Country for Second Graph", 
-                      choices = unique(data_wwbi_long$country_name), 
-                      multiple = FALSE)
-        ),
-        
-        # Second Graph Output - Single-Country Line Plot
-        fluidRow(
-          plotlyOutput("secondGraphGenderWagePremium", height = "600px")
-        ),
-        fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              textOutput("note_secondGraphGenderWagePremium"))
+          column(
+            width = 12,
+            div(
+              style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
+              textOutput("note_firstGraphGenderWagePremium")
+            )
+          )
         ),
         
-        # Download Button
+        # Second-graph selector (moved here, before the plot)
         fluidRow(
-          downloadButton("downloadGraphsWordGenderWagePremium", "Download Public Sector Wage Premium by Gender Report")
+          column(
+            width = 7,
+            selectInput(
+              "country_second",
+              "Select country/region/income group",
+              choices  = sort(unique(data_wwbi_long$country_name)),
+              multiple = FALSE,
+              width    = "100%"
+            )
+          )
+        ),
+        
+        # Second graph: single-country line plot + note
+        fluidRow(
+          column(
+            width = 12,
+            plotlyOutput("secondGraphGenderWagePremium", height = "600px")
+          )
+        ),
+        fluidRow(
+          column(
+            width = 12,
+            div(
+              style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
+              textOutput("note_secondGraphGenderWagePremium")
+            )
+          )
         )
       )
     } else if (tab == "wagepremium") {
@@ -1340,26 +1412,59 @@ server <- function(input, output, session) {
         )
       )
     
-    } else if(tab == "gender_wage_premium") {
+    } else if (tab == "gender_wage_premium") {
       tagList(
         h3("Gender Wage Premium in Public Sector by Industry"),
+        
+        # Intro note (card style)
         fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              "This visualization explores the gender wage premium in the public sector by industry across selected countries.")
+          column(
+            width = 12,
+            div(
+              style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
+              "This visualization explores the gender wage premium in the public sector by industry across selected countries."
+            )
+          )
         ),
+        
+        # --- Controls (GDP-style layout)
         fluidRow(
-          selectInput("selected_countries", "Select Countries", 
-                      choices = unique(data_wwbi_long$country_name), multiple = TRUE)
+          column(
+            width = 7,
+            selectInput(
+              "selected_countries",
+              "Select country(ies)/region(s)/income group(s) – Your first selection will be treated as the reference point in both the graph and the output report",
+              choices  = sort(unique(data_wwbi_long$country_name)),
+              multiple = TRUE,
+              width    = "100%"
+            ),
+            br(),
+            downloadButton(
+              "downloadGenderWagePremium",
+              "Download Gender Wage Premium in Public Sector by Industry Report",
+              class = "dl-btn w-100"
+            )
+          )
+          # , column(width = 5, ...) # optional space for extra filters/help
         ),
+        
+        # Plot
         fluidRow(
-          plotOutput("gender_wage_barplot", height = "600px")
+          column(
+            width = 12,
+            plotOutput("gender_wage_barplot", height = "600px")
+          )
         ),
+        
+        # Footer note (card style)
         fluidRow(
-          div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              textOutput("note_gender_wage_barplot"))
-        ),
-        fluidRow(
-          downloadButton("downloadGenderWagePremium", "Download Gender Wage premium in Public Sector by Industry Report")
+          column(
+            width = 12,
+            div(
+              style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
+              textOutput("note_gender_wage_barplot")
+            )
+          )
         )
       )
     } else if (tab == "pay_compression") {
