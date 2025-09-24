@@ -1134,7 +1134,7 @@ server <- function(input, output, session) {
             width = 12,
             div(
               style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              "This visualization explores the public sector wage premium by gender across selected countries and its trend over time."
+              "This visualization explores the public sector wage premium by gender across selected countrie(s)/region(s)/income groups."
             )
           )
         ),
@@ -1176,7 +1176,16 @@ server <- function(input, output, session) {
             )
           )
         ),
-        
+        # Description (card style)
+        fluidRow(
+          column(
+            width = 12,
+            div(
+              style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
+              "This visualization explores the public sector wage premium by gender across selected countries and its trend over time."
+            )
+          )
+        ),
         # Second-graph selector (moved here, before the plot)
         fluidRow(
           column(
@@ -4399,6 +4408,9 @@ server <- function(input, output, session) {
     )
   })
   
+  output$note_firstGraphGenderWagePremium <- renderText({
+    "Note: Each dot shows the public-sector wage premium for the latest available year in each country. The premium is the percentage difference in average wages in the public sector relative to the private sector within the same gender. Positive values mean higher wages in the public sector; negative values mean lower. Country coverage and reference years may differ across countries."
+  })
   
   # Second Graph - Single-Country Line Plot for Wage Premium by Gender Over Time
   
@@ -4450,7 +4462,7 @@ server <- function(input, output, session) {
   })
   
   output$note_secondGraphGenderWagePremium <- renderText({
-    "Note: This indicator represents the gender wage premium across industries in the public sector, showing differences between men and women over time."
+    "Note: This indicator represents the public sector wage premium for men and women over time, comparing compensation in the public sector with that in the private sector for each gender."
   })
   
   # Download Handler - Save Gender Wage Premium Graphs to Word Document
@@ -5113,7 +5125,7 @@ server <- function(input, output, session) {
   }
   
 
-  # Women Leadership 
+  # Female Leadership 
   
   output$barPlotwomen <- renderPlotly({
     if (is.null(input$selected_countries) || length(input$selected_countries) == 0) {
@@ -5122,20 +5134,24 @@ server <- function(input, output, session) {
                  title = "No country selected",
                  annotations = list(
                    text = "Please select at least one country to view the data.",
-                   xref = "paper",
-                   yref = "paper",
-                   showarrow = FALSE,
-                   font = list(size = 16),
-                   x = 0.5,
-                   y = 0.5
+                   xref = "paper", yref = "paper", showarrow = FALSE,
+                   font = list(size = 16), x = 0.5, y = 0.5
                  ),
-                 plot_bgcolor = "white",
-                 paper_bgcolor = "white"
+                 plot_bgcolor = "white", paper_bgcolor = "white"
                ))
     }
     
-    filtered_data <- gender_leadership %>% 
-      filter(country_name %in% input$selected_countries)
+    filtered_data <- gender_leadership %>%
+      dplyr::filter(country_name %in% input$selected_countries) %>%
+      # Order groups as requested
+      dplyr::mutate(
+        indicator_label = factor(
+          indicator_label,
+          levels = c("Clerks-Private", "Clerks-Public", "Managers-Private", "Managers-Public")
+        ),
+        # (optional) keep countries in the order the user selected
+        country_name = factor(country_name, levels = input$selected_countries)
+      )
     
     if (nrow(filtered_data) == 0) {
       return(plotly_empty(type = "bar") %>%
@@ -5143,36 +5159,34 @@ server <- function(input, output, session) {
                  title = "No data available",
                  annotations = list(
                    text = "No data available for the selected country/countries.",
-                   xref = "paper",
-                   yref = "paper",
-                   showarrow = FALSE,
-                   font = list(size = 16),
-                   x = 0.5,
-                   y = 0.5
+                   xref = "paper", yref = "paper", showarrow = FALSE,
+                   font = list(size = 16), x = 0.5, y = 0.5
                  ),
-                 plot_bgcolor = "white",
-                 paper_bgcolor = "white"
+                 plot_bgcolor = "white", paper_bgcolor = "white"
                ))
     }
     
+    # Same hue per occupation; darker tone for Public
+    cols <- c(
+      "Clerks-Private"   = "#9ECAE1",  # light blue
+      "Clerks-Public"    = "#08519C",  # dark blue
+      "Managers-Private" = "#FDAE6B",  # light orange
+      "Managers-Public"  = "#E6550D"   # dark orange
+    )
+    
     plot_ly(
-      data = filtered_data,
-      x = ~country_name,
-      y = ~value_percentage,
-      color = ~indicator_label,
-      colors = c(
-        "Clerks-Public" = "#E69F00",    # orange
-        "Managers-Public" = "#56B4E9",  # sky blue
-        "Clerks-Private" = "#009E73",   # green
-        "Managers-Private" = "#F0E442"  # yellow
-      ),
-      type = 'bar',
-      barmode = 'group',
-      text = ~paste(
-        "Country:", country_name,
-        "Group-Sector:", indicator_label,
-        "Female Share:", round(value_percentage, 1), "%",
-        "Year:", year
+      data   = filtered_data,
+      x      = ~country_name,
+      y      = ~value_percentage,
+      color  = ~indicator_label,
+      colors = cols,
+      type   = "bar",
+      barmode = "group",
+      text = ~paste0(
+        "Country: ", country_name, "<br>",
+        "Group–Sector: ", indicator_label, "<br>",
+        "Female Share: ", round(value_percentage, 1), "%<br>",
+        "Year: ", year
       ),
       hoverinfo = "text"
     ) %>%
@@ -5180,10 +5194,11 @@ server <- function(input, output, session) {
         title = "Females by Occupational Group and Sector",
         xaxis = list(title = "Country"),
         yaxis = list(title = "Female Share (%)"),
-        bargap = 0.2
+        bargap = 0.2,
+        legend = list(traceorder = "normal")  # keep legend in factor order
       )
-    
   })
+  
   
   
   output$note_barPlotwomen <- renderText({
@@ -5191,45 +5206,88 @@ server <- function(input, output, session) {
   })
   
   output$downloadGraphsWordfemale <- downloadHandler(
-    filename = function() { paste0("Females_Occupation_Groups_Analysis_", Sys.Date(), ".docx") },
-    content = function(file) {
+    filename = function() paste0("Females_Occupation_Groups_Analysis_", Sys.Date(), ".docx"),
+    content  = function(file) {
       
-      # Create Word Document
-      doc <- read_docx()
+      req(input$selected_countries, length(input$selected_countries) > 0)
       
-      # Title Style
-      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
-      doc <- doc %>% body_add_fpar(fpar(ftext("Females by Occupational Group and Sector", prop = title_style)))
+      # --- Title (same style as your other report) ---
+      first_sel    <- input$selected_countries[1]
+      report_title <- paste0("Females by Occupational Group and Sector — ", first_sel)
       
-      # Introduction
-      doc <- doc %>% body_add_par("This report presents an analysis of female representation in different occupational groups across selected countries.", style = "Normal")
+      title_style <- officer::fp_text(color = "#722F37", font.size = 16, bold = TRUE)
+      doc <- officer::read_docx() %>%
+        officer::body_add_fpar(officer::fpar(officer::ftext(report_title, prop = title_style))) %>%
+        officer::body_add_par("", style = "Normal")  # spacer
       
-      # Filter Data
-      filtered_data <- gender_leadership %>% filter(country_name %in% input$selected_countries)
+      # --- Section heading style ---
+      h2_fmt <- officer::fp_text(font.size = 14, bold = TRUE)
       
-      if(nrow(filtered_data) == 0) return(NULL)  # Ensure there's data to plot
+      # --- Introduction ---
+      doc <- doc %>%
+        officer::body_add_fpar(officer::fpar(officer::ftext("Introduction", h2_fmt))) %>%
+        officer::body_add_par(
+          "This report presents an analysis of female representation in Managers and Clerks across public and private sectors for the selected countries.",
+          style = "Normal"
+        ) %>%
+        officer::body_add_par("", style = "Normal") %>%
+        # >>> Your requested subsection <<<
+        officer::body_add_fpar(
+          officer::fpar(officer::ftext("1.2 Equity in the Public Sector", h2_fmt))
+        ) %>%
+        officer::body_add_par("", style = "Normal")  # spacer before graphs
       
-      # Convert to ggplot Object for ggsave()
-      ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_label)) +
-        geom_bar(stat = "identity", position = "dodge") +
-        scale_fill_viridis_d(option = "D", name = "Occupation") +
-        labs(
-          title = "Females by Occupational Group and Sector",
-          x = "Country", 
-          y = "Female Share (%)"
+      # --- Data ---
+      filtered_data <- gender_leadership %>%
+        dplyr::filter(country_name %in% input$selected_countries) %>%
+        dplyr::mutate(
+          indicator_label = factor(
+            indicator_label,
+            levels = c("Clerks-Private", "Clerks-Public", "Managers-Private", "Managers-Public")
+          ),
+          country_name = factor(country_name, levels = input$selected_countries)
+        )
+      req(nrow(filtered_data) > 0, cancelOutput = TRUE)
+      
+      # --- Colors (same hue per occupation; darker for Public) ---
+      cols <- c(
+        "Clerks-Private"   = "#9ECAE1",  # light blue
+        "Clerks-Public"    = "#08519C",  # dark blue
+        "Managers-Private" = "#FDAE6B",  # light orange
+        "Managers-Public"  = "#E6550D"   # dark orange
+      )
+      
+      # --- Plot (ggplot -> PNG) ---
+      p <- ggplot2::ggplot(
+        filtered_data,
+        ggplot2::aes(x = country_name, y = value_percentage, fill = indicator_label)
+      ) +
+        ggplot2::geom_col(position = ggplot2::position_dodge(width = 0.8), width = 0.7) +
+        ggplot2::scale_fill_manual(
+          values = cols,
+          drop   = FALSE,
+          name   = "Group–Sector",
+          breaks = c("Clerks-Private", "Clerks-Public", "Managers-Private", "Managers-Public"),
+          labels = c("Clerks — Private", "Clerks — Public", "Managers — Private", "Managers — Public")
         ) +
-        theme_minimal()
+        ggplot2::labs(
+          title = "Females by Occupational Group and Sector",
+          x = "Country", y = "Female Share (%)"
+        ) +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
       
-      # Save ggplot as Image
       img_path <- tempfile(fileext = ".png")
-      ggsave(filename = img_path, plot = ggplot_obj, width = 8, height = 6, dpi = 300)
+      ggplot2::ggsave(img_path, plot = p, width = 8, height = 6, dpi = 300)
       
-      # Add Image to Word
-      doc <- doc %>% 
-        body_add_img(src = img_path, width = 6, height = 4) %>% 
-        body_add_par("This graph shows the share of females in various occupational groups (Managers/Clerks) in the public and private sectors for the selected countries.", style = "Normal")
+      # --- Add image + note ---
+      doc <- doc %>%
+        officer::body_add_img(src = img_path, width = 6.5, height = 4.8) %>%
+        officer::body_add_par(
+          "Note: Bars are ordered as Clerks–Private, Clerks–Public, Managers–Private, Managers–Public. Blue tones denote Clerks (Public is darker); orange tones denote Managers (Public is darker).",
+          style = "Normal"
+        )
       
-      # Save the Word Document
       print(doc, target = file)
     }
   )
