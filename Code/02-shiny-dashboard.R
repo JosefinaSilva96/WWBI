@@ -1152,7 +1152,7 @@ server <- function(input, output, session) {
             ),
             br(),
             downloadButton(
-              "downloadGraphsWordGenderWagePremium",
+              "downloadGraphswagepremiumbygender",
               "Download Public Sector Wage Premium by Gender Report",
               class = "dl-btn w-100"
             )
@@ -3107,84 +3107,111 @@ server <- function(input, output, session) {
   })
 
   # Download the Report as a Word Document
-  output$downloadWagePremiumReport <- downloadHandler(
-    filename = function() paste0("Public_Sector_Wage_Premium_", Sys.Date(), ".docx"),
+  output$downloadGraphswagepremiumbygender <- downloadHandler(
+    filename = function() paste0("Wage_Premium_Gender_Graphs_", Sys.Date(), ".docx"),
     content  = function(file) {
-      req(input$countries_wage_premium)
       
-      # ---- Filter and validate data ----
-      filtered_df <- public_wage_premium %>%
-        dplyr::filter(country_name %in% input$countries_wage_premium) %>%
-        tidyr::drop_na(value_percentage)
+      # --- Inputs & title ---
+      req((!is.null(input$countries_first) && length(input$countries_first) > 0) || isTruthy(input$country_second))
       
-      req(nrow(filtered_df) > 0)
-      
-      # Ensure numeric
-      if (!is.numeric(filtered_df$value_percentage)) {
-        suppressWarnings({
-          filtered_df$value_percentage <- as.numeric(filtered_df$value_percentage)
-        })
+      first_sel <- if (!is.null(input$countries_first) && length(input$countries_first) > 0) {
+        input$countries_first[1]
+      } else if (isTruthy(input$country_second)) {
+        input$country_second
+      } else {
+        "Selected Country"
       }
       
-      # ---- Title text (first selected country) ----
-      first_sel    <- input$countries_wage_premium[1]
-      report_title <- paste0("Public Sector Wage Premium – ", first_sel)
+      report_title <- paste0("Public Sector Wage Premium by Gender — ", first_sel)
       
-      # ---- Create the Word doc and add title + intro sections (same style) ----
-      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
-      doc <- read_docx()
-      
-      doc <- doc %>%
-        body_add_fpar(fpar(ftext(report_title, prop = title_style))) %>%
-        body_add_par("", style = "Normal") %>%   # spacer
-        body_add_par("Introduction", style = "heading 2") %>%
-        body_add_par(
-          "This section presents the public sector wage premium—the percentage difference in wages between public sector workers and all private sector employees—across the selected countries.",
+      # --- Doc + Title/Intro/Section (same style pattern) ---
+      title_style <- officer::fp_text(color = "#722F37", font.size = 16, bold = TRUE)
+      doc <- officer::read_docx() %>%
+        officer::body_add_fpar(officer::fpar(officer::ftext(report_title, prop = title_style))) %>%
+        officer::body_add_par("", style = "Normal") %>%
+        officer::body_add_par("Introduction", style = "heading 2") %>%
+        officer::body_add_par(
+          "This section presents the public sector wage premium—the percentage difference in wages between public sector workers and private sector employees—reported separately for men and women in the selected countries and over time for a selected country.",
           style = "Normal"
         ) %>%
-        body_add_par("Size and Characteristics of the public sector", style = "heading 2") %>%
-        body_add_par("", style = "Normal")       # spacer before plot
+        officer::body_add_par("Equity in the Public Sector", style = "heading 2") %>%
+        officer::body_add_par("", style = "Normal")   # spacer before graphs
       
-      # ---- Plot data (highlight first selection, same color scheme & margins) ----
-      d_plot <- filtered_df %>%
-        dplyr::mutate(
-          highlight = ifelse(country_name == first_sel, "Selected country", "Other countries"),
-          country_name = factor(country_name,
-                                levels = c(first_sel, sort(setdiff(unique(country_name), first_sel))))
-        )
+      # --- Colors (Male/Female) ---
+      cols_gender <- c("Male" = "#E69F00", "Female" = "#56B4E9")
       
-      p <- ggplot2::ggplot(
-        d_plot,
-        ggplot2::aes(x = country_name, y = value_percentage, color = highlight)
-      ) +
-        ggplot2::geom_point(size = 4.5, alpha = 0.95, show.legend = FALSE) +
-        ggplot2::scale_color_manual(
-          values = c("Selected country" = "#B3242B",  # red
-                     "Other countries"  = "#003366")   # dark blue
-        ) +
-        ggplot2::labs(
-          title = "Public Sector Wage Premium by Country",
-          x = "Country",
-          y = "Wage Premium (%)"
-        ) +
-        ggplot2::theme_minimal() +
-        ggplot2::coord_cartesian(clip = "off") +
-        ggplot2::theme(
-          plot.margin = ggplot2::margin(10, 40, 10, 10)
-        )
+      # =========================
+      # Graph 1: Multi-country (last year available)
+      # =========================
+      if ("firstGraphgender" %in% input$graphs_to_download && length(input$countries_first) > 0) {
+        d1 <- gender_wage_premium_last %>%
+          dplyr::filter(country_name %in% input$countries_first) %>%
+          tidyr::drop_na(value_percentage)
+        
+        if (nrow(d1) > 0) {
+          p1 <- ggplot2::ggplot(
+            d1, ggplot2::aes(x = country_name, y = value_percentage, color = indicator_label)
+          ) +
+            ggplot2::geom_point(size = 3) +
+            ggplot2::scale_color_manual(values = cols_gender, name = "Gender") +
+            ggplot2::labs(
+              title = "Public Sector Wage Premium by Gender (Last Year Available)",
+              x = "Country", y = "Wage Premium (%)"
+            ) +
+            ggplot2::theme_minimal() +
+            ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+          
+          # Add to doc (use body_add_gg to avoid manual file paths)
+          doc <- doc %>%
+            officer::body_add_par("First Graph: Wage Premium by Gender (Multi-Country)", style = "heading 1") %>%
+            officer::body_add_gg(value = p1, width = 6.5, height = 4.5) %>%
+            officer::body_add_par(
+              "Note: Each dot shows the public-sector wage premium for the latest available year in each country. Positive values indicate higher wages in the public sector relative to the private sector within the same gender; negative values indicate the opposite. Reference years vary by country.",
+              style = "Normal"
+            ) %>%
+            officer::body_add_par("", style = "Normal")
+        }
+      }
       
-      # ---- Add plot + note (same pattern as Education) ----
-      doc <- doc %>%
-        officer::body_add_gg(value = p, width = 6.5, height = 4.5) %>%
-        body_add_par(
-          "Note: This visualization shows the estimated public sector wage premium, compared to private sector counterparts, after controlling for characteristics including gender, education, tenure, and geographic location",
-          style = "Normal"
-        )
+      # =========================
+      # Graph 2: Single-country time series
+      # =========================
+      if ("secondGraphgender" %in% input$graphs_to_download && isTruthy(input$country_second)) {
+        d2 <- gender_wage_premium %>%
+          dplyr::filter(country_name == input$country_second) %>%
+          tidyr::drop_na(value_percentage)
+        
+        if (nrow(d2) > 0) {
+          # try to normalize the gender column name
+          gender_col <- if ("indicator_name" %in% names(d2)) "indicator_name" else "indicator_label"
+          
+          p2 <- ggplot2::ggplot(
+            d2, ggplot2::aes(x = year, y = value_percentage, color = .data[[gender_col]], group = .data[[gender_col]])
+          ) +
+            ggplot2::geom_line(size = 1) +
+            ggplot2::geom_point(size = 2.8) +
+            ggplot2::scale_color_manual(values = cols_gender, name = "Gender") +
+            ggplot2::labs(
+              title = paste0("Public Sector Wage Premium Over Time — ", input$country_second),
+              x = "Year", y = "Wage Premium (%)"
+            ) +
+            ggplot2::theme_minimal()
+          
+          doc <- doc %>%
+            officer::body_add_par("Second Graph: Wage Premium by Gender (Single Country, Over Time)", style = "heading 1") %>%
+            officer::body_add_gg(value = p2, width = 6.5, height = 4.5) %>%
+            officer::body_add_par(
+              "Note: Lines show the evolution of the public-sector wage premium for men and women. Positive values indicate higher wages in the public sector relative to the private sector within the same gender; negative values indicate the opposite.",
+              style = "Normal"
+            )
+        }
+      }
       
-      # ---- Write the file ----
+      # --- Write file ---
       print(doc, target = file)
     }
   )
+  
   
   generate_wage_premium_report_section <- function(doc, selected_countries) {
     # Add Section Title and Intro
@@ -3415,7 +3442,7 @@ server <- function(input, output, session) {
     plot
   })
   
-  output$downloadGraphsWordworkforce <- downloadHandler(
+  output$downloadGraphswagepremium <- downloadHandler(
     filename = function() { paste0("Wage_Premium_Gender_Graphs_", Sys.Date(), ".docx") },
     content = function(file) {
       print(input$countries_first)
