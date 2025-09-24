@@ -293,57 +293,49 @@ ui <- bootstrapPage(
   }
   .accordion-button::after{ filter: invert(1); }  /* white chevron */
 
-  /* =========================
-     Logos: force same visual size
-     ========================= */
-  .logos-row { display:flex; align-items:center; }
-  .logo-wrap { display:flex; justify-content:center; }
-
-/* Base: left logo (and general) */
-img.bl-logo {
-  height: 64px;          /* base size */
-  max-height: none;      /* remove earlier caps */
-  width: auto;
-  display: inline-block;
-  object-fit: contain;
+ /* Keep all three on one line and evenly spaced */
+.logos-row {
+  display: flex;                 /* row is already flex in Bootstrap, this is ok */
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: nowrap;             /* <- prevents wrapping to a second line */
 }
-  /* Base: left logo (and general) */
+
+/* Each logo container shares the row evenly and centers its img */
+.logo-wrap {
+  flex: 1 1 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* Images scale down if needed so they don't force wrapping */
+.logos-row img {
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Base sizes */
+img.bl-logo,
 img.wb-logo {
-  height: 64px;          /* base size */
-  max-height: none;      /* remove earlier caps */
-  width: auto;
-  display: inline-block;
-  object-fit: contain;
+  max-height: 64px;   /* use max-height so they can shrink on small widths */
 }
 
-/* Make the RIGHT logo bigger */
-img.wb-logo.wb-logo--right {
-  height: 80px !important;   /* override any previous rules */
-  max-height: none !important;
+/* Make the right logo a touch taller on wide screens only */
+@media (min-width: 992px) {
+  img.wb-logo.wb-logo--right { max-height: 80px; }
 }
 
-/* If the right PNG has a lot of transparent padding, add a small scale bump */
-img.wb-logo.wb-logo--right.bl-logo.padfix {
+/* (optional) remove the old overly-specific selector:
+   .wb-logo.wb-logo--right.bl-logo.padfix  (that requires ALL three classes)
+   If you want a padfix variant, use this instead: */
+.wb-logo.wb-logo--right.padfix {
   transform: scale(1.12);
   transform-origin: center;
 }
-/* Optional: keep them aligned nicely */
-.logos-row img { vertical-align: middle; }
- /* ===== Compact KPI tiles with proper alignment ===== */
-.custom-infobox .info-box{
-  --tile: 72px;            /* blue square size */
-  --gap: 14px;             /* space between square and text */
-
-  display: flex;           /* align icon + text horizontally */
-  align-items: center;     /* vertical centering relative to square */
-  gap: var(--gap);
-
-  background: transparent !important;
-  border: 0 !important;
-  min-height: var(--tile);
-  padding: 6px 6px;
-}
-
 /* Blue square */
 .custom-infobox .info-box-icon{
   flex: 0 0 var(--tile);           /* fixed square width */
@@ -653,26 +645,26 @@ server <- function(input, output, session) {
       tagList(   # wrap everything in tagList
         fluidRow(class = "mb-3 logos-row",
                  column(
-                   6, div(class = "logo-wrap",
+                   4, div(class = "logo-wrap",
+                          tags$img(
+                            src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/wbg_institutions_logo.png",
+                            class = "wb-logo wb-logo--right"   
+                        ))
+                 ), 
+                 column(
+                   4, div(class = "logo-wrap",
                           tags$img(
                             src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/bl_logo.png",
                             class = "bl-logo"
-                        ))
+                          ))
                  ),
                  column(
-                   6, div(class = "logo-wrap",
+                   4, div(class = "logo-wrap",
                           tags$img(
                             src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/wbg_dec_logo.png",
                             class = "wb-logo"
                           ))
                  ),
-                 column(
-                   6, div(class = "logo-wrap",
-                          tags$img(
-                            src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/wbg_institutions_logo.png",
-                            class = "wb-logo wb-logo--right"   
-                        ))
-                 )
         ),
         h3("Overview"),
         accordion(
@@ -6616,6 +6608,7 @@ server <- function(input, output, session) {
   })
   
 }
+
 
 
 shinyApp(ui = ui, server = server)
