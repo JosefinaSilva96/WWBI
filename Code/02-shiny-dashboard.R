@@ -3049,57 +3049,44 @@ server <- function(input, output, session) {
   output$dotPlot <- renderPlotly({
     req(input$countries_wage_premium)
     
-    # Filter dataset & select only relevant columns
-    filtered_data <- public_wage_premium %>% 
-      filter(country_name %in% input$countries_wage_premium) %>%
-      select(country_name, value_percentage, year) %>%
-      drop_na(value_percentage)  # Remove any NA values
+    filtered_data <- public_wage_premium %>%
+      dplyr::filter(country_name %in% input$countries_wage_premium) %>%
+      dplyr::select(country_name, value_percentage, year) %>%
+      tidyr::drop_na(value_percentage)
     
-    # Fallback if no data
     if (nrow(filtered_data) == 0) {
-      return(plotly_empty(type = "scatter") %>%
-               layout(
+      return(plotly::plotly_empty(type = "scatter") %>%
+               plotly::layout(
                  title = "No data available",
                  annotations = list(
                    text = "No data available for the selected country/countries.",
-                   xref = "paper",
-                   yref = "paper",
-                   showarrow = FALSE,
-                   font = list(size = 16),
-                   x = 0.5,
-                   y = 0.5
+                   xref = "paper", yref = "paper", showarrow = FALSE,
+                   font = list(size = 16), x = 0.5, y = 0.5
                  ),
-                 plot_bgcolor = "white",
-                 paper_bgcolor = "white"
+                 plot_bgcolor = "white", paper_bgcolor = "white"
                ))
     }
     
-    # Assign colors: First country -> Red, Others -> Dark Blue
     filtered_data <- filtered_data %>%
-      mutate(color = ifelse(country_name == input$countries_wage_premium[1], "#B3242B", "#003366"))
+      dplyr::mutate(color = ifelse(country_name == input$countries_wage_premium[1], "#B3242B", "#003366"))
     
-    # Generate Dot Plot
-    plot <- plot_ly(
+    plotly::plot_ly(
       data = filtered_data,
-      x = ~country_name,
-      y = ~value_percentage,
-      type = "scatter",
-      mode = "markers",
+      x = ~country_name, y = ~value_percentage,
+      type = "scatter", mode = "markers",
       marker = list(size = 10, opacity = 0.8, color = ~color),
       text = ~paste(
-        "Country:", filtered_data$country_name,
-        "Value:", round(filtered_data$value_percentage, 1), "%",
-        "<br>Year:", filtered_data$year
+        "Country:", country_name,
+        "Value:", round(value_percentage, 1), "%",
+        "<br>Year:", year
       )
-      ) %>%
-      layout(
+    ) %>%
+      plotly::layout(
         title = "Public Sector Wage Premium (Compared to All Private Employees) by Country",
         xaxis = list(title = "Country"),
         yaxis = list(title = "Public Sector Wage Premium (%)"),
         showlegend = FALSE
       )
-    
-    plot
   })
 
   output$note_wage_premium <- renderText({
@@ -3111,9 +3098,10 @@ server <- function(input, output, session) {
     filename = function() paste0("Wage_Premium_Gender_Graphs_", Sys.Date(), ".docx"),
     content  = function(file) {
       
-      # --- Inputs & title ---
+      # Need at least one of these to proceed
       req((!is.null(input$countries_first) && length(input$countries_first) > 0) || isTruthy(input$country_second))
       
+      # Title reference (first of multi-country, else single-country)
       first_sel <- if (!is.null(input$countries_first) && length(input$countries_first) > 0) {
         input$countries_first[1]
       } else if (isTruthy(input$country_second)) {
@@ -3124,7 +3112,7 @@ server <- function(input, output, session) {
       
       report_title <- paste0("Public Sector Wage Premium by Gender — ", first_sel)
       
-      # --- Doc + Title/Intro/Section (same style pattern) ---
+      # Create doc with title + intro + section headings
       title_style <- officer::fp_text(color = "#722F37", font.size = 16, bold = TRUE)
       doc <- officer::read_docx() %>%
         officer::body_add_fpar(officer::fpar(officer::ftext(report_title, prop = title_style))) %>%
@@ -3137,18 +3125,62 @@ server <- function(input, output, session) {
         officer::body_add_par("Equity in the Public Sector", style = "heading 2") %>%
         officer::body_add_par("", style = "Normal")   # spacer before graphs
       
-      # --- Colors (Male/Female) ---
-      cols_gender <- c("Male" = "#E69F00", "Female" = "#56B4E9")
+      # ----------------------------
+      # Graph 0 (cross-section): ggplot version of output$dotPlot so it embeds
+      # ----------------------------
+      if (isTruthy(input$countries_wage_premium)) {
+        d0 <- public_wage_premium %>%
+          dplyr::filter(country_name %in% input$countries_wage_premium) %>%
+          dplyr::select(country_name, value_percentage, year) %>%
+          tidyr::drop_na(value_percentage) %>%
+          dplyr::mutate(
+            highlight = ifelse(country_name == input$countries_wage_premium[1],
+                               "Selected country", "Other countries"),
+            country_name = factor(
+              country_name,
+              levels = c(input$countries_wage_premium[1],
+                         sort(setdiff(unique(country_name), input$countries_wage_premium[1])))
+            )
+          )
+        
+        if (nrow(d0) > 0) {
+          p0 <- ggplot2::ggplot(
+            d0, ggplot2::aes(x = country_name, y = value_percentage, color = highlight)
+          ) +
+            ggplot2::geom_point(size = 4.5, alpha = 0.95, show.legend = FALSE) +
+            ggplot2::scale_color_manual(values = c(
+              "Selected country" = "#B3242B",  # red
+              "Other countries"  = "#003366"   # dark blue
+            )) +
+            ggplot2::labs(
+              title = "Public Sector Wage Premium (Compared to All Private Employees) by Country",
+              x = "Country", y = "Public Sector Wage Premium (%)"
+            ) +
+            ggplot2::theme_minimal() +
+            ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+          
+          doc <- doc %>%
+            officer::body_add_par("Public Sector Wage Premium (Cross-Section)", style = "heading 1") %>%
+            officer::body_add_gg(value = p0, width = 6.5, height = 4.5) %>%
+            officer::body_add_par(
+              "Note: This visualization shows the estimated public sector wage premium, compared to private sector counterparts, after controlling for characteristics including gender, education, tenure, and geographic location.",
+              style = "Normal"
+            ) %>%
+            officer::body_add_par("", style = "Normal")
+        }
+      }
       
-      # =========================
-      # Graph 1: Multi-country (last year available)
-      # =========================
+      # ----------------------------
+      # Graph 1: Multi-country (last year available), by gender
+      # ----------------------------
       if ("firstGraphgender" %in% input$graphs_to_download && length(input$countries_first) > 0) {
         d1 <- gender_wage_premium_last %>%
           dplyr::filter(country_name %in% input$countries_first) %>%
           tidyr::drop_na(value_percentage)
         
         if (nrow(d1) > 0) {
+          cols_gender <- c("Male" = "#E69F00", "Female" = "#56B4E9")
+          
           p1 <- ggplot2::ggplot(
             d1, ggplot2::aes(x = country_name, y = value_percentage, color = indicator_label)
           ) +
@@ -3161,7 +3193,6 @@ server <- function(input, output, session) {
             ggplot2::theme_minimal() +
             ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
           
-          # Add to doc (use body_add_gg to avoid manual file paths)
           doc <- doc %>%
             officer::body_add_par("First Graph: Wage Premium by Gender (Multi-Country)", style = "heading 1") %>%
             officer::body_add_gg(value = p1, width = 6.5, height = 4.5) %>%
@@ -3173,17 +3204,17 @@ server <- function(input, output, session) {
         }
       }
       
-      # =========================
-      # Graph 2: Single-country time series
-      # =========================
+      # ----------------------------
+      # Graph 2: Single-country time series, by gender
+      # ----------------------------
       if ("secondGraphgender" %in% input$graphs_to_download && isTruthy(input$country_second)) {
         d2 <- gender_wage_premium %>%
           dplyr::filter(country_name == input$country_second) %>%
           tidyr::drop_na(value_percentage)
         
         if (nrow(d2) > 0) {
-          # try to normalize the gender column name
           gender_col <- if ("indicator_name" %in% names(d2)) "indicator_name" else "indicator_label"
+          cols_gender <- c("Male" = "#E69F00", "Female" = "#56B4E9")
           
           p2 <- ggplot2::ggplot(
             d2, ggplot2::aes(x = year, y = value_percentage, color = .data[[gender_col]], group = .data[[gender_col]])
@@ -3207,7 +3238,7 @@ server <- function(input, output, session) {
         }
       }
       
-      # --- Write file ---
+      # Write file
       print(doc, target = file)
     }
   )
