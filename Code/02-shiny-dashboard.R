@@ -299,6 +299,14 @@ ui <- bootstrapPage(
   .logos-row { display:flex; align-items:center; }
   .logo-wrap { display:flex; justify-content:center; }
 
+/* Base: left logo (and general) */
+img.bl-logo {
+  height: 64px;          /* base size */
+  max-height: none;      /* remove earlier caps */
+  width: auto;
+  display: inline-block;
+  object-fit: contain;
+}
   /* Base: left logo (and general) */
 img.wb-logo {
   height: 64px;          /* base size */
@@ -315,7 +323,7 @@ img.wb-logo.wb-logo--right {
 }
 
 /* If the right PNG has a lot of transparent padding, add a small scale bump */
-img.wb-logo.wb-logo--right.padfix {
+img.wb-logo.wb-logo--right.bl-logo.padfix {
   transform: scale(1.12);
   transform-origin: center;
 }
@@ -647,9 +655,16 @@ server <- function(input, output, session) {
                  column(
                    6, div(class = "logo-wrap",
                           tags$img(
+                            src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/bl_logo.png",
+                            class = "bl-logo"
+                        ))
+                 ),
+                 column(
+                   6, div(class = "logo-wrap",
+                          tags$img(
                             src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/wbg_dec_logo.png",
                             class = "wb-logo"
-                        ))
+                          ))
                  ),
                  column(
                    6, div(class = "logo-wrap",
