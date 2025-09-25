@@ -1015,10 +1015,12 @@ server <- function(input, output, session) {
                  border: 1px solid white; border-radius: 10px; padding: 20px;",
             textOutput("note_horizontalStackedBar")
           )
+        ), 
+        column(
+          width = 4,
+          downloadButton("dl_csv",  "Download data (CSV)",  class = "dl-btn w-100")
         )
-        
       )
-    
     } else if (tab == "education") {
       tagList(
         h3("Workers with Tertiary Education"),
@@ -1129,8 +1131,12 @@ server <- function(input, output, session) {
               textOutput("note_barPlotwomen")
             )
           )
+        ), 
+        column(
+          width = 4,
+            downloadButton("dl_csv",  "Download data (CSV)",  class = "dl-btn w-100")
+          )
         )
-      )
     } else if (tab == "wagepremium_gender") {
       tagList(
         h3("Public Sector Wage Premium by Gender"),
@@ -1222,6 +1228,10 @@ server <- function(input, output, session) {
               textOutput("note_secondGraphGenderWagePremium")
             )
           )
+        ),
+        column(
+          width = 4,
+          downloadButton("dl_csv",  "Download data (CSV)",  class = "dl-btn w-100")
         )
       )
     } else if (tab == "wagepremium") {
@@ -1425,6 +1435,10 @@ server <- function(input, output, session) {
         # --- Second graph
         fluidRow(
           plotlyOutput("secondGraphGenderWorkforce", height = "600px")
+        ), 
+        column(
+          width = 4,
+          downloadButton("dl_csv",  "Download data (CSV)",  class = "dl-btn w-100")
         )
       )
     
@@ -1481,6 +1495,10 @@ server <- function(input, output, session) {
               textOutput("note_gender_wage_barplot")
             )
           )
+        ),
+        column(
+          width = 4,
+          downloadButton("dl_csv",  "Download data (CSV)",  class = "dl-btn w-100")
         )
       )
     } else if (tab == "pay_compression") {
@@ -1526,6 +1544,10 @@ server <- function(input, output, session) {
                  border: 1px solid white; border-radius: 10px; padding: 20px;",
             textOutput("note_dotplot_pay")
           )
+        ),
+        column(
+          width = 4,
+          downloadButton("dl_csv",  "Download data (CSV)",  class = "dl-btn w-100")
         )
       )
     } else if(tab == "download_all") {
