@@ -642,35 +642,41 @@ server <- function(input, output, session) {
     tab <- active_tab()
     
     if (tab == "dashboard") {
-      tagList(   # wrap everything in tagList
-        fluidRow(class = "mb-3 logos-row",
-                 column(
-                   4, div(class = "logo-wrap",
-                          tags$img(
-                            src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/wbg_institutions_logo.png",
-                            class = "wb-logo wb-logo--right"   
-                        ))
-                 ), 
-                 column(
-                   4, div(class = "logo-wrap",
-                          tags$img(
-                            src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/bl_logo.png",
-                            class = "bl-logo"
-                          ))
-                 ),
-                 column(
-                   4, div(class = "logo-wrap",
-                          tags$img(
-                            src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/wbg_dec_logo.png",
-                            class = "wb-logo"
-                          ))
-                 ),
+      tagList(
+        # Logos
+        fluidRow(
+          class = "mb-3 logos-row",
+          column(
+            4,
+            div(class = "logo-wrap",
+                tags$img(
+                  src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/wbg_institutions_logo.png",
+                  class = "wb-logo wb-logo--right", alt = "WBG Institutions"
+                ))
+          ),
+          column(
+            4,
+            div(class = "logo-wrap",
+                tags$img(
+                  src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/bl_logo.png",
+                  class = "bl-logo", alt = "Bureaucracy Lab"
+                ))
+          ),
+          column(
+            4,
+            div(class = "logo-wrap",
+                tags$img(
+                  src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/wbg_dec_logo.png",
+                  class = "wb-logo", alt = "WBG DEC"
+                ))
+          )
         ),
+        
         h3("Overview"),
         accordion(
           id = "ov_acc",
           multiple = TRUE,
-          open = character(0),   # start collapsed; use "About the WWBI" to start one open
+          open = character(0),
           
           accordion_panel(
             "About the WWBI",
@@ -686,116 +692,124 @@ server <- function(input, output, session) {
                 tags$li("Gender wage gaps in the public and private sectors"),
                 tags$li("Pay compression ratios in public and private sectors (ratio of 90th to 10th percentile earners)"),
                 tags$li("The relative size of the public sector wage bill")
-              ))),
-          
-          accordion_panel("Contact Information",
-                          tags$p(
-                            "Flavia Sacco – ", tags$a(href="mailto:fsaccocapurro@worldbank.org","fsaccocapurro@worldbank.org"), br(),
-                            "Josefina Silva – ", tags$a(href="mailto:jsilvafuentealba@worldbank.org","jsilvafuentealba@worldbank.org")
-                          )
+              )
+            )
           ),
           
-          accordion_panel("Citation",
-                          p("We kindly ask all users of the dashboard to cite it as follows: Source: Worldwide Bureaucracy Indicators (WWBI) Dashboard – World Bank.")
+          accordion_panel(
+            "Contact Information",
+            tags$p(
+              "Flavia Sacco – ", tags$a(href="mailto:fsaccocapurro@worldbank.org","fsaccocapurro@worldbank.org"), br(),
+              "Josefina Silva – ", tags$a(href="mailto:jsilvafuentealba@worldbank.org","jsilvafuentealba@worldbank.org")
+            )
           ),
           
-          accordion_panel("Disclaimer",
-                          p("The findings, interpretations, and conclusions presented in this dashboard are those of the World Bank staff and do not necessarily reflect the views of the World Bank, its affiliated organizations, the Executive Directors of the World Bank, or the governments they represent. The boundaries, colors, denominations, and other information shown on this dashboard do not imply any judgment on the part of the World Bank concerning the legal status of any territory, or the endorsement or acceptance of such boundaries. The terms “country” or “economy,” as used in this dashboard, are used for statistical convenience and do not imply political independence.")
+          accordion_panel(
+            "Citation",
+            p("We kindly ask all users of the dashboard to cite it as follows: Source: Worldwide Bureaucracy Indicators (WWBI) Dashboard – World Bank.")
+          ),
+          
+          accordion_panel(
+            "Disclaimer",
+            p("The findings, interpretations, and conclusions presented in this dashboard are those of the World Bank staff and do not necessarily reflect the views of the World Bank, its affiliated organizations, the Executive Directors of the World Bank, or the governments they represent. The boundaries, colors, denominations, and other information shown on this dashboard do not imply any judgment on the part of the World Bank concerning the legal status of any territory, or the endorsement or acceptance of such boundaries. The terms “country” or “economy,” as used in this dashboard, are used for statistical convenience and do not imply political independence.")
           )
-        ), 
-        fluidRow(
-          column(10,
-                 h3("📄 Publications"),
-                 wellPanel(
-                   style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-                   h4("Download Team Publications:"),
-                   tags$ul(
-                     tags$li(
-                       downloadLink("pub1", "Innovating Bureaucracy for a More Capable Government"),
-                       br(), tags$small("Report")
-                     ),
-                     tags$li(
-                       downloadLink("pub2", "Introducing the Worldwide Bureaucracy Indicators: A New Global Dataset on Public Sector Employment and Compensation"),
-                       br(), tags$small("Faisal Ali Baig- World Bank Group, Xu Han- University of Maryland, Zahid Hasnain- World Bank Group, Daniel Rogger- World Bank Group ")
-                     ),
-                     tags$li(
-                       downloadLink("pub3", "Public Sector Employment and Compensation: An Assessment Framework"),
-                       br(), tags$small("Report")), 
-                       tags$li(
-                         downloadLink("pub4", "Worldwide Bureaucracy Indicators"),
-                         br(), tags$small("Report")
-                       )
-                     )
-                   )
-                 )
-          )
-      )
-    } else if (tab == "instructions") {
-      tagList(
-        h3("📘 Instruction Manual"),
+        ),
         
-        accordion(
-          id = "inst_acc",
-          multiple = TRUE,
-          open = "About this dashboard",  # or character(0) to start fully collapsed
-          
-          accordion_panel("About this dashboard",
-                          p("This Dashboard is a product of the Bureaucracy Lab, a joint initiative between the Governance Global Practice and the Development Impact Evaluation (DIME) Department of the Research Group at the World Bank."),
-                          p("The dashboard allows users to explore key indicators from the Worldwide Bureaucracy Indicators (WWBI) through a variety of interactive visualizations, which can also be exported into a Word report for further use and analysis."),
-                          p("Each section of the dashboard presents a set of graphs designed to facilitate benchmarking of state capacity measures across countries, regions, and income groups.")
-          ),
-          
-          accordion_panel("What each section contains",
-                          tags$ul(
-                            tags$li(tags$b("Macro-Fundamentals of the Public Sector:"), 
-                                    " This section shows the trends in the size of the public wage bill, expressed as a percentage of both total public expenditure and GDP. It also includes cross-country comparisons of these indicators by income level (measured by GDP per capita)."),
-                            tags$li(tags$b("Size and Characteristics of the Public Sector:"), 
-                                    " Examine public sector employment within the overall labor market, workforce distribution by industry, and educational attainment vs. private sector employees."),
-                            tags$li(tags$b("Competitiveness of Public Sector Wages:"), 
-                                    " Public sector wage premium vs. private workers, how it varies by education level, and pay compression in public and private sectors."),
-                            tags$li(tags$b("Equity in the Public Sector:"), 
-                                    " Female employment and leadership, occupational segregation, and gender wage gaps across public-sector industries."),
-                            tags$li(tags$b("Download Graph Report:"), 
-                                    " Download a full report with all visualizations or create a custom report by selecting sections/graphs (DOC format with prefilled text).")
-                          )
-          ),
-          
-          accordion_panel("How to use the dashboard",
-                          tags$ol(
-                            tags$li("In each tab, select a country of interest and choose comparator countries, regions, or income groups."),
-                            tags$li("To check indicator availability, go to “Metadata”. Select an indicator to see which countries have data and their values."),
-                            tags$li("Dropdowns only list options with available data for the chosen indicator."),
-                            tags$li("The first selected country appears first in graphs and acts as the benchmark."),
-                            tags$li("Each tab provides downloadable graphs. To download, select the",  icon("camera"), "icon content may be incorrect.icon in the top-right corner of each visualization"),
-                            tags$li("Or set selections across tabs, then use “Download All Graphs” to export a comprehensive, pre-formatted Word report.")
-                          )
-          ),
-          
-          accordion_panel("Resources & links",
-                          tags$p(
-                            "GitHub Repository:The construction files for all indicators included in the dataset can be accessed in the repository:",
-                            tags$a(href="https://github.com/worldbank/Worldwide-Bureaucracy-Indicators",
-                                   "https://github.com/worldbank/Worldwide-Bureaucracy-Indicators", target="_blank")
-                          ),
-                          tags$p(
-                            "Data Catalog: The full WWBI dataset, available in multiple file formats, can be accessed at:",
-                            tags$a(href="https://datacatalog.worldbank.org/int/home",
-                                   "https://datacatalog.worldbank.org/int/home", target="_blank")
-                          ),
-                          accordion_panel(
-                            "Codebook",
-                            p("Further details on the dataset, along with definitions of the indicators and their construction, can be found in the codebook below."),
-                            div(style = "margin-top: 8px;",
-                                downloadButton("download_pdf", "📥 Download Codebook", class = "btn btn-primary")
-                            )
-                          )
+        # Publications
+        fluidRow(
+          column(
+            10,
+            h3("📄 Publications"),
+            wellPanel(
+              style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
+              h4("Download Team Publications:"),
+              tags$ul(
+                tags$li(
+                  downloadLink("pub1", "Innovating Bureaucracy for a More Capable Government"),
+                  br(), tags$small("Report")
+                ),
+                tags$li(
+                  downloadLink("pub2", "Introducing the Worldwide Bureaucracy Indicators: A New Global Dataset on Public Sector Employment and Compensation"),
+                  br(), tags$small("Faisal Ali Baig- World Bank Group, Xu Han- University of Maryland, Zahid Hasnain- World Bank Group, Daniel Rogger- World Bank Group ")
+                ),
+                tags$li(
+                  downloadLink("pub3", "Public Sector Employment and Compensation: An Assessment Framework"),
+                  br(), tags$small("Report")
+                ),
+                tags$li(
+                  downloadLink("pub4", "Worldwide Bureaucracy Indicators"),
+                  br(), tags$small("Report")
+                )
+              )
+            )
           )
         )
       )
-    } else if(tab == "metadata") {
+      
+    } else if (tab == "instructions") {
+      tagList(
+        h3("📘 Instruction Manual"),
+        accordion(
+          id = "inst_acc",
+          multiple = TRUE,
+          open = "About this dashboard",
+          
+          accordion_panel(
+            "About this dashboard",
+            p("This Dashboard is a product of the Bureaucracy Lab, a joint initiative between the Governance Global Practice and the Development Impact Evaluation (DIME) Department of the Research Group at the World Bank."),
+            p("The dashboard allows users to explore key indicators from the Worldwide Bureaucracy Indicators (WWBI) through a variety of interactive visualizations, which can also be exported into a Word report for further use and analysis."),
+            p("Each section of the dashboard presents a set of graphs designed to facilitate benchmarking of state capacity measures across countries, regions, and income groups.")
+          ),
+          
+          accordion_panel(
+            "What each section contains",
+            tags$ul(
+              tags$li(tags$b("Macro-Fundamentals of the Public Sector:"), " This section shows the trends in the size of the public wage bill, expressed as a percentage of both total public expenditure and GDP. It also includes cross-country comparisons of these indicators by income level (measured by GDP per capita)."),
+              tags$li(tags$b("Size and Characteristics of the Public Sector:"), " Examine public sector employment within the overall labor market, workforce distribution by industry, and educational attainment vs. private sector employees."),
+              tags$li(tags$b("Competitiveness of Public Sector Wages:"), " Public sector wage premium vs. private workers, how it varies by education level, and pay compression in public and private sectors."),
+              tags$li(tags$b("Equity in the Public Sector:"), " Female employment and leadership, occupational segregation, and gender wage gaps across public-sector industries."),
+              tags$li(tags$b("Download Graph Report:"), " Download a full report with all visualizations or create a custom report by selecting sections/graphs (DOC format with prefilled text).")
+            )
+          ),
+          
+          accordion_panel(
+            "How to use the dashboard",
+            tags$ol(
+              tags$li("In each tab, select a country of interest and choose comparator countries, regions, or income groups."),
+              tags$li("To check indicator availability, go to “Metadata”. Select an indicator to see which countries have data and their values."),
+              tags$li("Dropdowns only list options with available data for the chosen indicator."),
+              tags$li("The first selected country appears first in graphs and acts as the benchmark."),
+              tags$li("Each tab provides downloadable graphs. To download, select the", icon("camera"), "icon in the top-right corner of each visualization."),
+              tags$li("Or set selections across tabs, then use “Download All Graphs” to export a comprehensive, pre-formatted Word report.")
+            )
+          ),
+          
+          accordion_panel(
+            "Resources & links",
+            tags$p(
+              "GitHub Repository:The construction files for all indicators included in the dataset can be accessed in the repository:",
+              tags$a(href="https://github.com/worldbank/Worldwide-Bureaucracy-Indicators",
+                     "https://github.com/worldbank/Worldwide-Bureaucracy-Indicators", target="_blank")
+            ),
+            tags$p(
+              "Data Catalog: The full WWBI dataset, available in multiple file formats, can be accessed at:",
+              tags$a(href="https://datacatalog.worldbank.org/int/home",
+                     "https://datacatalog.worldbank.org/int/home", target="_blank")
+            ),
+            accordion_panel(
+              "Codebook",
+              p("Further details on the dataset, along with definitions of the indicators and their construction, can be found in the codebook below."),
+              div(style = "margin-top: 8px;",
+                  downloadButton("download_pdf", "📥 Download Codebook", class = "btn btn-primary")
+              )
+            )
+          )
+        )
+      )
+      
+    } else if (tab == "metadata") {
       tagList(
         h3("Metadata"),
-        # Custom-styled InfoBoxes with gradient background
         fluidRow(
           column(4, div(class = "custom-infobox", infoBox("Indicators", 302, icon = icon("list")))),
           column(4, div(class = "custom-infobox", infoBox("Economies", length(unique(data_wwbi$country_name)), icon = icon("globe")))),
@@ -811,19 +825,15 @@ server <- function(input, output, session) {
         ),
         fluidRow(
           column(6,
-                 selectInput("indicatorSelect", "Select Indicator", 
+                 selectInput("indicatorSelect", "Select Indicator",
                              choices = unique(data_wwbi$indicator_name), selected = NULL)
           )
         ),
-        fluidRow(
-          textOutput("countryCount")
-        ),
-        fluidRow(
-          leafletOutput("worldMap", height = "600px")
-        )
+        fluidRow(textOutput("countryCount")),
+        fluidRow(leafletOutput("worldMap", height = "600px"))
       )
       
-    } else if(tab == "wagebill") {
+    } else if (tab == "wagebill") {
       tagList(
         h3("Wage Bill Graphs"),
         fluidRow(
@@ -831,7 +841,6 @@ server <- function(input, output, session) {
               "This visualization explores the wage bill over time for selected countries.")
         ),
         fluidRow(
-          # LEFT: wide selector
           column(
             width = 7,
             selectInput(
@@ -839,11 +848,9 @@ server <- function(input, output, session) {
               "Select country(ies)/region(s)/income group(s) – Your first selection will be treated as the reference point in both the graph and the output report",
               choices  = sort(unique(data_wwbi_long$country_name)),
               multiple = TRUE,
-              width    = "100%"       # fill this column
+              width    = "100%"
             )
           ),
-          
-          # RIGHT: radio buttons
           column(
             width = 5,
             radioButtons(
@@ -856,43 +863,28 @@ server <- function(input, output, session) {
             )
           )
         ),
-        fluidRow(
-          plotlyOutput("plotwagebill", height = "500px")
-        ),
+        fluidRow(plotlyOutput("plotwagebill", height = "500px")),
         fluidRow(
           div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               textOutput("note_wagebill"))
         ),
         fluidRow(
-          downloadButton("downloadWord", "Download Report in Word", 
-                         class="dl-btn w-100")
+          column(12, downloadButton("downloadWord", "Download Report in Word", class="dl-btn w-100"))
         ),
         fluidRow(
-          column(
-            width = 8,
-            plotlyOutput("plotwagebill")
-          ),
-          column(
-            width = 4,
-            downloadButton("dl_csv",  "Download data (CSV)",  class = "dl-btn w-100")
-          )
+          column(4, downloadButton("dl_csv_wagebill",  "Download data (CSV)",  class = "dl-btn w-100"))
         )
       )
       
     } else if (tab == "wagebill_gdp") {
       tagList(
         h3("Wage Bill & GDP Graphs"),
-        
-        # Short intro box
         fluidRow(
           div(
-            style = "background-color: rgba(255,255,255,0.05);
-                 border: 1px solid white; border-radius: 10px; padding: 20px;",
+            style = "background-color: rgba(255,255,255,0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
             "This graph shows the relationship between the size of the wage bill and GDP per capita."
           )
         ),
-        
-        # Controls
         fluidRow(
           column(
             width = 7,
@@ -915,48 +907,31 @@ server <- function(input, output, session) {
                          selected = "Country")
           )
         ),
-        
-        # Plot (full width)
-        fluidRow(
-          column(12, plotlyOutput("dot_plot_gdp", height = "500px"))
-        ),
-        
-        # Note (full width)
+        fluidRow(column(12, plotlyOutput("dot_plot_gdp", height = "500px"))),
         fluidRow(
           column(
             12,
             div(
-              style = "background-color: rgba(255,255,255,0.05);
-                   border: 1px solid white; border-radius: 10px; padding: 20px;",
+              style = "background-color: rgba(255,255,255,0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               textOutput("note_dotplot_gdp")
             )
           )
         ),
-        
-        # Download button BELOW the note, right-aligned
         fluidRow(
-          column(
-            12,
-            div(class = "text-end mt-3",
-                downloadButton("dl_csv_gdp", "Download data (CSV)", class = "dl-btn"))
-          )
+          column(12, div(class = "text-end mt-3",
+                         downloadButton("dl_csv_gdp", "Download data (CSV)", class = "dl-btn")))
         )
       )
-    
+      
     } else if (tab == "public_workforce") {
       tagList(
         h3("Distribution of Public Sector Employment"),
-        
-        # -- Intro note
         fluidRow(
           div(
-            style = "background-color: rgba(255, 255, 255, 0.05);
-                 border: 1px solid white; border-radius: 10px; padding: 20px;",
+            style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
             "This visualization shows the distribution of the public sector workforce across the three main industries (public administration, health and education)."
           )
         ),
-        
-        # -- Controls row (GDP-style layout)
         fluidRow(
           column(
             width = 7,
@@ -977,64 +952,51 @@ server <- function(input, output, session) {
                            "Single-Country Graph" = "secondGraph"),
               selected = c("firstGraph", "secondGraph")
             ),
-            # full-width download button (same ID you already use)
             downloadButton("downloadGraphsemploymentdist",
                            "Download Selected Graphs in Word",
                            class = "dl-btn w-100")
           )
         ),
-        
-        # -- First graph + note
-        fluidRow(
-          plotlyOutput("stackedBarGraph", height = "600px")
-        ),
+        fluidRow(plotlyOutput("stackedBarGraph", height = "600px")),
         fluidRow(
           div(
-            style = "background-color: rgba(255, 255, 255, 0.05);
-                 border: 1px solid white; border-radius: 10px; padding: 20px;",
+            style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
             textOutput("note_stackedBarGraph")
           )
         ),
-        
-        # -- Second graph selector + plot + note
         fluidRow(
-          selectInput(
-            "selected_country",
-            "Select country/region/income group",
-            choices  = sort(unique(data_wwbi_long$country_name)),
-            multiple = FALSE,
-            width    = "100%"
+          column(
+            width = 12,
+            selectInput(
+              "selected_country",
+              "Select country/region/income group",
+              choices  = sort(unique(data_wwbi_long$country_name)),
+              multiple = FALSE,
+              width    = "100%"
+            )
           )
         ),
-        fluidRow(
-          plotlyOutput("horizontalStackedBar", height = "600px")
-        ),
+        fluidRow(plotlyOutput("horizontalStackedBar", height = "600px")),
         fluidRow(
           div(
-            style = "background-color: rgba(255, 255, 255, 0.05);
-                 border: 1px solid white; border-radius: 10px; padding: 20px;",
+            style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
             textOutput("note_horizontalStackedBar")
           )
-        ), 
-        column(
-          width = 4,
-          downloadButton("dl_csv",  "Download data (CSV)",  class = "dl-btn w-100")
+        ),
+        fluidRow(
+          column(4, downloadButton("dl_csv_public_workforce",  "Download data (CSV)",  class = "dl-btn w-100"))
         )
       )
+      
     } else if (tab == "education") {
       tagList(
         h3("Workers with Tertiary Education"),
-        
-        # --- Intro note
         fluidRow(
           div(
-            style = "background-color: rgba(255, 255, 255, 0.05);
-                 border: 1px solid white; border-radius: 10px; padding: 20px;",
+            style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
             "This visualization shows the proportion of workers with tertiary education in the public and private sectors."
           )
         ),
-        
-        # --- Controls (GDP-style layout)
         fluidRow(
           column(
             width = 7,
@@ -1056,7 +1018,7 @@ server <- function(input, output, session) {
             width = 5,
             tags$label(class = "form-label fw-semibold", "Choose label type"),
             radioButtons(
-              "label_type_edu",                # new ID to avoid clashes with GDP tab
+              "label_type_edu",
               label   = NULL,
               choices = c("Country", "Region"),
               selected = "Country",
@@ -1064,24 +1026,18 @@ server <- function(input, output, session) {
             )
           )
         ),
-        
-        # --- Plot + note
-        fluidRow(
-          plotlyOutput("barPlot", height = "600px")
-        ),
+        fluidRow(plotlyOutput("barPlot", height = "600px")),
         fluidRow(
           div(
-            style = "background-color: rgba(255, 255, 255, 0.05);
-                 border: 1px solid white; border-radius: 10px; padding: 20px;",
+            style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
             textOutput("note_tertiaryEducation")
           )
         )
       )
+      
     } else if (tab == "female_leadership") {
       tagList(
         h3("Female Leadership: Occupations and Sector"),
-        
-        # Intro note (keeps your translucent card style)
         fluidRow(
           column(
             width = 12,
@@ -1091,8 +1047,6 @@ server <- function(input, output, session) {
             )
           )
         ),
-        
-        # --- Controls (GDP-style layout)
         fluidRow(
           column(
             width = 7,
@@ -1110,19 +1064,8 @@ server <- function(input, output, session) {
               class = "dl-btn w-100"
             )
           )
-          # (Optional) add another column here for extra filters/help if needed
-          # , column(width = 5, ...)
         ),
-        
-        # Plot
-        fluidRow(
-          column(
-            width = 12,
-            plotlyOutput("barPlotwomen", height = "600px")
-          )
-        ),
-        
-        # Footer note (keeps your translucent card style)
+        fluidRow(column(width = 12, plotlyOutput("barPlotwomen", height = "600px"))),
         fluidRow(
           column(
             width = 12,
@@ -1131,17 +1074,15 @@ server <- function(input, output, session) {
               textOutput("note_barPlotwomen")
             )
           )
-        ), 
-        column(
-          width = 4,
-            downloadButton("dl_csv",  "Download data (CSV)",  class = "dl-btn w-100")
-          )
+        ),
+        fluidRow(
+          column(4, downloadButton("dl_csv_female_leadership",  "Download data (CSV)",  class = "dl-btn w-100"))
         )
+      )
+      
     } else if (tab == "wagepremium_gender") {
       tagList(
         h3("Public Sector Wage Premium by Gender"),
-        
-        # Description (card style)
         fluidRow(
           column(
             width = 12,
@@ -1151,8 +1092,6 @@ server <- function(input, output, session) {
             )
           )
         ),
-        
-        # --- Controls (GDP-style layout): first selector + download
         fluidRow(
           column(
             width = 7,
@@ -1170,26 +1109,17 @@ server <- function(input, output, session) {
               class = "dl-btn w-100"
             )
           )
-          # , column(width = 5, ...) # optional extras
         ),
-        
-        # First graph: multi-country dot plot + note
+        fluidRow(column(12, plotlyOutput("firstGraphGenderWagePremium", height = "600px"))),
         fluidRow(
           column(
-            width = 12,
-            plotlyOutput("firstGraphGenderWagePremium", height = "600px")
-          )
-        ),
-        fluidRow(
-          column(
-            width = 12,
+            12,
             div(
               style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               textOutput("note_firstGraphGenderWagePremium")
             )
           )
         ),
-        # Description (card style)
         fluidRow(
           column(
             width = 12,
@@ -1199,7 +1129,6 @@ server <- function(input, output, session) {
             )
           )
         ),
-        # Second-graph selector (moved here, before the plot)
         fluidRow(
           column(
             width = 7,
@@ -1212,33 +1141,24 @@ server <- function(input, output, session) {
             )
           )
         ),
-        
-        # Second graph: single-country line plot + note
+        fluidRow(column(12, plotlyOutput("secondGraphGenderWagePremium", height = "600px"))),
         fluidRow(
           column(
-            width = 12,
-            plotlyOutput("secondGraphGenderWagePremium", height = "600px")
-          )
-        ),
-        fluidRow(
-          column(
-            width = 12,
+            12,
             div(
               style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               textOutput("note_secondGraphGenderWagePremium")
             )
           )
         ),
-        column(
-          width = 4,
-          downloadButton("dl_csv",  "Download data (CSV)",  class = "dl-btn w-100")
+        fluidRow(
+          column(4, downloadButton("dl_csv_wagepremium_gender",  "Download data (CSV)",  class = "dl-btn w-100"))
         )
       )
+      
     } else if (tab == "wagepremium") {
       tagList(
         h3("Public Sector Wage Premium"),
-        
-        # --- Controls (GDP-style)
         fluidRow(
           column(
             width = 7,
@@ -1257,33 +1177,24 @@ server <- function(input, output, session) {
             )
           )
         ),
-        
-        # --- Plot + note
-        fluidRow(
-          plotlyOutput("dotPlot", height = "500px")
-        ),
+        fluidRow(plotlyOutput("dotPlot", height = "500px")),
         fluidRow(
           div(
             style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
             textOutput("note_wage_premium")
           )
         )
-        
       )
+      
     } else if (tab == "public_educ") {
       tagList(
         h3("Public Sector Wage Premium by Education Level"),
-        
-        # --- Description box
         fluidRow(
           div(
-            style = "background-color: rgba(255, 255, 255, 0.05);
-                 border: 1px solid white; border-radius: 10px; padding: 20px;",
+            style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
             "This visualization explores the public sector wage premium by education level, compared to private formal workers."
           )
         ),
-        
-        # --- Controls (GDP-style: select + full-width download)
         fluidRow(
           column(
             width = 7,
@@ -1291,7 +1202,7 @@ server <- function(input, output, session) {
               "selected_country",
               "Select country/region/income group – Your selection will be used as the reference in the graph and report",
               choices  = sort(unique(data_wwbi_long$country_name)),
-              multiple = FALSE,     # set TRUE if you want multi-select
+              multiple = FALSE,
               width    = "100%"
             ),
             br(),
@@ -1302,30 +1213,19 @@ server <- function(input, output, session) {
             )
           )
         ),
-        
-        # --- Plot + note
-        fluidRow(
-          plotlyOutput("education_wage_premium_plot", height = "600px")
-        ),
+        fluidRow(plotlyOutput("education_wage_premium_plot", height = "600px")),
         fluidRow(
           div(
-            style = "background-color: rgba(255, 255, 255, 0.05);
-                 border: 1px solid white; border-radius: 10px; padding: 20px;",
+            style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
             textOutput("note_education_wage_premium")
           )
         )
       )
-    } else if(tab == "public_graphs") {
+      
+    } else if (tab == "public_graphs") {
       tagList(
         h3("Public Sector Employment Graphs"),
-        
-        # Description Box
-        #fluidRow(
-          #div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
-              #"Note: This indicator represents the size of public sector employment in the labor market for the most recent year available in each country.")
-        #),
-        
-        # Multi-Country Selection for First Graph
+        # Controls for first graph
         fluidRow(
           column(
             width = 7,
@@ -1335,59 +1235,50 @@ server <- function(input, output, session) {
               choices  = sort(unique(data_wwbi_long$country_name)),
               multiple = TRUE,
               width    = "100%"
-            )),
-        
-        # Dot Plot Output
-        fluidRow(
-          plotlyOutput("firstGraphpublic", height = "600px")
+            )
+          )
         ),
+        # First graph
+        fluidRow(plotlyOutput("firstGraphpublic", height = "600px")),
         fluidRow(
           div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               textOutput("note_firstGraphpublic"))
         ),
-        # Single-Country Selection for Line Graph
+        # Single-country selector for second graph
         fluidRow(
-          selectInput("country_second", "Select country/region/income group", 
-                      choices = unique(data_wwbi_long$country_name), multiple = FALSE)
+          column(
+            12,
+            selectInput("country_second", "Select country/region/income group",
+                        choices = unique(data_wwbi_long$country_name), multiple = FALSE, width = "100%")
+          )
         ),
-        
-        # Line Plot Output
-        fluidRow(
-          plotlyOutput("secondGraphpublic", height = "600px")
-        ),
+        # Second graph
+        fluidRow(plotlyOutput("secondGraphpublic", height = "600px")),
         fluidRow(
           div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               textOutput("note_secondGraphpublic"))
         ),
-        # Download Button
+        # Download button
         fluidRow(
-          downloadButton("downloadGraphsWord", "Download Graphs as Word File")
+          column(12, downloadButton("downloadGraphsWord", "Download Graphs as Word File", class = "dl-btn w-100"))
         )
       )
-      )
+      
     } else if (tab == "gender_workforce") {
       tagList(
         h3("Female share of employment"),
-        
-        # --- Description
         fluidRow(
           div(
-            style = "background-color: rgba(255, 255, 255, 0.05);
-                 border: 1px solid white; border-radius: 10px; padding: 20px;",
+            style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
             "This visualization explores female employment in the public and private sectors across selected countries."
           )
         ),
-        
-        # === FIRST GRAPH NOTE (before selector and graph)
         fluidRow(
           div(
-            style = "background-color: rgba(255, 255, 255, 0.05);
-                 border: 1px solid white; border-radius: 10px; padding: 20px;",
+            style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
             textOutput("note_firstGraphGenderWorkforce")
           )
         ),
-        
-        # --- Controls (multi-select + download)
         fluidRow(
           column(
             width = 7,
@@ -1406,47 +1297,34 @@ server <- function(input, output, session) {
             )
           )
         ),
-        
-        # --- First graph
-        fluidRow(
-          plotlyOutput("firstGraphGenderWorkforce", height = "600px")
-        ),
-        
-        # === SECOND GRAPH NOTE (before selector and graph)
+        fluidRow(plotlyOutput("firstGraphGenderWorkforce", height = "600px")),
         fluidRow(
           div(
-            style = "background-color: rgba(255, 255, 255, 0.05);
-                 border: 1px solid white; border-radius: 10px; padding: 20px;",
+            style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
             textOutput("note_secondGraphGenderWorkforce")
           )
         ),
-        
-        # --- Single-country selector (now after its note, before its graph)
         fluidRow(
-          selectInput(
-            "country_gender",
-            "Select country/region/income group",
-            choices  = sort(unique(data_wwbi_long$country_name)),
-            multiple = FALSE,
-            width    = "100%"
+          column(
+            12,
+            selectInput(
+              "country_gender",
+              "Select country/region/income group",
+              choices  = sort(unique(data_wwbi_long$country_name)),
+              multiple = FALSE,
+              width    = "100%"
+            )
           )
         ),
-        
-        # --- Second graph
+        fluidRow(plotlyOutput("secondGraphGenderWorkforce", height = "600px")),
         fluidRow(
-          plotlyOutput("secondGraphGenderWorkforce", height = "600px")
-        ), 
-        column(
-          width = 4,
-          downloadButton("dl_csv",  "Download data (CSV)",  class = "dl-btn w-100")
+          column(4, downloadButton("dl_csv_gender_workforce",  "Download data (CSV)",  class = "dl-btn w-100"))
         )
       )
-    
+      
     } else if (tab == "gender_wage_premium") {
       tagList(
         h3("Gender Wage Premium in Public Sector by Industry"),
-        
-        # Intro note (card style)
         fluidRow(
           column(
             width = 12,
@@ -1456,8 +1334,6 @@ server <- function(input, output, session) {
             )
           )
         ),
-        
-        # --- Controls (GDP-style layout)
         fluidRow(
           column(
             width = 7,
@@ -1475,18 +1351,8 @@ server <- function(input, output, session) {
               class = "dl-btn w-100"
             )
           )
-          # , column(width = 5, ...) # optional space for extra filters/help
         ),
-        
-        # Plot
-        fluidRow(
-          column(
-            width = 12,
-            plotOutput("gender_wage_barplot", height = "600px")
-          )
-        ),
-        
-        # Footer note (card style)
+        fluidRow(column(12, plotOutput("gender_wage_barplot", height = "600px"))),
         fluidRow(
           column(
             width = 12,
@@ -1496,25 +1362,20 @@ server <- function(input, output, session) {
             )
           )
         ),
-        column(
-          width = 4,
-          downloadButton("dl_csv",  "Download data (CSV)",  class = "dl-btn w-100")
+        fluidRow(
+          column(4, downloadButton("dl_csv_gender_wage_premium",  "Download data (CSV)",  class = "dl-btn w-100"))
         )
       )
+      
     } else if (tab == "pay_compression") {
       tagList(
         h3("Pay Compression Ratios"),
-        
-        # --- Section description
         fluidRow(
           div(
-            style = "background-color: rgba(255, 255, 255, 0.05);
-                 border: 1px solid white; border-radius: 10px; padding: 20px;",
+            style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
             "This visualization explores pay compression in the public and private sectors across selected countries."
           )
         ),
-        
-        # --- Controls (GDP-style layout)
         fluidRow(
           column(
             width = 7,
@@ -1533,39 +1394,28 @@ server <- function(input, output, session) {
             )
           )
         ),
-        
-        # --- Plot + note
-        fluidRow(
-          plotlyOutput("paycompression_plot", height = "600px")
-        ),
+        fluidRow(plotlyOutput("paycompression_plot", height = "600px")),
         fluidRow(
           div(
-            style = "background-color: rgba(255, 255, 255, 0.05);
-                 border: 1px solid white; border-radius: 10px; padding: 20px;",
+            style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
             textOutput("note_dotplot_pay")
           )
         ),
-        column(
-          width = 4,
-          downloadButton("dl_csv",  "Download data (CSV)",  class = "dl-btn w-100")
+        fluidRow(
+          column(4, downloadButton("dl_csv_pay_compression",  "Download data (CSV)",  class = "dl-btn w-100"))
         )
       )
-    } else if(tab == "download_all") {
+      
+    } else if (tab == "download_all") {
       tagList(
-        
-        # Title
         h3("Download Graph Reports"),
-        
-        # Description box
         fluidRow(
           div(style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
               p("You can download a comprehensive report with all graphs or select specific graphs to include in your report.",
                 style = "font-size: 16px; color: #333;")
           )
         ),
-        
         br(),
-        
         fluidRow(
           column(6, align = "center",
                  selectInput(
@@ -1578,10 +1428,7 @@ server <- function(input, output, session) {
                  )
           )
         ),
-        
-        # ✅ Select Graphs to Download
         h4("Download a Custom Report"),
-        
         checkboxGroupInput(
           inputId = "selected_graphs",
           label = "Select Graphs to Include:",
@@ -1597,15 +1444,12 @@ server <- function(input, output, session) {
             "Female share of employment" = "gender_workforce",
             "Female Leadership Occupations" = "female_leadership",
             "Wage Premium" = "wagepremium",
-            "Gender Wage premium in Public Sector by Industry" = "gender_wage_premium", 
+            "Gender Wage premium in Public Sector by Industry" = "gender_wage_premium",
             "Pay Compression Ratios" = "pay_compression"
           ),
-          selected = c("wagebill", "public_employment") # Default selections
+          selected = c("wagebill", "public_employment")
         ),
-        
         br(),
-        
-        # ✅ Download Buttons
         fluidRow(
           column(6, align = "center",
                  downloadButton("downloadAllGraphsDoc", "\U1F4C4 Download Full Word Report",
@@ -1620,12 +1464,10 @@ server <- function(input, output, session) {
                                 style = "padding: 10px 20px; font-size: 16px; margin-top: 10px;")
           )
         )
-        
-      )  
+      )
     }
-  }
-)
-
+  })
+  
   # ---------------------------
   
     output$download_pdf <- downloadHandler(
@@ -2796,6 +2638,8 @@ server <- function(input, output, session) {
     return(ppt)
   }
   
+  
+  #Download cvs 
   
   
   
