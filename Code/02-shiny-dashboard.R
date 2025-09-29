@@ -1381,12 +1381,18 @@ server <- function(input, output, session) {
               textOutput("note_gender_wage_barplot")
             )
           )
-        ),
+        ), 
         fluidRow(
-          column(4, downloadButton("dl_csv_gender_wage_premium",  "Download data (CSV)",  class = "dl-btn w-100"))
-        )
+          column(
+            4,
+            downloadButton(
+              "dl_csv_gender_wage_industry",
+              "Download data (CSV)",
+              class = "dl-btn w-100"
+            )
+          )
       )
-      
+      )
     } else if (tab == "pay_compression") {
       tagList(
         h3("Pay Compression Ratios"),
@@ -6227,6 +6233,58 @@ server <- function(input, output, session) {
     return(doc)
   }
   
+  #Download cvs
+  
+  output$dl_csv_gender_wage_industry <- downloadHandler(
+    filename = function() paste0("gender_wage_premium_public_by_industry_", Sys.Date(), ".csv"),
+    content  = function(file) {
+      # empty schema so the file isn't structurally blank if no data
+      empty_schema <- tibble::tibble(
+        country_name        = character(),
+        industry            = character(),
+        year                = integer(),
+        wage_premium_pct    = numeric()
+      )
+      
+      # guard: need selections
+      if (is.null(input$selected_countries) || !length(input$selected_countries)) {
+        utils::write.csv(empty_schema, file, row.names = FALSE, na = "", fileEncoding = "UTF-8")
+        return()
+      }
+      
+      # industries shown in the chart
+      keep_inds <- c("Public Administration", "Education", "Health", "Other")
+      
+      d <- gender_wage_premiumpublic %>%
+        dplyr::filter(
+          country_name %in% input$selected_countries,
+          indicator_label %in% keep_inds
+        )
+      
+      if (nrow(d) == 0) {
+        utils::write.csv(empty_schema, file, row.names = FALSE, na = "", fileEncoding = "UTF-8")
+        return()
+      }
+      
+      # match the chart’s “one bar per country & industry” by taking the latest year
+      d_out <- d %>%
+        dplyr::group_by(country_name, indicator_label) %>%
+        dplyr::slice_max(order_by = year, n = 1, with_ties = FALSE) %>%
+        dplyr::ungroup() %>%
+        dplyr::transmute(
+          country_name,
+          industry         = indicator_label,
+          year             = as.integer(year),
+          wage_premium_pct = as.numeric(value_percentage)
+        ) %>%
+        dplyr::arrange(country_name, industry)
+      
+      if (nrow(d_out) == 0) d_out <- empty_schema
+      utils::write.csv(d_out, file, row.names = FALSE, na = "", fileEncoding = "UTF-8")
+    }
+  )
+  
+  
   
 #Pay compression 
   
@@ -6560,6 +6618,51 @@ server <- function(input, output, session) {
     
     return(doc)
   }
+  
+  #Download CVS
+  output$dl_csv_pay_compression <- downloadHandler(
+    filename = function() paste0("pay_compression_public_vs_private_", Sys.Date(), ".csv"),
+    content  = function(file) {
+      # empty schema so you never get a structurally blank file
+      empty_schema <- tibble::tibble(
+        country_name    = character(),
+        year            = integer(),
+        private_sector  = numeric(),
+        public_sector   = numeric()
+      )
+      
+      # need selected countries
+      if (is.null(input$countries_first) || !length(input$countries_first)) {
+        utils::write.csv(empty_schema, file, row.names = FALSE, na = "", fileEncoding = "UTF-8")
+        return()
+      }
+      
+      # filter source used by the plot
+      d <- pay_compression_wide %>%
+        dplyr::filter(country_name %in% input$countries_first)
+      
+      # ensure required columns exist
+      if (!all(c("Public_Sector", "Private_Sector") %in% names(d))) {
+        utils::write.csv(empty_schema, file, row.names = FALSE, na = "", fileEncoding = "UTF-8")
+        return()
+      }
+      
+      # include year if present; otherwise fill NA
+      out <- d %>%
+        dplyr::transmute(
+          country_name,
+          year           = if ("year" %in% names(d)) as.integer(.data[["year"]]) else NA_integer_,
+          private_sector = as.numeric(Private_Sector),
+          public_sector  = as.numeric(Public_Sector)
+        ) %>%
+        dplyr::arrange(country_name)
+      
+      if (nrow(out) == 0) out <- empty_schema
+      utils::write.csv(out, file, row.names = FALSE, na = "", fileEncoding = "UTF-8")
+    }
+  )
+  
+  
   
   add_section_slide <- function(ppt, title) {
     ppt %>%
