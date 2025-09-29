@@ -1324,8 +1324,13 @@ server <- function(input, output, session) {
         ),
         fluidRow(plotlyOutput("secondGraphGenderWorkforce", height = "600px")),
         fluidRow(
-          column(4, downloadButton("dl_csv_gender_workforce",  "Download data (CSV)",  class = "dl-btn w-100"))
-        )
+  column(
+    4,
+    downloadButton("dl_csv_gender_emp_both",
+                   "Download data (CSV)",
+                   class = "dl-btn w-100")
+  )
+)
       )
       
     } else if (tab == "gender_wage_premium") {
@@ -3738,6 +3743,97 @@ server <- function(input, output, session) {
     
     return(ppt)
   }
+  
+  #Download cvs 
+  
+  output$dl_csv_gender_emp_both <- downloadHandler(
+    filename = function() paste0("female_employment_public_private_", Sys.Date(), ".csv"),
+    content  = function(file) {
+      
+      # helper: an empty tibble with the expected columns
+      empty_schema <- tibble::tibble(
+        graph = character(),
+        country_name = character(),
+        sector = character(),
+        year = numeric(),
+        value_percentage = numeric()
+      )
+      
+      # ---------- Graph A: latest year per country & sector ----------
+      dA <- tryCatch({
+        if (is.null(input$countries_workforce) || !length(input$countries_workforce)) {
+          empty_schema
+        } else {
+          base <- gender_workforce %>%
+            dplyr::filter(country_name %in% input$countries_workforce) %>%
+            dplyr::select(country_name, year, indicator_name, value_percentage)
+          
+          # latest public per country
+          d_pub <- base %>%
+            dplyr::filter(indicator_name == "Females, as a share of public paid employees") %>%
+            dplyr::group_by(country_name) %>%
+            dplyr::slice_max(order_by = year, n = 1, with_ties = FALSE) %>%
+            dplyr::ungroup() %>%
+            dplyr::mutate(sector = "Public") %>%
+            dplyr::select(country_name, sector, year, value_percentage)
+          
+          # latest private per country
+          d_priv <- base %>%
+            dplyr::filter(indicator_name == "Females, as a share of private paid employees") %>%
+            dplyr::group_by(country_name) %>%
+            dplyr::slice_max(order_by = year, n = 1, with_ties = FALSE) %>%
+            dplyr::ungroup() %>%
+            dplyr::mutate(sector = "Private") %>%
+            dplyr::select(country_name, sector, year, value_percentage)
+          
+          d_bind <- dplyr::bind_rows(d_pub, d_priv)
+          if (nrow(d_bind) == 0) empty_schema
+          else d_bind %>% dplyr::mutate(graph = "cross_section_last_year") %>%
+            dplyr::select(graph, dplyr::everything())
+        }
+      }, error = function(e) empty_schema)
+      
+      # ---------- Graph B: over-time for selected country ----------
+      dB <- tryCatch({
+        if (is.null(input$selected_country) || !nzchar(input$selected_country)) {
+          empty_schema
+        } else {
+          d <- gender_workforce %>%
+            dplyr::filter(
+              country_name == input$selected_country,
+              indicator_name %in% c(
+                "Females, as a share of public paid employees",
+                "Females, as a share of private paid employees"
+              )
+            ) %>%
+            dplyr::mutate(
+              sector = dplyr::case_when(
+                indicator_name == "Females, as a share of public paid employees"  ~ "Public",
+                indicator_name == "Females, as a share of private paid employees" ~ "Private",
+                TRUE ~ NA_character_
+              )
+            ) %>%
+            dplyr::select(country_name, sector, year, value_percentage)
+          
+          if (nrow(d) == 0) empty_schema
+          else d %>% dplyr::mutate(graph = "single_country_overtime") %>%
+            dplyr::select(graph, dplyr::everything())
+        }
+      }, error = function(e) empty_schema)
+      
+      # ---------- Combine & (conditionally) arrange ----------
+      out <- dplyr::bind_rows(dA, dB)
+      if (nrow(out) > 0) {
+        out <- out %>% dplyr::arrange(graph, country_name, sector, year)
+      } else {
+        out <- empty_schema
+      }
+      
+      utils::write.csv(out, file, row.names = FALSE, na = "")
+    }
+  )
+  
+  
 
   # Wage premium by Education Level 
   
