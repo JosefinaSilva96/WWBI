@@ -5822,6 +5822,47 @@ server <- function(input, output, session) {
   
   #Download CVS
   
+  output$dl_csv_female_leadership <- downloadHandler(
+    filename = function() paste0("female_leadership_occupation_sector_", Sys.Date(), ".csv"),
+    content  = function(file) {
+      # empty schema to avoid blank file issues
+      empty_schema <- tibble::tibble(
+        country_name      = character(),
+        group_sector      = character(),
+        year              = integer(),
+        female_share_pct  = numeric()
+      )
+      
+      if (is.null(input$selected_countries) || !length(input$selected_countries)) {
+        utils::write.csv(empty_schema, file, row.names = FALSE, na = "")
+        return()
+      }
+      
+      d <- gender_leadership %>%
+        dplyr::filter(country_name %in% input$selected_countries) %>%
+        dplyr::mutate(
+          indicator_label = factor(
+            indicator_label,
+            levels = c("Clerks-Private", "Clerks-Public", "Managers-Private", "Managers-Public")
+          ),
+          country_name = factor(country_name, levels = input$selected_countries)
+        ) %>%
+        # Keep the latest year per country & group-sector (matches what users usually expect)
+        dplyr::arrange(country_name, indicator_label, dplyr::desc(year)) %>%
+        dplyr::group_by(country_name, indicator_label) %>%
+        dplyr::slice_head(n = 1) %>%
+        dplyr::ungroup() %>%
+        dplyr::transmute(
+          country_name     = as.character(country_name),
+          group_sector     = as.character(indicator_label),
+          year             = as.integer(year),
+          female_share_pct = as.numeric(value_percentage)
+        )
+      
+      if (nrow(d) == 0) d <- empty_schema
+      utils::write.csv(d, file, row.names = FALSE, na = "", fileEncoding = "UTF-8")
+    }
+  )
   
   
   #Gender Wage premium in the public sector, by industry 
