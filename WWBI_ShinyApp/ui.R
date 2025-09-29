@@ -127,281 +127,363 @@ pay_compression_wide <- readRDS(file.path(data_path, "Data", "pay_compression_wi
 
 
 library(shiny)
-library(shinydashboard)
+library(bslib)
 
-ui <- dashboardPage(
-  skin = "blue",  # AdminLTE skin (names only)
-  dashboardHeader(title = "WWBI Dashboard", titleWidth = 280),
+ui <- bootstrapPage(
+  theme = bs_theme(version = 5, bootswatch = "sandstone"),
   
-  dashboardSidebar(
-    width = 280,
+  # Put global CSS/JS in <head>
+  tags$head(
+    # ------- Your styles (unchanged) -------
+    tags$style(HTML("
+      :root { --accent: #6fa8dc; }
+
+      /* General page background and text color */
+      html, body { height: 100%; }
+      body, .container-fluid, .main-container, .content-wrapper, .flex-grow-1 {
+        background-color: #002244 !important;
+        color: #ffffff !important;
+      }
+
+      /* Typography and panels */
+      h1, h2, h3, h4, h5, h6, p, .well, .card, .panel, .info-box, .custom-info-box, .box {
+        color: #ffffff !important;
+        background-color: transparent !important;
+        border: none !important;
+      }
+
+      /* Panels and wells with a border */
+      .well, .panel {
+        background-color: #002244 !important;
+        border: 1px solid var(--accent) !important;
+        border-radius: 8px;
+      }
+
+      /* Buttons */
+      .btn, .btn-primary {
+        background-color: var(--accent) !important;
+        border: none !important;
+      }
+      .btn:hover { background-color: #4a90c2 !important; }
+
+      /* Link styling */
+      a { color: #ffffff !important; text-decoration: none; }
+      a:hover { text-decoration: underline; }
+
+      /* --- Sidebar container --- */
+      #sidebar {
+        height: 100vh;
+        width: 290px; min-width: 290px;
+        background: linear-gradient(180deg, #2b4c66 0%, #253f57 100%);
+        padding: 18px 16px;
+        color: #e8f0fb;
+        overflow-y: auto;
+        border-right: 1px solid rgba(255,255,255,0.08);
+        box-shadow: inset 0 0 12px rgba(0,0,0,.25);
+        position: sticky; top: 0;
+      }
+
+      /* subtle custom scrollbar */
+      #sidebar::-webkit-scrollbar { width: 8px; }
+      #sidebar::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,.25);
+        border-radius: 8px;
+      }
+      #sidebar::-webkit-scrollbar-track { background: transparent; }
+
+      /* brand/title area (optional) */
+      .sidebar-brand {
+        display: flex; align-items: center; gap: 10px;
+        margin: 2px 6px 14px;
+        font-weight: 700; letter-spacing: .3px;
+        color: #fff;
+      }
+      .sidebar-brand .brand-dot {
+        width: 10px; height: 10px; border-radius: 50%;
+        background: var(--accent); display: inline-block;
+      }
+
+      /* section headings (click to expand) */
+      .nav-section {
+        display: flex; align-items: center; justify-content: space-between;
+        font-size: 16px; font-weight: 700;
+        padding: 10px 10px; margin: 12px 6px 4px;
+        color: #dbe7ff; border-radius: 8px;
+        transition: background .2s, color .2s;
+        cursor: pointer;
+      }
+      .nav-section:hover { background: rgba(255,255,255,.06); }
+      .nav-section::after {
+        content: '▾'; font-size: 14px; opacity: .8; margin-left: 8px;
+      }
+      .section-open::after { transform: rotate(180deg); }
+
+      /* links */
+      .nav-item a, .nav-sub-item a { color: inherit; text-decoration: none; }
+
+      /* top-level items */
+      .nav-item {
+        display: flex; align-items: center; gap: 10px;
+        margin: 6px 6px; padding: 10px 12px;
+        font-size: 16px; font-weight: 600; color: #eef5ff;
+        border-radius: 10px; transition: transform .08s, background .2s;
+      }
+      .nav-item:hover { background: rgba(255,255,255,.08); transform: translateX(2px); }
+
+      /* active item with accent bar */
+      .nav-item.active {
+        background: rgba(111,168,220,.25);
+        box-shadow: inset 0 0 0 1px rgba(111,168,220,.5);
+        position: relative;
+      }
+      .nav-item.active::before {
+        content: ''; position: absolute; left: -6px; top: 10px; bottom: 10px;
+        width: 4px; border-radius: 4px; background: var(--accent);
+      }
+
+      /* sub-items (include all expandable sections) */
+      #macro_section,
+      #public_sector_section,
+      #public_sector_workforce_section,
+      #public_sector_wages_section,
+      #equity_public_sector_section {
+        padding: 4px 6px 6px 12px; display: none;
+        border-left: 1px dashed rgba(255,255,255,.15);
+        margin-left: 10px;
+      }
+
+      .nav-sub-item {
+        display: flex; align-items: center; gap: 8px;
+        margin: 4px 0; padding: 8px 10px;
+        font-size: 15px; color: #eaf3ff; border-radius: 8px;
+        transition: background .2s, transform .08s;
+      }
+      .nav-sub-item:hover { background: rgba(255,255,255,.06); transform: translateX(2px); }
+      .nav-sub-item.active { background: rgba(111,168,220,.22); }
+
+      /* =========================
+         Accordion (Bootstrap 5)
+         ========================= */
+      .accordion-item{
+        background-color:#2b4c66;
+        border:1px solid #6fa8dc;
+        border-radius:12px !important;
+        margin-bottom:14px;
+        overflow:hidden;
+        color:#fff;
+      }
+      .accordion-button{
+        background-color:#2b4c66;
+        color:#fff;
+        box-shadow:none !important;
+        font-size:18px;
+        padding:16px 20px;
+      }
+      .accordion-button:not(.collapsed){
+        background-color:#356088;
+        color:#fff;
+      }
+      .accordion-button:focus{
+        box-shadow:none !important;
+      }
+      .accordion-body{
+        background-color:#356088;
+        color:#fff;
+        padding:18px 22px;
+        border-top:1px solid #6fa8dc;
+      }
+      .accordion-button::after{ filter: invert(1); }  /* white chevron */
+
+      /* Keep all three logos on one line and evenly spaced */
+      .logos-row { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:nowrap; }
+      .logo-wrap { flex:1 1 0; display:flex; justify-content:center; }
+      .logos-row img { max-width:100%; height:auto; object-fit:contain; display:inline-block; vertical-align:middle; }
+      img.bl-logo, img.wb-logo { max-height:64px; }
+      @media (min-width: 992px) { img.wb-logo.wb-logo--right { max-height:80px; } }
+      .wb-logo.wb-logo--right.padfix { transform: scale(1.12); transform-origin: center; }
+
+      /* Info boxes (optional) */
+      .custom-infobox .info-box-icon{
+        flex: 0 0 var(--tile);
+        height: var(--tile);
+        border-radius: 12px;
+        background-color: #00BFE5 !important;
+        color: #fff !important;
+        display:flex; align-items:center; justify-content:center;
+        float: none !important;
+      }
+      .custom-infobox .info-box-content{ margin:0 !important; padding:0; }
+      .custom-infobox .info-box-text{ font-size:15px !important; line-height:1.2; letter-spacing:.2px; margin:0; }
+      .custom-infobox .info-box-number{ font-size:22px !important; font-weight:600; line-height:1.1; margin-top:2px; }
+
+      @media (max-width: 992px){
+        .custom-infobox .info-box{ --tile:64px; }
+        .custom-infobox .info-box-icon i{ font-size:22px !important; }
+        .custom-infobox .info-box-text{ font-size:14px !important; }
+        .custom-infobox .info-box-number{ font-size:20px !important; }
+      }
+      @media (max-width: 768px){
+        .custom-infobox .info-box{ --tile:56px; --gap:10px; padding:6px 4px; }
+        .custom-infobox .info-box-icon i{ font-size:20px !important; }
+        .custom-infobox .info-box-text{ font-size:13px !important; }
+        .custom-infobox .info-box-number{ font-size:18px !important; }
+      }
+
+      #graph_choice .form-check { margin-bottom: .25rem; }
+    ")),
     
-    # ====== Global styles & scripts (put in <head>) ======
-    tags$head(
-      tags$style(HTML("
-        :root{
-          --bg:#0f3352;         /* content background */
-          --sidebar1:#2b4c66;   /* sidebar gradient top */
-          --sidebar2:#243d55;   /* sidebar gradient bottom */
-          --accent:#6fa8dc;     /* brand accent */
-          --header:#183a5a;     /* header/nav bar */
+    # ------- Accordion styles to match your palette -------
+    tags$style(HTML("
+      .accordion-item{
+        background-color:#2b4c66;
+        border:1px solid #6fa8dc;
+        border-radius:12px !important;
+        margin-bottom:14px;
+        overflow:hidden;
+        color:#fff;
+      }
+      .accordion-button{
+        background-color:#2b4c66;
+        color:#fff;
+        box-shadow:none !important;
+        font-size:18px;
+        padding:16px 20px;
+      }
+      .accordion-button:not(.collapsed){
+        background-color:#356088;
+        color:#fff;
+      }
+      .accordion-button:focus{ box-shadow:none !important; }
+      .accordion-body{
+        background-color:#356088;
+        color:#fff;
+        padding:18px 22px;
+        border-top:1px solid #6fa8dc;
+      }
+      .accordion-button::after{ filter: invert(1); }
+
+      /* Logo size (base) */
+      .wb-logo{
+        max-height:60px;
+        width:auto;
+        height:auto;
+        display:inline-block;
+      }
+
+      /* Download buttons */
+      .dl-btn {
+        font-size: 18px;
+        padding: 14px 22px;
+        border-radius: 12px;
+        background-color: #76A9D6;
+        border-color: #76A9D6;
+        color: #fff;
+      }
+      .dl-btn:hover {
+        background-color: #669bd0;
+        border-color: #669bd0;
+        color:#fff;
+      }
+
+      /* Only shrink the DEC logo */
+      img.wb-logo.wb-logo--dec { max-height: 45px !important; }
+
+      li i.fa, li i.fas, li i.fa-solid { margin: 0 6px; color: #fff; }
+
+      /* Keep the group left-aligned */
+      #graph_choice { text-align: left; }
+
+      /* Title aligned with the radio dots (fixed small typo: removed stray space in -1.9rem) */
+      #graph_choice .rb-title{
+        display: block;
+        font-weight: 700;
+        font-size: 1.1rem;
+        line-height: 1.2;
+        margin: 0 0 .25rem 0;
+        padding-left: 0;
+        margin-left: -1.9rem;
+      }
+
+      @media (max-width: 768px){
+        #graph_choice .rb-title{
+          font-size: 1.0rem;
+          padding-left: 1.9rem;
         }
+      }
 
-        /* Header */
-        .main-header .logo,
-        .main-header .navbar { background-color: var(--header) !important; }
-        .main-header .logo { color:#fff !important; font-weight:700; }
-        .main-header .navbar .sidebar-toggle { color:#fff !important; }
-
-        /* Content wrapper (AdminLTE) */
-        .content-wrapper, .right-side {
-          background: var(--bg) !important;
-          color: #fff !important;
-        }
-        /* Add padding because BS3 doesn't ship p-classes */
-        .content-padding { padding: 22px 24px; }
-
-        /* Typography & containers */
-        h1,h2,h3,h4,h5,h6,p,.well,.panel,.box {
-          color:#fff !important; background:transparent !important; border:none !important;
-        }
-        .well,.panel{
-          border:1px solid var(--accent) !important; border-radius:10px;
-          background-color:#002244 !important;
-        }
-
-        /* Buttons & links */
-        .btn,.btn-primary{ background:var(--accent) !important; border:none !important; }
-        .btn:hover{ background:#4a90c2 !important; }
-        a{ color:#fff !important; text-decoration:none; }
-        a:hover{ text-decoration:underline; }
-
-        /* ------- Sidebar look (AdminLTE) ------- */
-        .main-sidebar{
-          background:linear-gradient(180deg,var(--sidebar1) 0%, var(--sidebar2) 100%) !important;
-          color:#e8f0fb !important;
-          border-right:1px solid rgba(255,255,255,.08);
-          box-shadow:inset 0 0 12px rgba(0,0,0,.25);
-        }
-        .sidebar{ padding:14px 10px; }
-
-        /* custom scrollbar */
-        .main-sidebar::-webkit-scrollbar{ width:8px; }
-        .main-sidebar::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.25); border-radius:8px; }
-        .main-sidebar::-webkit-scrollbar-track{ background:transparent; }
-
-        /* Top-level items (custom) */
-        .nav-item{
-          display:flex; align-items:center; gap:10px;
-          margin:6px; padding:10px 12px; border-radius:10px;
-          font-size:16px; font-weight:600; color:#eef5ff;
-          transition:transform .08s, background .2s;
-        }
-        .nav-item a{ color:inherit; text-decoration:none; width:100%; display:block; }
-        .nav-item:hover{ background:rgba(255,255,255,.08); transform:translateX(2px); }
-        .nav-item.active{
-          background:rgba(111,168,220,.22);
-          box-shadow:inset 0 0 0 1px rgba(111,168,220,.5);
-          position:relative;
-        }
-        .nav-item.active::before{
-          content:''; position:absolute; left:-6px; top:10px; bottom:10px;
-          width:4px; border-radius:4px; background:var(--accent);
-        }
-
-        /* Section headers (expand/collapse) */
-        .nav-section{
-          display:flex; align-items:center; gap:8px;
-          margin:14px 6px 6px; padding:10px; border-radius:8px;
-          font-weight:700; color:#dbe7ff; cursor:pointer;
-          transition:background .2s;
-        }
-        .nav-section:hover{ background:rgba(255,255,255,.06); }
-        .nav-section .caret{ margin-left:auto; transition:transform .2s; opacity:.9; }
-        .nav-section.open .caret{ transform:rotate(180deg); }
-
-        /* Sub-items & container */
-        .nav-sub{
-          padding:4px 6px 6px 14px; margin-left:6px;
-          border-left:1px dashed rgba(255,255,255,.15); display:none;
-        }
-        .nav-sub-item{
-          display:flex; align-items:center; gap:8px;
-          margin:4px 0; padding:8px 10px; border-radius:8px;
-          font-size:15px; color:#eaf3ff; transition:background .2s, transform .08s;
-        }
-        .nav-sub-item a{ color:inherit; text-decoration:none; width:100%; display:block; }
-        .nav-sub-item:hover{ background:rgba(255,255,255,.06); transform:translateX(2px); }
-        .nav-sub-item.active{ background:rgba(111,168,220,.20); }
-
-        /* Optional: shinydashboard boxes with your palette */
-        .box.box-solid>.box-header{ background-color:#2b4c66; color:#fff; }
-        .box.box-solid{ border:1px solid var(--accent); border-radius:12px; }
-        .box { box-shadow:none; }
-     /* --- Hero logos (top of Overview) --- */
-.hero-logos{
-  display:flex; align-items:center; justify-content:center;
-  gap:24px; flex-wrap:wrap; margin-bottom:10px;
-}
-.hero-logos .wb-logo{
-  max-height:96px; width:auto; height:auto; display:block;
-}
-@media (max-width: 1200px){ .hero-logos .wb-logo{ max-height:84px; } }
-@media (max-width:  768px){ .hero-logos .wb-logo{ max-height:68px; } }
-/* ---- Palette (accordion colors) ---- */
-:root{
-  --ov-panel:#2b4c66;
-  --ov-head:#356088;
-  --ov-accent:#6fa8dc;
-  --ov-text:#ffffff;
-  --ov-head-open:#3b6a95;
-}
-
-/* Only target these two accordions */
-#ov_acc.panel-group .panel,
-#inst_acc.panel-group .panel{
-  background-color:var(--ov-panel) !important;
-  border:1px solid var(--ov-accent) !important;
-  border-radius:12px !important;
-  color:var(--ov-text) !important;
-  box-shadow:none !important;
-  overflow:hidden;
-  margin-bottom:14px;
-}
-
-#ov_acc .panel-heading,
-#inst_acc .panel-heading{
-  background:var(--ov-head) !important;
-  border-bottom:1px solid rgba(255,255,255,.12) !important;
-  padding:14px 18px !important;
-}
-
-#ov_acc .panel-title a,
-#inst_acc .panel-title a{
-  display:block;
-  color:var(--ov-text) !important;
-  text-decoration:none !important;
-  font-size:18px;
-}
-
-#ov_acc .panel-title a:not(.collapsed),
-#inst_acc .panel-title a:not(.collapsed){
-  background:var(--ov-head-open) !important;
-  border-radius:8px; padding:6px 8px;
-}
-
-#ov_acc .panel-body,
-#inst_acc .panel-body{
-  background:var(--ov-head) !important;
-  color:var(--ov-text) !important;
-  padding:18px 22px !important;
-}
-
-#ov_acc .panel-title a:after,
-#inst_acc .panel-title a:after{
-  content:'▸'; float:right; opacity:.9; transition:transform .2s;
-}
-#ov_acc .panel-title a:not(.collapsed):after,
-#inst_acc .panel-title a:not(.collapsed):after{
-  transform:rotate(90deg);
-}
-")),
-      tags$script(HTML("
-        function toggleSection(id){
-          const sec = document.getElementById(id);
-          const hdr = document.querySelector('[data-target=\"'+id+'\"]');
-          if(!sec || !hdr) return;
-          const show = (sec.style.display === 'none' || sec.style.display === '');
-          sec.style.display = show ? 'block' : 'none';
-          hdr.classList.toggle('open', show);
-          // remember state
-          if(window.localStorage){
-            const openIds = JSON.parse(localStorage.getItem('openSections')||'[]');
-            const idx = openIds.indexOf(id);
-            if(show && idx === -1) openIds.push(id);
-            if(!show && idx > -1) openIds.splice(idx,1);
-            localStorage.setItem('openSections', JSON.stringify(openIds));
-          }
-        }
-        // active highlight
-        document.addEventListener('click', function(e){
-          const top = e.target.closest('.nav-item');
-          const sub = e.target.closest('.nav-sub-item');
-          if(top){
-            document.querySelectorAll('.main-sidebar .nav-item').forEach(n=>n.classList.remove('active'));
-            top.classList.add('active');
-          }
-          if(sub){
-            document.querySelectorAll('.main-sidebar .nav-sub-item').forEach(n=>n.classList.remove('active'));
-            sub.classList.add('active');
-          }
-        }, true);
-
-        // restore on load: open sections & set 'Overview' active
-        document.addEventListener('DOMContentLoaded', function(){
-          try{
-            const openIds = JSON.parse(localStorage.getItem('openSections')||'[]');
-            openIds.forEach(id=>{
-              const sec = document.getElementById(id);
-              const hdr = document.querySelector('[data-target=\"'+id+'\"]');
-              if(sec && hdr){ sec.style.display='block'; hdr.classList.add('open'); }
-            });
-          }catch(e){}
-          const first = document.querySelector('.nav-item');
-          if(first) first.classList.add('active');
-        });
-      "))
-    ),
+      #graph_choice .form-check { margin-bottom: .3rem; }
+    ")),
     
-    # ====== Custom sidebar content ======
-    div(class = "nav-item", actionLink("nav_dashboard", "Overview")),
-    div(class = "nav-item", actionLink("nav_instructions", "Instructions")),
-    div(class = "nav-item", actionLink("nav_metadata", "Metadata")),
-    
-    div(class = "nav-section", `data-target`="macro_section",
-        span("Macro Fundamentals of the Public Sector"), span(class="caret","▾"),
-        onclick = "toggleSection('macro_section')"),
-    div(id = "macro_section", class="nav-sub",
-        div(class = "nav-sub-item", actionLink("nav_wagebill", "Wage Bill Graphs")),
-        div(class = "nav-sub-item", actionLink("nav_wagebill_gdp", "Wage Bill & GDP Graphs"))
-    ),
-    
-    div(class = "nav-section", `data-target`="public_sector_section",
-        span("Size and Characteristics of the Public Sector"), span(class="caret","▾"),
-        onclick = "toggleSection('public_sector_section')"),
-    div(id = "public_sector_section", class="nav-sub",
-        div(class = "nav-sub-item", actionLink("nav_public_graphs", "Public Employment")),
-        div(class = "nav-sub-item", actionLink("nav_public_workforce", "Employment Distribution")),
-        div(class = "nav-sub-item", actionLink("nav_education", "Tertiary Education"))
-    ),
-    
-    div(class = "nav-section", `data-target`="public_sector_wages_section",
-        span("Competitiveness of Public Sector Wages"), span(class="caret","▾"),
-        onclick = "toggleSection('public_sector_wages_section')"),
-    div(id = "public_sector_wages_section", class="nav-sub",
-        div(class = "nav-sub-item", actionLink("nav_wagepremium", "Wage Premium")),
-        div(class = "nav-sub-item", actionLink("nav_public_educ", "Wage Premium by Education")),
-        div(class = "nav-sub-item", actionLink("nav_pay_compression", "Pay Compression"))
-    ),
-    
-    div(class = "nav-section", `data-target`="equity_public_sector_section",
-        span("Equity in Public Sector"), span(class="caret","▾"),
-        onclick = "toggleSection('equity_public_sector_section')"),
-    div(id = "equity_public_sector_section", class="nav-sub",
-        div(class = "nav-sub-item", actionLink("nav_gender_workforce", "Female Employment")),
-        div(class = "nav-sub-item", actionLink("nav_female_leadership", "Female Leadership")),
-        div(class = "nav-sub-item", actionLink("nav_wagepremium_gender", "Wage Premium by Gender")),
-        div(class = "nav-sub-item", actionLink("nav_gender_wage_premium", "Gender Wage Premium by Industry"))
-    ),
-    
-    div(class = "nav-item", actionLink("nav_download_all", "📥 Download All Graphs"))
+    # ------- JS to toggle sidebar submenus (yours) -------
+    tags$script(HTML("
+      function toggleSection(id){
+        var section = document.getElementById(id);
+        section.style.display = (section.style.display === 'none' || section.style.display === '') ? 'block' : 'none';
+        var header = document.querySelector('[onclick=\"toggleSection(\\''+id+'\\')\"]');
+        if(header){ header.classList.toggle('section-open'); }
+      }
+      // highlight clicked items
+      document.addEventListener('click', function(e){
+        if(e.target.closest('.nav-item')){
+          document.querySelectorAll('#sidebar .nav-item').forEach(n=>n.classList.remove('active'));
+          e.target.closest('.nav-item').classList.add('active');
+        }
+        if(e.target.closest('.nav-sub-item')){
+          document.querySelectorAll('#sidebar .nav-sub-item').forEach(n=>n.classList.remove('active'));
+          e.target.closest('.nav-sub-item').classList.add('active');
+        }
+      }, true);
+    "))
   ),
   
-  dashboardBody(
-    div(class = "content-padding",
-        h2("Worldwide Bureaucracy Indicators"),
-        uiOutput("main_content")
-    )
+  # ------- Layout -------
+  div(class = "d-flex",
+      # --- Sidebar ---
+      div(
+        id = "sidebar",
+        div(class = "nav-item", actionLink("nav_dashboard", "Overview")),
+        div(class = "nav-item", actionLink("nav_instructions", "Instructions")),
+        div(class = "nav-item", actionLink("nav_metadata", "Metadata")),
+        
+        div(class = "nav-section", onclick = "toggleSection('macro_section')",
+            "Macro Fundamentals of the Public Sector"),
+        div(id = "macro_section",
+            div(class = "nav-sub-item", actionLink("nav_wagebill", "Wage Bill Graphs")),
+            div(class = "nav-sub-item", actionLink("nav_wagebill_gdp", "Wage Bill & GDP Graphs"))
+        ),
+        
+        div(class = "nav-section", onclick = "toggleSection('public_sector_section')",
+            "Size and Characteristics of the Public Sector"),
+        div(id = "public_sector_section",
+            div(class = "nav-sub-item", actionLink("nav_public_graphs", "Public Employment")),
+            div(class = "nav-sub-item", actionLink("nav_public_workforce", "Employment Distribution")),
+            div(class = "nav-sub-item", actionLink("nav_education", "Tertiary Education"))
+        ),
+        
+        div(class = "nav-section", onclick = "toggleSection('public_sector_wages_section')",
+            "Competitiveness of Public Sector Wages"),
+        div(id = "public_sector_wages_section",
+            div(class = "nav-sub-item", actionLink("nav_wagepremium", "Wage Premium")),
+            div(class = "nav-sub-item", actionLink("nav_public_educ", "Wage Premium by Education")),
+            div(class = "nav-sub-item", actionLink("nav_pay_compression", "Pay Compression"))
+        ),
+        
+        div(class = "nav-section", onclick = "toggleSection('equity_public_sector_section')",
+            "Equity in Public Sector"),
+        div(id = "equity_public_sector_section",
+            div(class = "nav-sub-item", actionLink("nav_gender_workforce", "Female Employment")),
+            div(class = "nav-sub-item", actionLink("nav_female_leadership", "Female Leadership")),
+            div(class = "nav-sub-item", actionLink("nav_wagepremium_gender", "Wage Premium by Gender")),
+            div(class = "nav-sub-item", actionLink("nav_gender_wage_premium", "Gender Wage Premium by Industry"))
+        ),
+        
+        div(class = "nav-item", actionLink("nav_download_all", "📥 Download All Graphs"))
+      ),
+      
+      # --- Main content with collapsible tabs (accordion) ---
+      div(class = "flex-grow-1 p-4",
+          h2("Worldwide Bureaucracy Indicators"),
+          uiOutput("main_content")
+      )
   )
 )
-

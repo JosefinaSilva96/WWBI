@@ -456,6 +456,8 @@ img.wb-logo {
       border-color: #669bd0;
       color:#fff;
     }
+    /* Only shrink the DEC logo */
+img.wb-logo.wb-logo--dec { max-height: 45px !important; }
   li i.fa, li i.fas, li i.fa-solid { margin: 0 6px; color: #fff; }
   /* Let the label have a wider line so it doesn't stack to 3–4 lines */
 .custom-infobox .info-box{
@@ -667,7 +669,7 @@ server <- function(input, output, session) {
             div(class = "logo-wrap",
                 tags$img(
                   src = "https://raw.githubusercontent.com/JosefinaSilva96/WWBI/main/www/wbg_dec_logo.png",
-                  class = "wb-logo", alt = "WBG DEC"
+                  class = "wb-logo wb-logo--dec", alt = "WBG DEC"
                 ))
           )
         ),
