@@ -1032,6 +1032,9 @@ server <- function(input, output, session) {
             style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
             textOutput("note_tertiaryEducation")
           )
+        ),
+        fluidRow(
+          column(4, downloadButton("dl_csv_tertiary_edu",  "Download data (CSV)",  class = "dl-btn w-100"))
         )
       )
       
@@ -1183,6 +1186,9 @@ server <- function(input, output, session) {
             style = "background-color: rgba(255, 255, 255, 0.05); border: 1px solid white; border-radius: 10px; padding: 20px;",
             textOutput("note_wage_premium")
           )
+        ), 
+        fluidRow(
+          column(4, downloadButton("dl_csv_wage_premium",  "Download data (CSV)",  class = "dl-btn w-100"))
         )
       )
       
@@ -2641,6 +2647,72 @@ server <- function(input, output, session) {
   
   #Download cvs 
   
+  # ---- Download CSV for BOTH public_workforce graphs ----
+  output$dl_csv_public_workforce <- downloadHandler(
+    filename = function() paste0("public_workforce_data_", Sys.Date(), ".csv"),
+    content  = function(file) {
+      
+      # ---------- Graph 1 data (multi-country, last year available per country/indicator)
+      d1 <- tryCatch({
+        if (is.null(input$countries_workforce) || !length(input$countries_workforce)) {
+          tibble::tibble()
+        } else {
+          filtered_workforce_data() %>%                      # your reactive
+            dplyr::filter(country_name %in% input$countries_workforce) %>%
+            dplyr::select(country_name, year, indicator_name, value_percentage) %>%
+            dplyr::mutate(graph = "multi_country_last_year")
+        }
+      }, error = function(e) tibble::tibble())
+      
+      # ---------- Graph 2 data (single country, first & last year, averaged by indicator)
+      d2 <- tryCatch({
+        if (is.null(input$selected_country) || !nzchar(input$selected_country)) {
+          tibble::tibble()
+        } else {
+          df2 <- public_sector_workforce %>%
+            dplyr::filter(country_name == input$selected_country)
+          
+          if (nrow(df2) == 0) {
+            tibble::tibble()
+          } else {
+            first_year <- suppressWarnings(min(df2$year, na.rm = TRUE))
+            last_year  <- suppressWarnings(max(df2$year, na.rm = TRUE))
+            
+            if (!is.finite(first_year) || !is.finite(last_year)) {
+              tibble::tibble()
+            } else {
+              df2 %>%
+                dplyr::filter(year %in% c(first_year, last_year)) %>%
+                dplyr::group_by(year, indicator_name) %>%
+                dplyr::summarise(value_percentage = mean(value_percentage, na.rm = TRUE), .groups = "drop") %>%
+                dplyr::mutate(
+                  country_name = input$selected_country,
+                  graph = "single_country_first_last"
+                ) %>%
+                dplyr::select(country_name, year, indicator_name, value_percentage, graph)
+            }
+          }
+        }
+      }, error = function(e) tibble::tibble())
+      
+      # ---------- Combine & write
+      out <- dplyr::bind_rows(d1, d2) %>%
+        dplyr::arrange(graph, country_name, indicator_name, year)
+      
+      # If everything is empty, still write a header-only CSV so the download works
+      if (nrow(out) == 0) {
+        out <- tibble::tibble(
+          country_name = character(),
+          year = numeric(),
+          indicator_name = character(),
+          value_percentage = numeric(),
+          graph = character()
+        )
+      }
+      
+      utils::write.csv(out, file, row.names = FALSE, na = "")
+    }
+  )
   
   
   #Tertiary education
@@ -2915,6 +2987,24 @@ server <- function(input, output, session) {
     return(ppt)
   }
 
+  #Download cvs
+  
+  output$dl_csv_tertiary_edu <- downloadHandler(
+    filename = function() paste0("tertiary_education_", Sys.Date(), ".csv"),
+    content  = function(file) {
+      req(input$selected_countries)
+      
+      out <- tertiary_education %>%
+        dplyr::filter(country_name %in% input$selected_countries) %>%
+        dplyr::select(country_name, year, indicator_name, value_percentage) %>%
+        dplyr::arrange(country_name, indicator_name, year)
+      
+      # write even if empty so the button still works
+      utils::write.csv(out, file, row.names = FALSE, na = "")
+    }
+  )
+  
+  
   #Public Sector Wage Premium 
   
   # Render the Dot Plot for Public Sector Wage Premium
@@ -3234,6 +3324,27 @@ server <- function(input, output, session) {
     
     return(doc)
   }
+  
+  #Download cvs
+  
+  output$dl_csv_wage_premium <- downloadHandler(
+    filename = function() paste0("public_sector_wage_premium_", Sys.Date(), ".csv"),
+    content  = function(file) {
+      req(input$countries_wage_premium)
+      
+      df <- public_wage_premium %>%
+        dplyr::filter(country_name %in% input$countries_wage_premium) %>%
+        dplyr::select(country_name, year, value_percentage) %>%
+        tidyr::drop_na(value_percentage) %>%
+        dplyr::mutate(
+          highlighted = country_name == input$countries_wage_premium[1],   # matches plot highlight
+          color_hex   = ifelse(highlighted, "#B3242B", "#003366")
+        ) %>%
+        dplyr::arrange(country_name, year)
+      
+      utils::write.csv(df, file, row.names = FALSE, na = "")
+    }
+  )
   
   
   #Female share of employment
