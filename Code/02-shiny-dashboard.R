@@ -1155,7 +1155,7 @@ server <- function(input, output, session) {
           )
         ),
         fluidRow(
-          column(4, downloadButton("dl_csv_wagepremium_gender",  "Download data (CSV)",  class = "dl-btn w-100"))
+          column(4, downloadButton("dl_gender_wageprem_xlsx",  "Download data (CSV)",  class = "dl-btn w-100"))
         )
       )
       
@@ -1269,6 +1269,13 @@ server <- function(input, output, session) {
         # Download button
         fluidRow(
           column(12, downloadButton("downloadGraphsWord", "Download Graphs as Word File", class = "dl-btn w-100"))
+        ), 
+        fluidRow(
+          column(
+            width = 12,
+            div(class = "text-end",
+                downloadButton("", "Download data CVS", class = "dl-btn"))
+          )
         )
       )
       
@@ -1328,7 +1335,7 @@ server <- function(input, output, session) {
         fluidRow(
   column(
     4,
-    downloadButton("dl_csv_gender_emp_both",
+    downloadButton("dl_gender_workforce_xlsx",
                    "Download data (CSV)",
                    class = "dl-btn w-100")
   )
@@ -4556,7 +4563,45 @@ server <- function(input, output, session) {
   
   #Download cvs 
   
-  
+  output$dl_public_emp_data <- downloadHandler(
+    filename = function() {
+      paste0("public_sector_employment_data_", Sys.Date(), ".xlsx")
+    },
+    content = function(file) {
+      # ===== Graph 1: Multi-country (last year available) =====
+      d1 <- public_sector_emp_temp_last %>%
+        dplyr::filter(country_name %in% input$countries_first) %>%
+        tidyr::drop_na(value_percentage) %>%
+        dplyr::transmute(
+          country_name,
+          indicator = indicator_label,
+          year = as.numeric(year),
+          value_percentage = as.numeric(value_percentage)
+        ) %>%
+        dplyr::arrange(country_name, indicator)
+      
+      # ===== Graph 2: Single-country over time =====
+      d2 <- public_sector_emp_temp %>%
+        dplyr::filter(country_name == input$country_second) %>%
+        tidyr::drop_na(value_percentage) %>%
+        dplyr::transmute(
+          country_name,
+          indicator = indicator_label,
+          year = as.numeric(year),
+          value_percentage = as.numeric(value_percentage)
+        ) %>%
+        dplyr::arrange(year, indicator)
+      
+      # write two sheets
+      writexl::write_xlsx(
+        x = list(
+          "Graph1_MultiCountry_LastYear" = d1,
+          "Graph2_SingleCountry_OverTime" = d2
+        ),
+        path = file
+      )
+    }
+  )
   
 #Gender Wage premium 
   
@@ -4938,6 +4983,51 @@ server <- function(input, output, session) {
     
     return(ppt)
   }
+  
+  #Download CVS
+  
+  # ---- Data behind: 
+  # Graph 1 -> gender_wage_premium_last filtered by input$countries_first
+  # Graph 2 -> gender_wage_premium filtered by input$country_second
+  # -----------------------------------------------
+  output$dl_gender_wageprem_xlsx <- downloadHandler(
+    filename = function() paste0("wage_premium_by_gender_", Sys.Date(), ".xlsx"),
+    content = function(file) {
+      
+      # Graph 1: multi-country, last year available
+      d1 <- gender_wage_premium_last %>%
+        dplyr::filter(country_name %in% input$countries_first) %>%
+        tidyr::drop_na(value_percentage) %>%
+        dplyr::transmute(
+          country_name,
+          gender = indicator_label,                    # "Male"/"Female"
+          year   = as.numeric(year),
+          wage_premium_pct = as.numeric(value_percentage)
+        ) %>%
+        dplyr::arrange(country_name, gender)
+      
+      # Graph 2: single country over time
+      d2 <- gender_wage_premium %>%
+        dplyr::filter(country_name == input$country_second) %>%
+        tidyr::drop_na(value_percentage) %>%
+        dplyr::transmute(
+          country_name,
+          gender = indicator_label,
+          year   = as.numeric(year),
+          wage_premium_pct = as.numeric(value_percentage)
+        ) %>%
+        dplyr::arrange(year, gender)
+      
+      writexl::write_xlsx(
+        x = list(
+          "Graph1_MultiCountry_LastYear"  = d1,
+          "Graph2_SingleCountry_OverTime" = d2
+        ),
+        path = file
+      )
+    }
+  )
+  
   
   
   # Gender Workforce Graphs
@@ -5327,6 +5417,58 @@ server <- function(input, output, session) {
     return(ppt)
   }
   
+  #Download CVS
+  
+  output$dl_gender_workforce_xlsx <- downloadHandler(
+    filename = function() paste0("female_employment_by_sector_", Sys.Date(), ".xlsx"),
+    content = function(file) {
+      # Graph 1: Multi-country (last year per country & sector)
+      d1 <- gender_workforce %>%
+        dplyr::filter(country_name %in% input$countries_gender) %>%
+        dplyr::group_by(country_name, indicator_name) %>%
+        dplyr::arrange(year, .by_group = TRUE) %>%
+        dplyr::slice_tail(n = 1) %>%
+        dplyr::ungroup() %>%
+        dplyr::transmute(
+          country_name,
+          sector = dplyr::recode(
+            indicator_name,
+            "as a share of private paid employees" = "Private",
+            "as a share of public paid employees"  = "Public",
+            .default = as.character(indicator_name)
+          ),
+          year  = as.numeric(year),
+          female_share_pct = as.numeric(value_percentage)
+        ) %>%
+        dplyr::arrange(country_name, sector)
+      
+      # Graph 2: Single-country over time (both sectors)
+      d2 <- gender_workforce %>%
+        dplyr::filter(country_name == input$country_gender,
+                      indicator_name %in% c("as a share of private paid employees",
+                                            "as a share of public paid employees")) %>%
+        dplyr::transmute(
+          country_name,
+          sector = dplyr::recode(
+            indicator_name,
+            "as a share of private paid employees" = "Private",
+            "as a share of public paid employees"  = "Public"
+          ),
+          year  = as.numeric(year),
+          female_share_pct = as.numeric(value_percentage)
+        ) %>%
+        dplyr::arrange(year, sector)
+      
+      writexl::write_xlsx(
+        x = list(
+          "Graph1_MultiCountry_LastYear"  = d1,
+          "Graph2_SingleCountry_OverTime" = d2
+        ),
+        path = file
+      )
+    }
+  )
+  
 
   # Female Leadership 
   
@@ -5677,6 +5819,9 @@ server <- function(input, output, session) {
     
     return(ppt)
   }
+  
+  #Download CVS
+  
   
   
   #Gender Wage premium in the public sector, by industry 
