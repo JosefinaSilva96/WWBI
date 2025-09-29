@@ -301,7 +301,7 @@ ui <- bootstrapPage(
       img.bl-logo, img.wb-logo { max-height:64px; }
       @media (min-width: 992px) { img.wb-logo.wb-logo--right { max-height:80px; } }
       .wb-logo.wb-logo--right.padfix { transform: scale(1.12); transform-origin: center; }
-
+img.wb-logo.wb-logo--dec { max-height: 45px !important; }
       /* Info boxes (optional) */
       .custom-infobox .info-box-icon{
         flex: 0 0 var(--tile);
