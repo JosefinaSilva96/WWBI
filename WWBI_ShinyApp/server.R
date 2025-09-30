@@ -664,7 +664,7 @@ server <- function(input, output, session) {
             ),
             br(),
             downloadButton(
-              "downloadWagePremiumReport",
+              "downloadGraphswagepremium",
               "Download Public Sector Wage Premium Report",
               class = "dl-btn w-100"
             )
@@ -2744,6 +2744,94 @@ server <- function(input, output, session) {
         }
       }  
       
+      # ---- Write file ----
+      print(doc, target = file)
+    } 
+  )    
+  
+  # Download the Report as a Word Document
+  output$downloadGraphswagepremium <- downloadHandler(
+    filename = function() paste0("Wage_Premium_Graphs_", Sys.Date(), ".docx"),
+    content  = function(file) {
+      
+      # ---- Title anchor (pick something sensible) ----
+      first_sel <- if (!is.null(input$countries_first) && length(input$countries_first) > 0) {
+        input$countries_first[1]
+      } else if (isTruthy(input$country_second)) {
+        input$country_second
+      } else if (isTruthy(input$countries_wage_premium)) {
+        input$countries_wage_premium[1]
+      } else {
+        "Selected Country"
+      }
+      
+      report_title <- paste0("Public Sector Wage Premium — ", first_sel)
+      
+      # ---- Doc scaffolding ----
+      title_style <- officer::fp_text(color = "#722F37", font.size = 16, bold = TRUE)
+      doc <- officer::read_docx() %>%
+        officer::body_add_fpar(officer::fpar(officer::ftext(report_title, prop = title_style))) %>%
+        officer::body_add_par("", style = "Normal") %>%
+        officer::body_add_par("Introduction", style = "heading 2") %>%
+        officer::body_add_par(
+          "This section presents the public sector wage premium—the percentage difference in wages between public sector workers and private sector employees—reported separately for men and women in the selected countries and over time for a selected country.",
+          style = "Normal"
+        ) %>%
+        officer::body_add_par("Equity in the Public Sector", style = "heading 2") %>%
+        officer::body_add_par("", style = "Normal")
+      
+      # === GRAPH 0: Cross-section (countries_wage_premium) ===
+      if (isTruthy(input$countries_wage_premium)) {
+        d0 <- public_wage_premium %>%
+          dplyr::filter(country_name %in% input$countries_wage_premium) %>%
+          dplyr::select(country_name, value_percentage, year) %>%
+          tidyr::drop_na(value_percentage)
+        
+        if (!is.numeric(d0$value_percentage)) {
+          suppressWarnings(d0$value_percentage <- as.numeric(d0$value_percentage))
+        }
+        
+        if (nrow(d0) > 0) {
+          d0 <- d0 %>%
+            dplyr::mutate(
+              highlight = ifelse(country_name == input$countries_wage_premium[1],
+                                 "Selected country", "Other countries"),
+              country_name = factor(
+                country_name,
+                levels = c(input$countries_wage_premium[1],
+                           sort(setdiff(unique(country_name), input$countries_wage_premium[1])))
+              )
+            )
+          
+          p0 <- ggplot2::ggplot(
+            d0, ggplot2::aes(x = country_name, y = value_percentage, color = highlight)
+          ) +
+            ggplot2::geom_point(size = 4.5, alpha = 0.95, show.legend = FALSE) +
+            ggplot2::scale_color_manual(values = c(
+              "Selected country" = "#B3242B",
+              "Other countries"  = "#003366"
+            )) +
+            ggplot2::labs(
+              title = "Public Sector Wage Premium (Compared to All Private Employees) by Country",
+              x = "Country", y = "Public Sector Wage Premium (%)"
+            ) +
+            ggplot2::theme_minimal() +
+            ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
+          
+          doc <- doc %>%
+            officer::body_add_par("Public Sector Wage Premium (Cross-Section)", style = "heading 1") %>%
+            officer::body_add_gg(value = p0, width = 6.5, height = 4.5) %>%
+            officer::body_add_par(
+              "Note: This visualization shows the estimated public sector wage premium, compared to private sector counterparts, after controlling for characteristics including gender, education, tenure, and geographic location.",
+              style = "Normal"
+            ) %>%
+            officer::body_add_par("", style = "Normal")
+        } else {
+          doc <- doc %>%
+            officer::body_add_par("Public Sector Wage Premium (Cross-Section)", style = "heading 1") %>%
+            officer::body_add_par("No data available for the selected countries.", style = "Normal")
+        }
+      }
       # ---- Write file ----
       print(doc, target = file)
     } 
