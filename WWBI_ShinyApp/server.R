@@ -764,7 +764,7 @@ server <- function(input, output, session) {
           column(
             width = 12,
             div(class = "text-end",
-                downloadButton("", "Download data CVS", class = "dl-btn"))
+                downloadButton("dl_public_emp_data", "Download data CVS", class = "dl-btn"))
           )
         )
       )
@@ -1275,7 +1275,7 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
-  output$dl_csv <- downloadHandler(
+  output$dl_csv_wagebill <- downloadHandler(
     filename = function() {
       type <- if (input$graph_choice == "GDP") "gdp" else "publicexp"
       paste0("wagebill_", type, "_", paste(input$countries, collapse = "-"), ".csv")
@@ -1763,6 +1763,12 @@ server <- function(input, output, session) {
     },
     contentType = "text/csv"     # avoids “.htm” save dialog
   )
+  
+  output$note_dotplot_gdp <- renderText({
+    "Note: This graph shows the relationship between the wage bill (expressed as a share of total expenditure) and the income level of countries. It offers a clearer understanding of whether wage bill spending is consistent with countries’ respective income levels."
+  })
+  
+  
   
   #Employment distribution
   
