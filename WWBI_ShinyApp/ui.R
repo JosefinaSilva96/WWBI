@@ -386,7 +386,7 @@ img.wb-logo.wb-logo--dec { max-height: 60px !important; }
       }
 
       /* Only shrink the DEC logo */
-      img.wb-logo.wb-logo--dec { max-height: 45px !important; }
+      img.wb-logo.wb-logo--dec { max-height: 50px !important; }
 
       li i.fa, li i.fas, li i.fa-solid { margin: 0 6px; color: #fff; }
 
