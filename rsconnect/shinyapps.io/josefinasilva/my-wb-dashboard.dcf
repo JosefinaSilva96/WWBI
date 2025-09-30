@@ -1,0 +1,10 @@
+name: my-wb-dashboard
+title:
+username: josefinasilva
+account: josefinasilva
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 15609650
+bundleId: 10973071
+url: https://josefinasilva.shinyapps.io/my-wb-dashboard/
+version: 1
