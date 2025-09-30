@@ -3507,46 +3507,69 @@ server <- function(input, output, session) {
   })
   
   output$downloadGraphswagepremium <- downloadHandler(
-    filename = function() { paste0("Wage_Premium_Gender_Graphs_", Sys.Date(), ".docx") },
-    content = function(file) {
-      print(input$countries_first)
-      print(input$country_second)
-      countries <- ifelse(!is.null(input$countries_first) & length(input$countries_first) > 0, input$countries_first[1], "Unknown Country")
-      report_title <- paste("Wage Premium Gender Analysis Report -", countries)
-      doc <- read_docx()
-      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
-      doc <- doc %>% body_add_fpar(fpar(ftext(report_title, prop = title_style)))
-      doc <- doc %>% body_add_par("Introduction", style = "heading 2") %>% 
-        body_add_par("This report presents evidence on public sector employment and compensation practices for the selected countries.", style = "Normal")
-      if("firstGraphgender" %in% input$graphs_to_download & length(input$countries_first) > 0) {
-        data_to_plot <- gender_wage_premium_last %>% filter(country_name %in% input$countries_first)
-        data_to_plot_long <- data_to_plot %>% select(country_name, indicator_label, year, value, value_percentage) %>% 
-          mutate(indicator_label = factor(indicator_label))
-        first_graph_wage_premium_gender <- ggplot(data_to_plot_long, aes(x = country_name, y = value_percentage, color = indicator_label)) +
-          geom_point(size = 3) +
-          labs(title = "Wage Premium Gender (Multi-Country)", x = "Country", y = "Value") +
-          theme_minimal()
-        graph_path1 <- "C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/first_graph_wage_premium_gender.png"
-        ggsave(graph_path1, plot = first_graph_wage_premium_gender, width = 6, height = 4)
-        doc <- doc %>% body_add_par("First Graph: Wage Premium Gender (Multi-Country)", style = "heading 1") %>% 
-          body_add_img(src = graph_path1, width = 6, height = 4) %>% 
-          body_add_par("This graph shows the wage premium by gender across multiple countries.", style = "Normal")
+    filename = function() paste0("Wage_Premium_by_Country_", Sys.Date(), ".docx"),
+    content  = function(file) {
+      # guard: need at least one country selected
+      if (is.null(input$countries_wage_premium) || length(input$countries_wage_premium) == 0) {
+        doc <- officer::read_docx() %>%
+          body_add_par("Public Sector Wage Premium (Compared to All Private Employees) by Country", style = "heading 1") %>%
+          body_add_par("No countries selected.", style = "Normal")
+        print(doc, target = file)
+        return(invisible())
       }
-      if("secondGraphgender" %in% input$graphs_to_download & !is.null(input$country_second)) {
-        data_to_plot <- gender_wage_premium %>% filter(country_name == input$country_second)
-        data_to_plot_long <- data_to_plot %>% select(year, indicator_name, value, value_percentage) %>% 
-          mutate(indicator_name = factor(indicator_name))
-        second_graph_wage_premium_gender <- ggplot(data_to_plot_long, aes(x = year, y = value_percentage, color = indicator_name)) +
-          geom_line(size = 1) +
-          geom_point(size = 3) +
-          labs(title = paste("Public sector wage premium, by gender in", input$country_second, "Over Time"), x = "Year", y = "Employment Value") +
-          theme_minimal()
-        graph_path2 <- "C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/second_graph_wage_premium_gender.png"
-        ggsave(graph_path2, plot = second_graph_wage_premium_gender, width = 6, height = 4)
-        doc <- doc %>% body_add_par("Second Graph: Public Sector Employment (Single Country)", style = "heading 1") %>% 
-          body_add_img(src = graph_path2, width = 6, height = 4) %>% 
-          body_add_par("This visualization explores female employment in the public and private sectors over time for the selected country", style = "Normal")
+      
+      # data -> same filter as the plotly graph
+      sel <- input$countries_wage_premium
+      dat <- public_wage_premium %>%
+        dplyr::filter(country_name %in% sel) %>%
+        dplyr::select(country_name, value_percentage, year) %>%
+        tidyr::drop_na(value_percentage)
+      
+      # if no rows, write a tiny note doc
+      if (nrow(dat) == 0) {
+        doc <- officer::read_docx() %>%
+          body_add_par("Public Sector Wage Premium (Compared to All Private Employees) by Country", style = "heading 1") %>%
+          body_add_par("No data available for the selected country/countries.", style = "Normal")
+        print(doc, target = file)
+        return(invisible())
       }
+      
+      # highlight first selection like your plotly: red for the first, blue for others
+      dat <- dat %>%
+        dplyr::mutate(
+          highlight = dplyr::if_else(country_name == sel[1], "first", "other")
+        )
+      
+      p <- ggplot(dat, aes(x = country_name, y = value_percentage, color = highlight)) +
+        geom_point(size = 3) +
+        scale_color_manual(values = c(first = "#B3242B", other = "#003366"), guide = "none") +
+        labs(
+          title = "Public Sector Wage Premium (Compared to All Private Employees) by Country",
+          x = "Country", y = "Public Sector Wage Premium (%)"
+        ) +
+        theme_minimal(base_size = 12) +
+        theme(
+          axis.text.x = element_text(angle = 45, hjust = 1)
+        )
+      
+      # save plot to a temp image (no hard-coded paths)
+      img_path <- tempfile(fileext = ".png")
+      ggsave(img_path, plot = p, width = 7, height = 4.5, dpi = 300)
+      
+      # build the doc
+      doc <- officer::read_docx()
+      title_style <- officer::fp_text(color = "#222222", font.size = 16, bold = TRUE)
+      
+      doc <- doc %>%
+        body_add_fpar(fpar(ftext("Wage Premium Report", prop = title_style))) %>%
+        body_add_par("", style = "Normal") %>%
+        body_add_par("Selected countries:", style = "heading 2") %>%
+        body_add_par(paste(sel, collapse = ", "), style = "Normal") %>%
+        body_add_par("", style = "Normal") %>%
+        body_add_par("Chart", style = "heading 2") %>%
+        body_add_img(src = img_path, width = 6.5, height = 4) %>%
+        body_add_par("Note: The first selected country is highlighted in red.", style = "Normal")
+      
       print(doc, target = file)
     }
   )
