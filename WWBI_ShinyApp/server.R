@@ -2980,50 +2980,6 @@ server <- function(input, output, session) {
     plot
   })
   
-  output$downloadGraphswagepremium <- downloadHandler(
-    filename = function() { paste0("Wage_Premium_Gender_Graphs_", Sys.Date(), ".docx") },
-    content = function(file) {
-      print(input$countries_first)
-      print(input$country_second)
-      countries <- ifelse(!is.null(input$countries_first) & length(input$countries_first) > 0, input$countries_first[1], "Unknown Country")
-      report_title <- paste("Wage Premium Gender Analysis Report -", countries)
-      doc <- read_docx()
-      title_style <- fp_text(color = "#722F37", font.size = 16, bold = TRUE)
-      doc <- doc %>% body_add_fpar(fpar(ftext(report_title, prop = title_style)))
-      doc <- doc %>% body_add_par("Introduction", style = "heading 2") %>% 
-        body_add_par("This report presents evidence on public sector employment and compensation practices for the selected countries.", style = "Normal")
-      if("firstGraphgender" %in% input$graphs_to_download & length(input$countries_first) > 0) {
-        data_to_plot <- gender_wage_premium_last %>% filter(country_name %in% input$countries_first)
-        data_to_plot_long <- data_to_plot %>% select(country_name, indicator_label, year, value, value_percentage) %>% 
-          mutate(indicator_label = factor(indicator_label))
-        first_graph_wage_premium_gender <- ggplot(data_to_plot_long, aes(x = country_name, y = value_percentage, color = indicator_label)) +
-          geom_point(size = 3) +
-          labs(title = "Wage Premium Gender (Multi-Country)", x = "Country", y = "Value") +
-          theme_minimal()
-        graph_path1 <- "C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/first_graph_wage_premium_gender.png"
-        ggsave(graph_path1, plot = first_graph_wage_premium_gender, width = 6, height = 4)
-        doc <- doc %>% body_add_par("First Graph: Wage Premium Gender (Multi-Country)", style = "heading 1") %>% 
-          body_add_img(src = graph_path1, width = 6, height = 4) %>% 
-          body_add_par("This graph shows the wage premium by gender across multiple countries.", style = "Normal")
-      }
-      if("secondGraphgender" %in% input$graphs_to_download & !is.null(input$country_second)) {
-        data_to_plot <- gender_wage_premium %>% filter(country_name == input$country_second)
-        data_to_plot_long <- data_to_plot %>% select(year, indicator_name, value, value_percentage) %>% 
-          mutate(indicator_name = factor(indicator_name))
-        second_graph_wage_premium_gender <- ggplot(data_to_plot_long, aes(x = year, y = value_percentage, color = indicator_name)) +
-          geom_line(size = 1) +
-          geom_point(size = 3) +
-          labs(title = paste("Public sector wage premium, by gender in", input$country_second, "Over Time"), x = "Year", y = "Employment Value") +
-          theme_minimal()
-        graph_path2 <- "C:/Users/wb631166/OneDrive - WBG/Desktop/Bureaucracy Lab/WWBI/second_graph_wage_premium_gender.png"
-        ggsave(graph_path2, plot = second_graph_wage_premium_gender, width = 6, height = 4)
-        doc <- doc %>% body_add_par("Second Graph: Public Sector Employment (Single Country)", style = "heading 1") %>% 
-          body_add_img(src = graph_path2, width = 6, height = 4) %>% 
-          body_add_par("This visualization explores female employment in the public and private sectors over time for the selected country", style = "Normal")
-      }
-      print(doc, target = file)
-    }
-  )
   generate_wage_premium_gender_section <- function(doc, selected_countries) {
     # Add section title and intro
     doc <- doc %>%
@@ -4196,7 +4152,7 @@ server <- function(input, output, session) {
   })
   
   # Download Handler - Save Gender Wage Premium Graphs to Word Document
-  output$downloadGraphsWordGenderWagePremium <- downloadHandler(
+  output$downloadGraphswagepremiumbygender <- downloadHandler(
     filename = function() {
       paste0("Public_Sector_Wage_Premium_Gender_", Sys.Date(), ".docx")
     },
@@ -5118,7 +5074,13 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
-  
+  # Color mapping (exactly as requested)
+  cols <- c(
+    "Clerks-Private"   = "#9ECAE1",  # light blue
+    "Clerks-Public"    = "#08519C",  # dark blue
+    "Managers-Private" = "#FDAE6B",  # light orange
+    "Managers-Public"  = "#E6550D"   # dark orange
+  )
   generate_females_occupation_groups_section <- function(doc, selected_countries) {
     # Add Section Title
     doc <- doc %>% body_add_par("Females by Occupational Group and Sector", style = "heading 1")
@@ -5149,15 +5111,23 @@ server <- function(input, output, session) {
     }
     
     # ✅ Generate ggplot for Female Occupational Groups
-    ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_label)) +
-      geom_bar(stat = "identity", position = "dodge") +
-      scale_fill_viridis_d(option = "D", name = "Occupation") +
+    ggplot_obj <- ggplot(
+      filtered_data,
+      aes(x = country_name, y = value_percentage, fill = indicator_label)
+    ) +
+      geom_col(position = position_dodge(width = 0.75), width = 0.7) +
+      scale_fill_manual(values = cols, name = "Occupation") +
       labs(
         title = "Females by Occupational Group and Sector",
-        x = "Country", 
+        x = "Country",
         y = "Female Share (%)"
       ) +
-      theme_minimal()
+      theme_minimal(base_size = 12) +
+      theme(
+        legend.position = "top",
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank()
+      )
     
     # ✅ Save the plot as an image
     img_path <- tempfile(fileext = ".png")
@@ -5280,15 +5250,23 @@ server <- function(input, output, session) {
     }
     
     # Plot
-    ggplot_obj <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, fill = indicator_label)) +
-      geom_bar(stat = "identity", position = "dodge") +
-      scale_fill_viridis_d(option = "D", name = "Occupation") +
+    ggplot_obj <- ggplot(
+      filtered_data,
+      aes(x = country_name, y = value_percentage, fill = indicator_label)
+    ) +
+      geom_col(position = position_dodge(width = 0.75), width = 0.7) +
+      scale_fill_manual(values = cols, name = "Occupation") +
       labs(
         title = "Females by Occupational Group and Sector",
-        x = "Country", 
+        x = "Country",
         y = "Female Share (%)"
       ) +
-      theme_minimal()
+      theme_minimal(base_size = 12) +
+      theme(
+        legend.position = "top",
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor = element_blank()
+      )
     
     # Save as image
     img_path <- tempfile(fileext = ".png")
