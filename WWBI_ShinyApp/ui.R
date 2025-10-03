@@ -453,7 +453,7 @@ img.wb-logo.wb-logo--dec { max-height: 60px !important; }
         ),
         
         div(class = "nav-section", onclick = "toggleSection('public_sector_section')",
-            "Size and Characteristics of the Public Sector"),
+            "Size and Characteristics of the Public Sector Employment"),
         div(id = "public_sector_section",
             div(class = "nav-sub-item", actionLink("nav_public_graphs", "Public Employment")),
             div(class = "nav-sub-item", actionLink("nav_public_workforce", "Employment Distribution")),
@@ -469,7 +469,7 @@ img.wb-logo.wb-logo--dec { max-height: 60px !important; }
         ),
         
         div(class = "nav-section", onclick = "toggleSection('equity_public_sector_section')",
-            "Equity in Public Sector"),
+            "Equity in Public Sector Employment"),
         div(id = "equity_public_sector_section",
             div(class = "nav-sub-item", actionLink("nav_gender_workforce", "Female Employment")),
             div(class = "nav-sub-item", actionLink("nav_female_leadership", "Female Leadership")),
