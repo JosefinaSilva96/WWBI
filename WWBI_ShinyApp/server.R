@@ -936,7 +936,7 @@ server <- function(input, output, session) {
           column(6, align = "center",
                  selectInput(
                    inputId = "download_report_countries",
-                   label = "Select countries for the report/slides:",
+                   label = "Select countries/region/income group(s) for the report/slides:",
                    choices = unique(data_wwbi_long$country_name),
                    selected = c("Chile"),
                    multiple = TRUE,
