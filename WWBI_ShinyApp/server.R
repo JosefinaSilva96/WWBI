@@ -1831,7 +1831,7 @@ server <- function(input, output, session) {
   })
   
   output$note_stackedBarGraph <- renderText({
-    "Note: This indicator represents the distribution of public sector employment across different industries (Public Administration, Education, Health, and Other) as a percentage of paid public employment."
+    "Note: This indicator represents the distribution of public sector employment across different industries (Public Administration, Education, Health, and Other) as a percentage of paid public employment. The indicator shows the last year available for each selected country/region/income group(s)."
   })
   output$messageOutput <- renderText({
     filtered_data <- public_sector_workforce %>% filter(country_name == input$selected_country)
@@ -2284,7 +2284,7 @@ server <- function(input, output, session) {
   })
   
   output$note_tertiaryEducation <- renderText({
-    "Note: This indicator represents the proportion of individuals with tertiary education in the public and private sectors across selected countries. It highlights differences in educational attainment among paid employees by sector."
+    "Note: This indicator represents the proportion of individuals with tertiary education in the public and private sectors across selected countries. It highlights differences in educational attainment among paid employees by sector. The indicator shows the last year available for each selected country/region/income group(s)."
   })
   
   output$downloadGraphsWordEducation <- downloadHandler(
@@ -2366,7 +2366,7 @@ server <- function(input, output, session) {
       doc <- doc %>%
         officer::body_add_gg(value = p, width = 6.5, height = 4.5) %>%
         body_add_par(
-          "Note: This graph compares the share of workers with tertiary education in the public and private sectors across the selected countries. The first country you selected is highlighted.",
+          "Note: This graph compares the share of workers with tertiary education in the public and private sectors across the selected countries. The first country you selected is highlighted. The indicator shows the last year available for each selected country/region/income group(s).",
           style = "Normal"
         )
       
@@ -2569,7 +2569,7 @@ server <- function(input, output, session) {
   })
   
   output$note_wage_premium <- renderText({
-    "Note: This visualization shows the estimated public sector wage premium, compared to private sector counterparts, after controlling for characteristics including gender, education, tenure, and geographic location."
+    "Note: This visualization shows the estimated public sector wage premium, compared to private sector counterparts, after controlling for characteristics including gender, education, tenure, and geographic location. The indicator shows the last year available for each selected country/region/income group(s)."
   })
   
   # Download the Report as a Word Document
@@ -2934,7 +2934,7 @@ server <- function(input, output, session) {
   })
   
   output$note_female_employment <- renderText({
-    "Note: This indicator represents female employment as a percentage of paid employees in the public and private sectors. Public sector data is displayed as bars, while private sector data is represented as scatter points."
+    "Note: This indicator represents female employment as a percentage of paid employees in the public and private sectors. Public sector data is displayed as bars, while private sector data is represented as scatter points. The indicator shows the last year available for each selected country/region/income group(s)."
   })
   
   output$note_female_employment_time <- renderText({
@@ -3336,7 +3336,7 @@ server <- function(input, output, session) {
   })
   
   output$note_education_wage_premium <- renderText({
-    "Note: This indicator represents the public sector wage premium across different education levels, comparing public sector wages to those of private formal workers."
+    "Note: This indicator represents the public sector wage premium across different education levels, comparing public sector wages to those of private formal workers. The indicator shows the last year available for each selected country/region/income group(s)."
   })
   
   output$downloadEducationWagePremium <- downloadHandler(
@@ -3420,7 +3420,7 @@ server <- function(input, output, session) {
       doc <- doc %>%
         officer::body_add_gg(value = p, width = 6.5, height = 4.5) %>%
         body_add_par(
-          "Note: Estimates reflect the public sector wage premium relative to private formal workers, by education level, controlling for observable characteristics where available.",
+          "Note: Estimates reflect the public sector wage premium relative to private formal workers, by education level, controlling for observable characteristics where available. The indicator shows the last year available for each selected country/region/income group(s).",
           style = "Normal"
         )
       
@@ -3674,7 +3674,7 @@ server <- function(input, output, session) {
   
   
   output$note_firstGraphpublic <- renderText({
-    "Note:This visualization shows the relative size of public sector employment in the labor market, measured by its share of formal, paid, and total employment for the latest available year. "
+    "Note:This visualization shows the relative size of public sector employment in the labor market, measured by its share of formal, paid, and total employment for the latest available year.The indicator shows the last year available for each selected country/region/income group(s). "
   })
   
   # Second Graph - Single-Country Line Plot
@@ -4095,7 +4095,7 @@ server <- function(input, output, session) {
   })
   
   output$note_firstGraphGenderWagePremium <- renderText({
-    "Note: Each dot shows the public-sector wage premium for the latest available year in each country. The premium is the percentage difference in average wages in the public sector relative to the private sector within the same gender. Positive values mean higher wages in the public sector; negative values mean lower. Country coverage and reference years may differ across countries."
+    "Note: Each dot shows the public-sector wage premium for the latest available year in each country. The premium is the percentage difference in average wages in the public sector relative to the private sector within the same gender. Positive values mean higher wages in the public sector; negative values mean lower. Country coverage and reference years may differ across countries. The indicator shows the last year available for each selected country/region/income group(s)."
   })
   
   # Second Graph - Single-Country Line Plot for Wage Premium by Gender Over Time
@@ -4534,7 +4534,7 @@ server <- function(input, output, session) {
   })
   
   output$note_firstGraphGenderWorkforce <- renderText({
-    "Note: This indicator represents the share of females employed in the public and private sectors. It highlights gender differences in workforce participation by sector."
+    "Note: This indicator represents the share of females employed in the public and private sectors. It highlights gender differences in workforce participation by sector. The indicator shows the last year available for each selected country/region/income group(s)."
   })
   
   # Second Graph - Single-Country Line Plot
@@ -4985,7 +4985,7 @@ server <- function(input, output, session) {
   
   
   output$note_barPlotwomen <- renderText({
-    "Note: This indicator represents the share of females in different occupational groups (Managers/Clerks) in both the public and private sectors, highlighting gender representation disparities."
+    "Note: This indicator represents the share of females in different occupational groups (Managers/Clerks) in both the public and private sectors, highlighting gender representation disparities. The indicator shows the last year available for each selected country/region/income group(s)."
   })
   
   output$downloadGraphsWordfemale <- downloadHandler(
@@ -5362,7 +5362,7 @@ server <- function(input, output, session) {
   
   
   output$note_gender_wage_barplot <- renderText({
-    "Note: This indicator represents the gender wage premium in the public sector across different industries, comparing wages of female employees to male employees."
+    "Note: This indicator represents the gender wage premium in the public sector across different industries, comparing wages of female employees to male employees. The indicator shows the last year available for each selected country/region/income group(s)."
   })
   
   
@@ -5822,7 +5822,7 @@ server <- function(input, output, session) {
   
   
   output$note_dotplot_pay <- renderText({
-    "Note: This visualization explores pay compression in the public and private sectors across selected countries. Compression ratios are calculated based on the ratio of incomes at the 90th to the 10th percentile."
+    "Note: This visualization explores pay compression in the public and private sectors across selected countries. Compression ratios are calculated based on the ratio of incomes at the 90th to the 10th percentile. The indicator shows the last year available for each selected country/region/income group(s)."
   })
   
   output$downloadPayCompressionDoc <- downloadHandler(

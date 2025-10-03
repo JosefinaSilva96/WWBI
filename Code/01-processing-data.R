@@ -276,6 +276,41 @@ income_mean <- income_mean %>%
 
 data_wwbi_long <- bind_rows(data_wwbi_long, income_mean)
 
+#Build global means 
+
+#Build a region-level mean (use your existing object if you still have it in scope)
+regional_mean_for_global <- data_wwbi_long %>%
+  filter(!is.na(value), !is.na(wb_region)) %>%
+  group_by(wb_region, year, indicator_name) %>%
+  summarise(region_value = mean(value, na.rm = TRUE), .groups = "drop")
+
+# Optional: attach indicator_code (if present in your long data) for nicer metadata
+indicator_lookup <- data_wwbi_long %>%
+  distinct(indicator_name, indicator_code) %>%
+  filter(!is.na(indicator_code))
+
+# Compute Global = simple mean across available regions (per indicator, per year)
+global_mean <- regional_mean_for_global %>%
+  group_by(indicator_name, year) %>%
+  summarise(value = mean(region_value, na.rm = TRUE),
+            n_regions = n_distinct(wb_region),    # optional diagnostic
+            .groups = "drop") %>%
+  left_join(indicator_lookup, by = "indicator_name") %>%
+  mutate(
+    iso3c        = "GLB",
+    country_code = "GLB",
+    country_name = "Global",
+    wb_region    = "All regions",
+    income_level = "All incomes"
+  )
+
+# Make columns match your data_wwbi_long before appending
+global_mean <- global_mean %>%
+  select(any_of(names(data_wwbi_long)))
+
+#Append to your long dataset
+data_wwbi_long <- bind_rows(data_wwbi_long, global_mean)
+
 #Drop Na observations in the column country_name
 
 #data_wwbi_long <- data_wwbi_long %>% filter(!is.na(country_name))
