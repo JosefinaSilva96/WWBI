@@ -5,7 +5,7 @@ account: josefinasilva
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 15337561
-bundleId: 11007113
+bundleId: 11007142
 url: https://josefinasilva.shinyapps.io/WWBI-Dashboard-1/
 version: 1
 asMultiple: FALSE
