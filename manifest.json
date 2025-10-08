@@ -1,0 +1,409 @@
+{
+  "version": 1,
+  "locale": "en_US",
+  "platform": "4.5.1",
+  "metadata": {
+    "appmode": "static",
+    "primary_rmd": null,
+    "primary_html": "Code/README.html",
+    "content_category": null,
+    "has_parameters": false
+  },
+  "packages": null,
+  "files": {
+    ".RData": {
+      "checksum": "a3ff62898e71b70c253dc28b91ec399c"
+    },
+    "bl_logo.png": {
+      "checksum": "e2a844155ac419564a39deae00d76be2"
+    },
+    "bootstrap.min.css": {
+      "checksum": "9285512fae2358c1840856c0f73b3a6d"
+    },
+    "Code/0-main.R": {
+      "checksum": "0e2c861e80bbe9f5f3a98b705aebed4d"
+    },
+    "Code/0.5-pre-processing-data.R": {
+      "checksum": "1a4758c0e93770b14688396e392ae7e8"
+    },
+    "Code/01-processing-data.R": {
+      "checksum": "7907d58cd1fba186825de2c65fbbadd8"
+    },
+    "Code/02-shiny-dashboard.R": {
+      "checksum": "6d1bde597d44e7f5fc29a21211c4633e"
+    },
+    "Code/app.R": {
+      "checksum": "5eec5af47c88e6773c1945aeb318d719"
+    },
+    "Code/app.R_II.R": {
+      "checksum": "5eec5af47c88e6773c1945aeb318d719"
+    },
+    "Code/app_Shiny.R": {
+      "checksum": "18b69d12637ebc2faafb4b5b5f3e8e12"
+    },
+    "Code/bootstrap.min.css": {
+      "checksum": "9285512fae2358c1840856c0f73b3a6d"
+    },
+    "Code/README.html": {
+      "checksum": "aea4c3f1b9bc79454a805e2b5048a621"
+    },
+    "Code/README.qmd": {
+      "checksum": "4c79ef7946646a9773c230c275537394"
+    },
+    "Code/README_files/libs/bootstrap/bootstrap-icons.css": {
+      "checksum": "2318f137d201fbf51601fa0faba6bef7"
+    },
+    "Code/README_files/libs/bootstrap/bootstrap-icons.woff": {
+      "checksum": "1a51dfbe5467607389d603c02a77cd10"
+    },
+    "Code/README_files/libs/bootstrap/bootstrap.min.css": {
+      "checksum": "1c7ffb07dbe6c87d96aec056a46f79d6"
+    },
+    "Code/README_files/libs/bootstrap/bootstrap.min.js": {
+      "checksum": "e2b09c06f0e714b6144a6788a28e3950"
+    },
+    "Code/README_files/libs/clipboard/clipboard.min.js": {
+      "checksum": "15f52a1ee547f2bdd46e56747332ca2d"
+    },
+    "Code/README_files/libs/quarto-html/anchor.min.js": {
+      "checksum": "91bcf6cd1fd88fec3f109811e5fc3546"
+    },
+    "Code/README_files/libs/quarto-html/popper.min.js": {
+      "checksum": "3a4a291ccf3f1ea0f82b641542fd3827"
+    },
+    "Code/README_files/libs/quarto-html/quarto-syntax-highlighting.css": {
+      "checksum": "ab2b9e94a89b131e869fd951d6355545"
+    },
+    "Code/README_files/libs/quarto-html/quarto.js": {
+      "checksum": "7563d37e31580c9573af5b12aa3779a2"
+    },
+    "Code/README_files/libs/quarto-html/tippy.css": {
+      "checksum": "ebd6f8ce46a677e1a4f5f8a8317109a9"
+    },
+    "Code/README_files/libs/quarto-html/tippy.umd.min.js": {
+      "checksum": "d828775275749701b48bd9d958814111"
+    },
+    "Code/Respaldo_quartz.R": {
+      "checksum": "ea0c5840bc848a6136c62ed0a71c184a"
+    },
+    "Code/server.R": {
+      "checksum": "66bdd5d06382d8a2e74edbb1032c5e68"
+    },
+    "Code/Shiny_App_WWBI.R": {
+      "checksum": "71d3365c7ccadf7ec6505bc1818eb66f"
+    },
+    "Code/ui.R": {
+      "checksum": "b83cb414c0a3b06292bf23646b985a41"
+    },
+    "Data/data_gdp.dta": {
+      "checksum": "8e6cd9c7dadd8c69c7e521d669e39288"
+    },
+    "Data/data_indicator_wb.dta": {
+      "checksum": "5dcf95c6068a1cbf13f43540ecf314cf"
+    },
+    "Data/data_wwbi.dta": {
+      "checksum": "11daf566ed7b5164055fad9b1ca46fe0"
+    },
+    "Data/data_wwbi_long.dta": {
+      "checksum": "96e343d33458c23bd506b5c6607acf87"
+    },
+    "Data/gdp_2015.dta": {
+      "checksum": "cf47accc79f4ba5b4506056a4f0bea95"
+    },
+    "Data/gender_leadership.dta": {
+      "checksum": "43a3bf43b0bb4840f7c73be51bf6bbdb"
+    },
+    "Data/gender_leadership.rds": {
+      "checksum": "b367e7a5e9aae87f00c1a57b06aa91ca"
+    },
+    "Data/gender_wage_premium.dta": {
+      "checksum": "7051bad8559e51765aee54fa4680714a"
+    },
+    "Data/gender_wage_premium.rds": {
+      "checksum": "530c20f8fb7187c55b9fc24d56209ad3"
+    },
+    "Data/gender_wage_premium_last.dta": {
+      "checksum": "c343c3290a300a814d8a9c39ec82a8dc"
+    },
+    "Data/gender_wage_premium_last.rds": {
+      "checksum": "f6e31802aeed19242126ef01d9801524"
+    },
+    "Data/gender_wage_premiumpublic.dta": {
+      "checksum": "4c97cdf4bfd2feafdc84f1926d122df1"
+    },
+    "Data/gender_wage_premiumpublic.rds": {
+      "checksum": "8d0ac532a43b4b3966ac089c06eee5d0"
+    },
+    "Data/gender_workforce.dta": {
+      "checksum": "d349f667c388ee23e305c57b19b52d24"
+    },
+    "Data/IMF_GDP.xls": {
+      "checksum": "212f6d871481153734d1b7f8bb2dc3cb"
+    },
+    "Data/merged_data.dta": {
+      "checksum": "fb7d4aaad50d6169481c1b4261efc8e4"
+    },
+    "Data/pay_compression.rds": {
+      "checksum": "78c984385691d8ca5aa27b821d636c25"
+    },
+    "Data/pay_compression_wide.rds": {
+      "checksum": "8e1d18f452bc2f3a5f696138b5a2999b"
+    },
+    "Data/public_sector_emp.dta": {
+      "checksum": "29f8f2f5b6344c06732a35ce0dd28624"
+    },
+    "Data/public_sector_emp.rds": {
+      "checksum": "48d2ddbc098237935a7d6dab6b2a5300"
+    },
+    "Data/public_sector_emp_temp.dta": {
+      "checksum": "0e99cd280d8303157d1fa646dc266396"
+    },
+    "Data/public_sector_emp_temp.rds": {
+      "checksum": "00c73f1ce427c08fdd68f17d97218ac7"
+    },
+    "Data/public_sector_emp_temp_last.dta": {
+      "checksum": "52917e1ea7001910e31a7ed150ac7c1c"
+    },
+    "Data/public_sector_emp_temp_last.rds": {
+      "checksum": "bbdae15b681cb5dd0c78034cb6cee399"
+    },
+    "Data/public_sector_workforce.dta": {
+      "checksum": "e5b9de9806f94d10a389cf670da0df7c"
+    },
+    "Data/public_sector_workforce_clean": {
+      "checksum": "cd895bce2d4aceb1692f49c9631a53ed"
+    },
+    "Data/public_sector_workforce_clean.dta": {
+      "checksum": "8e0be81b451c13f5a7f1f5ef72a08fb1"
+    },
+    "Data/public_sector_workforce_first_last.dta": {
+      "checksum": "6a542251bd853f4e5cb346ec985be339"
+    },
+    "Data/public_wage_premium.dta": {
+      "checksum": "daef8614ae7556cb27abfb32ea779d95"
+    },
+    "Data/public_wage_premium_educ.dta": {
+      "checksum": "f06eaa5b86de96356d3628b8e7e434cd"
+    },
+    "Data/selected_data_long.dta": {
+      "checksum": "6daed2f66ad1f4638c4cc14e6baea944"
+    },
+    "Data/tertiary_education.dta": {
+      "checksum": "5cb19353e6f9f2060f21b472349f544f"
+    },
+    "Data/wage_bill_gdp.dta": {
+      "checksum": "4f184c18a2f64af7c7d723ca07daa140"
+    },
+    "Data/wage_bill_publicexp.dta": {
+      "checksum": "12f6ae70a259394b437f592f803a0fe0"
+    },
+    "Data/world_spatial.gpkg": {
+      "checksum": "1bf0f83bc10087823a4f15e770e465f4"
+    },
+    "Data/Worldwide Bureaucracy Indicators (WWBI) Version 3.1.xlsx": {
+      "checksum": "6ddbb6794c74dc32e1d6ba1c17b61a9a"
+    },
+    "Data/WWBI Codebook v3.1.pdf": {
+      "checksum": "6d3d8ec0a76861f5d6dca85768bac583"
+    },
+    "Files/Innovating-Bureaucracy-for-a-More-Capable-Government.pdf": {
+      "checksum": "74ea4e1bbee58a7bb0c8960d69cff5a1"
+    },
+    "Files/Public-Sector-Employment-and-Compensation-An-Assessment-Framework.pdf": {
+      "checksum": "b5785757b1f5025f5d9fcfdb9934bea2"
+    },
+    "Files/Public Administration Review - 2021 - Baig - Introducing the Worldwide Bureaucracy Indicators  A New Global Dataset on.pdf": {
+      "checksum": "c44d4819a728bf17a118180256510286"
+    },
+    "Files/Worldwide-Bureaucracy-Indicators-Methodology-Insights-and-Applications.pdf": {
+      "checksum": "1f08c3fb1a231c3c41335fa53d9495c6"
+    },
+    "Files/WWBI Codebook v3.1.pdf": {
+      "checksum": "6d3d8ec0a76861f5d6dca85768bac583"
+    },
+    "first_graph.png": {
+      "checksum": "6c60d552f411bbb7898fb7bd20caf614"
+    },
+    "README.md": {
+      "checksum": "d1d238c9e5af08d74c3bd4596364cc44"
+    },
+    "wbg_dec_logo.png": {
+      "checksum": "76c3be0a207aa62e87e2164ddf766f90"
+    },
+    "wbg_dec_logo_new.png": {
+      "checksum": "76c3be0a207aa62e87e2164ddf766f90"
+    },
+    "wbg_institutions_logo.png": {
+      "checksum": "f0d4987cdbe47b8530c4c3e778370e45"
+    },
+    "WWBI/server.R": {
+      "checksum": "66bdd5d06382d8a2e74edbb1032c5e68"
+    },
+    "WWBI/ui.R": {
+      "checksum": "d93d794d1ab6590b2d37e3f99b890996"
+    },
+    "WWBI_ShinyApp/Data/data_gdp.dta": {
+      "checksum": "8e6cd9c7dadd8c69c7e521d669e39288"
+    },
+    "WWBI_ShinyApp/Data/data_indicator_wb.dta": {
+      "checksum": "5dcf95c6068a1cbf13f43540ecf314cf"
+    },
+    "WWBI_ShinyApp/Data/data_wwbi.dta": {
+      "checksum": "11daf566ed7b5164055fad9b1ca46fe0"
+    },
+    "WWBI_ShinyApp/Data/data_wwbi_long.dta": {
+      "checksum": "96e343d33458c23bd506b5c6607acf87"
+    },
+    "WWBI_ShinyApp/Data/gdp_2015.dta": {
+      "checksum": "cf47accc79f4ba5b4506056a4f0bea95"
+    },
+    "WWBI_ShinyApp/Data/gender_leadership.dta": {
+      "checksum": "43a3bf43b0bb4840f7c73be51bf6bbdb"
+    },
+    "WWBI_ShinyApp/Data/gender_leadership.rds": {
+      "checksum": "b367e7a5e9aae87f00c1a57b06aa91ca"
+    },
+    "WWBI_ShinyApp/Data/gender_wage_premium.dta": {
+      "checksum": "7051bad8559e51765aee54fa4680714a"
+    },
+    "WWBI_ShinyApp/Data/gender_wage_premium.rds": {
+      "checksum": "530c20f8fb7187c55b9fc24d56209ad3"
+    },
+    "WWBI_ShinyApp/Data/gender_wage_premium_last.dta": {
+      "checksum": "c343c3290a300a814d8a9c39ec82a8dc"
+    },
+    "WWBI_ShinyApp/Data/gender_wage_premium_last.rds": {
+      "checksum": "f6e31802aeed19242126ef01d9801524"
+    },
+    "WWBI_ShinyApp/Data/gender_wage_premiumpublic.dta": {
+      "checksum": "4c97cdf4bfd2feafdc84f1926d122df1"
+    },
+    "WWBI_ShinyApp/Data/gender_wage_premiumpublic.rds": {
+      "checksum": "8d0ac532a43b4b3966ac089c06eee5d0"
+    },
+    "WWBI_ShinyApp/Data/gender_workforce.dta": {
+      "checksum": "d349f667c388ee23e305c57b19b52d24"
+    },
+    "WWBI_ShinyApp/Data/IMF_GDP.xls": {
+      "checksum": "212f6d871481153734d1b7f8bb2dc3cb"
+    },
+    "WWBI_ShinyApp/Data/merged_data.dta": {
+      "checksum": "fb7d4aaad50d6169481c1b4261efc8e4"
+    },
+    "WWBI_ShinyApp/Data/pay_compression.rds": {
+      "checksum": "78c984385691d8ca5aa27b821d636c25"
+    },
+    "WWBI_ShinyApp/Data/pay_compression_wide.rds": {
+      "checksum": "8e1d18f452bc2f3a5f696138b5a2999b"
+    },
+    "WWBI_ShinyApp/Data/public_sector_emp.dta": {
+      "checksum": "29f8f2f5b6344c06732a35ce0dd28624"
+    },
+    "WWBI_ShinyApp/Data/public_sector_emp.rds": {
+      "checksum": "48d2ddbc098237935a7d6dab6b2a5300"
+    },
+    "WWBI_ShinyApp/Data/public_sector_emp_temp.dta": {
+      "checksum": "0e99cd280d8303157d1fa646dc266396"
+    },
+    "WWBI_ShinyApp/Data/public_sector_emp_temp.rds": {
+      "checksum": "00c73f1ce427c08fdd68f17d97218ac7"
+    },
+    "WWBI_ShinyApp/Data/public_sector_emp_temp_last.dta": {
+      "checksum": "52917e1ea7001910e31a7ed150ac7c1c"
+    },
+    "WWBI_ShinyApp/Data/public_sector_emp_temp_last.rds": {
+      "checksum": "bbdae15b681cb5dd0c78034cb6cee399"
+    },
+    "WWBI_ShinyApp/Data/public_sector_workforce.dta": {
+      "checksum": "e5b9de9806f94d10a389cf670da0df7c"
+    },
+    "WWBI_ShinyApp/Data/public_sector_workforce_clean": {
+      "checksum": "cd895bce2d4aceb1692f49c9631a53ed"
+    },
+    "WWBI_ShinyApp/Data/public_sector_workforce_clean.dta": {
+      "checksum": "8e0be81b451c13f5a7f1f5ef72a08fb1"
+    },
+    "WWBI_ShinyApp/Data/public_sector_workforce_first_last.dta": {
+      "checksum": "6a542251bd853f4e5cb346ec985be339"
+    },
+    "WWBI_ShinyApp/Data/public_wage_premium.dta": {
+      "checksum": "daef8614ae7556cb27abfb32ea779d95"
+    },
+    "WWBI_ShinyApp/Data/public_wage_premium_educ.dta": {
+      "checksum": "f06eaa5b86de96356d3628b8e7e434cd"
+    },
+    "WWBI_ShinyApp/Data/selected_data_long.dta": {
+      "checksum": "6daed2f66ad1f4638c4cc14e6baea944"
+    },
+    "WWBI_ShinyApp/Data/tertiary_education.dta": {
+      "checksum": "5cb19353e6f9f2060f21b472349f544f"
+    },
+    "WWBI_ShinyApp/Data/wage_bill_gdp.dta": {
+      "checksum": "4f184c18a2f64af7c7d723ca07daa140"
+    },
+    "WWBI_ShinyApp/Data/wage_bill_publicexp.dta": {
+      "checksum": "12f6ae70a259394b437f592f803a0fe0"
+    },
+    "WWBI_ShinyApp/Data/world_spatial.gpkg": {
+      "checksum": "1bf0f83bc10087823a4f15e770e465f4"
+    },
+    "WWBI_ShinyApp/Data/Worldwide Bureaucracy Indicators (WWBI) Version 3.1.xlsx": {
+      "checksum": "6ddbb6794c74dc32e1d6ba1c17b61a9a"
+    },
+    "WWBI_ShinyApp/Data/WWBI Codebook v3.1.pdf": {
+      "checksum": "6d3d8ec0a76861f5d6dca85768bac583"
+    },
+    "WWBI_ShinyApp/Files/Innovating-Bureaucracy-for-a-More-Capable-Government.pdf": {
+      "checksum": "74ea4e1bbee58a7bb0c8960d69cff5a1"
+    },
+    "WWBI_ShinyApp/Files/Public-Sector-Employment-and-Compensation-An-Assessment-Framework.pdf": {
+      "checksum": "b5785757b1f5025f5d9fcfdb9934bea2"
+    },
+    "WWBI_ShinyApp/Files/Public Administration Review - 2021 - Baig - Introducing the Worldwide Bureaucracy Indicators  A New Global Dataset on.pdf": {
+      "checksum": "c44d4819a728bf17a118180256510286"
+    },
+    "WWBI_ShinyApp/Files/Worldwide-Bureaucracy-Indicators-Methodology-Insights-and-Applications.pdf": {
+      "checksum": "1f08c3fb1a231c3c41335fa53d9495c6"
+    },
+    "WWBI_ShinyApp/Files/WWBI Codebook v3.1.pdf": {
+      "checksum": "6d3d8ec0a76861f5d6dca85768bac583"
+    },
+    "WWBI_ShinyApp/server.R": {
+      "checksum": "e93cc02aee74ff53bf66ab7d60978f90"
+    },
+    "WWBI_ShinyApp/ui.R": {
+      "checksum": "c8bb554411f41e603a6f04d955ba184e"
+    },
+    "www/bl_logo.png": {
+      "checksum": "e2a844155ac419564a39deae00d76be2"
+    },
+    "www/bootstrap.min.css": {
+      "checksum": "9285512fae2358c1840856c0f73b3a6d"
+    },
+    "www/Logos/WB-DEC-Impact-horizontal-RGB-high.png": {
+      "checksum": "ed528a7fbdd0157b22c70deb3dd21685"
+    },
+    "www/Logos/WB-DEC-Impact-horizontal-white-high.png": {
+      "checksum": "76c3be0a207aa62e87e2164ddf766f90"
+    },
+    "www/Logos/WBG-Institutions-Horizontal-CMYK-01.jpg": {
+      "checksum": "6de2aafad312d1a10107bab476aaa0d3"
+    },
+    "www/Logos/wbg_dec_logo.png": {
+      "checksum": "76c3be0a207aa62e87e2164ddf766f90"
+    },
+    "www/Logos/wbg_institutions_logo.png": {
+      "checksum": "f0d4987cdbe47b8530c4c3e778370e45"
+    },
+    "www/Logos/WHITE WBG-Institutions-Horizontal-CMYK-01 (1).png": {
+      "checksum": "f0d4987cdbe47b8530c4c3e778370e45"
+    },
+    "www/wbg_dec_logo.png": {
+      "checksum": "76c3be0a207aa62e87e2164ddf766f90"
+    },
+    "www/wbg_institutions_logo.png": {
+      "checksum": "f0d4987cdbe47b8530c4c3e778370e45"
+    }
+  },
+  "users": null
+}
