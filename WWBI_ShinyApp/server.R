@@ -1622,7 +1622,7 @@ server <- function(input, output, session) {
       doc <- doc |>
         officer::body_add_gg(value = p, width = 6.5, height = 4.5) |>
         officer::body_add_par(
-          "Note: This graph shows the relationship between the wage bill (expressed as a share of total expenditure) and the income level of countries. It offers a clearer understanding of whether wage bill spending is consistent with countries’ respective income levels.",
+          "Note: This graph shows the relationship between the wage bill (expressed as a share of total expenditure) and the income level of countries. It offers a clearer understanding of whether wage bill spending is consistent with countries’ respective income levels.The indicator shows the last year available for each selected country/region/income group(s).",
           style = "Normal"
         )
       
@@ -1765,7 +1765,7 @@ server <- function(input, output, session) {
   )
   
   output$note_dotplot_gdp <- renderText({
-    "Note: This graph shows the relationship between the wage bill (expressed as a share of total expenditure) and the income level of countries. It offers a clearer understanding of whether wage bill spending is consistent with countries’ respective income levels."
+    "Note: This graph shows the relationship between the wage bill (expressed as a share of total expenditure) and the income level of countries. It offers a clearer understanding of whether wage bill spending is consistent with countries’ respective income levels. The indicator shows the last year available for each selected country/region/income group(s)."
   })
   
   
