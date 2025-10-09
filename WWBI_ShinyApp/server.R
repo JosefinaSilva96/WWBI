@@ -2237,7 +2237,6 @@ server <- function(input, output, session) {
     }
   )
   
-  
   #Tertiary education
   
   output$barPlot <- renderPlotly({
