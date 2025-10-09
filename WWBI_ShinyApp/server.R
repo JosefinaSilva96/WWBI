@@ -4222,181 +4222,113 @@ server <- function(input, output, session) {
     }
   )
  
-  
   generate_wage_premium_gender_report_section <- function(doc, selected_countries) {
-    
-    # helper: force numeric even if labelled/factor/"12.3%" strings
+    # --- tiny helper: robust numeric from "12.3%" / labels / factors ---
     to_num <- function(x) {
       x <- as.character(x)
       x <- gsub("[^0-9\\.-]", "", x)
       suppressWarnings(as.numeric(x))
     }
     
-    # ---- Guard inputs ----
-    sel <- as.character(selected_countries)
-    sel <- sel[!is.na(sel) & nzchar(sel)]
-    sel <- unique(sel)
-    if (length(sel) == 0) {
-      doc <- doc %>% body_add_par("No countries selected for analysis.", style = "Normal")
+    # --- guard inputs ---
+    sel <- unique(na.omit(as.character(selected_countries)))
+    sel <- sel[nzchar(sel)]
+    if (length(sel) == 0L) {
+      doc <- officer::body_add_par(doc, "No countries selected for analysis.", style = "Normal")
       return(doc)
     }
     first_country <- sel[1]
     
-    # ---- Title & intro ----
-    doc <- doc %>%
-      body_add_par("Public Sector Wage Premium by Gender", style = "heading 1") %>%
-      body_add_par(
-        "This section presents an analysis of the public sector wage premium by gender across selected countries.",
+    # ========== FIRST GRAPH: last available year across selected countries ==========
+    df1 <- try({
+      gender_wage_premium_last |>
+        dplyr::filter(.data$country_name %in% sel) |>
+        dplyr::mutate(
+          value_percentage = to_num(.data$value_percentage),
+          indicator_label  = as.character(.data$indicator_label),
+          country_name     = as.character(.data$country_name)
+        ) |>
+        dplyr::filter(is.finite(.data$value_percentage))
+    }, silent = TRUE)
+    
+    if (inherits(df1, "try-error") || !is.data.frame(df1) || nrow(df1) == 0L) {
+      doc <- officer::body_add_par(doc, "No last-year wage premium data found for selected countries.", style = "Normal")
+    } else {
+      first_graph <- ggplot2::ggplot(
+        df1,
+        ggplot2::aes(x = .data$country_name, y = .data$value_percentage, color = .data$indicator_label)
+      ) +
+        ggplot2::geom_point(size = 4) +
+        ggplot2::scale_color_manual(values = c("Male" = "#E69F00", "Female" = "#56B4E9")) +
+        ggplot2::labs(
+          title = "Public Sector Wage Premium by Gender (Last Year Available)",
+          x = "Country", y = "Wage Premium (%)", color = "Gender"
+        ) +
+        ggplot2::theme_minimal()
+      
+      img_path1 <- tempfile(fileext = ".png")
+      ok1 <- TRUE
+      tryCatch(ggplot2::ggsave(img_path1, plot = first_graph, width = 8, height = 6), error = function(e) ok1 <<- FALSE)
+      
+      doc <- officer::body_add_par(doc, "Public Sector Wage Premium by Gender - Last Year Available", style = "heading 2")
+      if (ok1 && file.exists(img_path1)) {
+        doc <- officer::body_add_img(doc, src = img_path1, width = 6, height = 4)
+      }
+    }
+    
+    # ========== SECOND GRAPH: time series for the first selected country ==========
+    df2 <- try({
+      gender_wage_premium |>
+        dplyr::filter(.data$country_name == first_country) |>
+        dplyr::mutate(
+          year             = suppressWarnings(as.integer(.data$year)),
+          value_percentage = to_num(.data$value_percentage),
+          indicator_label  = as.character(.data$indicator_label)
+        ) |>
+        dplyr::filter(is.finite(.data$year), is.finite(.data$value_percentage)) |>
+        dplyr::arrange(.data$year)
+    }, silent = TRUE)
+    
+    if (inherits(df2, "try-error") || !is.data.frame(df2) || nrow(df2) == 0L) {
+      doc <- officer::body_add_par(
+        doc,
+        paste0("No time series wage premium data found for ", first_country, "."),
         style = "Normal"
       )
-    
-    # ---- Last-available-year data ----
-    filtered_data <- gender_wage_premium_last %>%
-      dplyr::filter(country_name %in% sel) %>%
-      dplyr::mutate(
-        value_percentage = to_num(value_percentage),
-        indicator_label  = as.character(indicator_label),
-        country_name     = as.character(country_name)
-      ) %>%
-      tidyr::drop_na(value_percentage) %>%
-      dplyr::filter(is.finite(value_percentage)) %>%
-      dplyr::mutate(indicator_label = factor(indicator_label, levels = c("Male","Female")))
-    
-    if (nrow(filtered_data) < 1) {
-      doc <- doc %>% body_add_par("No data available for the selected countries.", style = "Normal")
-      return(doc)
+      return(doc)  # early return is fine; section still valid
     }
     
-    get_rounded_value <- function(df, country, indicator) {
-      v <- df %>%
-        dplyr::filter(.data$country_name == country, .data$indicator_label == indicator) %>%
-        dplyr::pull(.data$value_percentage)
-      if (length(v) == 0 || is.na(v[1])) return("Data not available")
-      round(v[1], 0)
-    }
-    
-    get_max_country <- function(df, indicator) {
-      df_f <- df %>% dplyr::filter(.data$indicator_label == indicator)
-      if (nrow(df_f) == 0) return(list(country = "N/A", value = "Data not available"))
-      max_val <- suppressWarnings(max(df_f$value_percentage, na.rm = TRUE))
-      if (!is.finite(max_val)) return(list(country = "N/A", value = "Data not available"))
-      hit <- df_f %>% dplyr::filter(.data$value_percentage == max_val)
-      if (nrow(hit) == 0) return(list(country = "N/A", value = "Data not available"))
-      list(country = hit$country_name[1], value = round(max_val, 0))
-    }
-    
-    male_first_country   <- get_rounded_value(filtered_data, first_country, "Male")
-    female_first_country <- get_rounded_value(filtered_data, first_country, "Female")
-    max_male             <- get_max_country(filtered_data, "Male")
-    max_female           <- get_max_country(filtered_data, "Female")
-    
-    # First Graph - Save as Image
-    first_graph <- ggplot(gender_wage_premium_last %>% filter(country_name %in% input$countries_first), 
-                          aes(x = country_name, y = value_percentage, color = indicator_label)) +
-      geom_point(size = 4) +
-      scale_color_manual(values = c(
-        "Male" = "#E69F00",    # Orange
-        "Female" = "#56B4E9"   # Sky Blue
-      )) +
-      labs(
-        title = "Public Sector Wage Premium by Gender (Last Year Available)", 
-        x = "Country", 
-        y = "Wage Premium (%)",
-        color = "Gender"
+    second_graph <- ggplot2::ggplot(
+      df2,
+      ggplot2::aes(x = .data$year, y = .data$value_percentage, color = .data$indicator_label)
+    ) +
+      ggplot2::geom_line(size = 1.2) +
+      ggplot2::geom_point(size = 3) +
+      ggplot2::scale_color_manual(values = c("Male" = "#E69F00", "Female" = "#56B4E9")) +
+      ggplot2::labs(
+        title = paste0("Public Sector Wage Premium by Gender Over Time — ", first_country),
+        x = "Year", y = "Wage Premium (%)", color = "Gender"
       ) +
-      theme_minimal()
+      ggplot2::theme_minimal()
     
-    img_path1 <- tempfile(fileext = ".png")
-    ggsave(img_path1, plot = first_graph, width = 8, height = 6)
-    interpretation_text1 <- paste0(
-      "This graph displays the public sector wage premium by gender for the last available year across the selected countries. ",
-      "In ", first_country, ", the wage premium for male employees is ", male_first_country,
-      "%, while for female employees, it is ", female_first_country, "%. ",
-      "The country with the highest male wage premium is ", max_male$country, " at ", max_male$value,
-      "%, while the highest female wage premium is in ", max_female$country, " at ", max_female$value, "%."
+    img_path2 <- tempfile(fileext = ".png")
+    ok2 <- TRUE
+    tryCatch(ggplot2::ggsave(img_path2, plot = second_graph, width = 8, height = 6), error = function(e) ok2 <<- FALSE)
+    
+    doc <- officer::body_add_par(doc, "Public Sector Wage Premium by Gender Over Time", style = "heading 2")
+    if (ok2 && file.exists(img_path2)) {
+      doc <- officer::body_add_img(doc, src = img_path2, width = 6, height = 4)
+    }
+    doc <- officer::body_add_par(
+      doc,
+      "Note: This indicator represents the gender wage premium across industries in the public sector.",
+      style = "Normal"
     )
     
-    doc <- doc %>%
-      body_add_par("Public Sector Wage Premium by Gender (Last Year Available)", style = "heading 2") %>%
-      body_add_img(src = img_path1, width = 6, height = 4) %>%
-      body_add_par(interpretation_text1, style = "Normal")
-    
-    # ---- Time series for the first selected country ----
-    ts <- gender_wage_premium %>%
-      dplyr::filter(.data$country_name == first_country) %>%
-      dplyr::mutate(
-        year             = suppressWarnings(as.integer(year)),
-        value_percentage = to_num(value_percentage),
-        indicator_label  = as.character(indicator_label)
-      ) %>%
-      tidyr::drop_na(year, value_percentage) %>%
-      dplyr::filter(is.finite(year), is.finite(value_percentage)) %>%
-      dplyr::mutate(indicator_label = factor(indicator_label, levels = c("Male","Female")))
-    
-    if (nrow(ts) > 0) {
-      second_graph <- ggplot(gender_wage_premium %>% filter(country_name == input$country_second), 
-                             aes(x = year, y = value_percentage, color = indicator_label)) +
-        geom_line(size = 1.2) +
-        geom_point(size = 3) +
-        scale_color_manual(values = c(
-          "Male" = "#E69F00",    # Orange
-          "Female" = "#56B4E9"   # Sky Blue
-        )) +
-        labs(
-          title = "Public Sector Wage Premium by Gender Over Time", 
-          x = "Year", 
-          y = "Wage Premium (%)",
-          color = "Gender"
-        ) +
-        theme_minimal()
-      
-      
-      img_path2 <- tempfile(fileext = ".png")
-      ggsave(img_path2, plot = second_graph, width = 8, height = 6)
-      
-      doc <- doc %>% body_add_par("Public Sector Wage Premium by Gender Over Time", style = "heading 2")
-      doc <- doc %>% body_add_img(src = img_path2, width = 6, height = 4) %>% 
-        body_add_par("Note: This indicator represents the gender wage premium across industries in the public sector.", 
-                     style = "Normal")
-      first_year <- 2010
-      last_year  <- suppressWarnings(max(ts$year, na.rm = TRUE))
-      last_year_ok <- isTRUE(is.finite(last_year))
-      if (!last_year_ok) {
-        doc <- doc %>% body_add_par("Time series found but years are missing/invalid.", style = "Normal")
-        return(doc)
-      }
-      get_year_value <- function(df, yr, indicator) {
-        v <- df %>%
-          dplyr::filter(.data$year == yr, .data$indicator_label == indicator) %>%
-          dplyr::pull(.data$value_percentage)
-        if (length(v) == 0 || is.na(v[1])) return("Data not available")
-        round(v[1], 0)
-      }
-      
-      male_2010   <- get_year_value(ts, first_year, "Male")
-      female_2010 <- get_year_value(ts, first_year, "Female")
-      male_last   <- get_year_value(ts, last_year,  "Male")
-      female_last <- get_year_value(ts, last_year,  "Female")
-      
-      interpretation_text2 <- paste0(
-        "This graph illustrates how the public sector wage premium by gender has evolved over time in ", first_country, ". ",
-        "In ", first_year, ", the male wage premium was ", male_2010, "% and the female wage premium was ", female_2010, "%. ",
-        "By ", last_year, ", the male wage premium is ", male_last, "% and the female wage premium is ", female_last, "%."
-      )
-      
-      doc <- doc %>%
-        body_add_par("Public Sector Wage Premium by Gender Over Time", style = "heading 2") %>%
-        body_add_img(src = img_path2, width = 6, height = 4) %>%
-        body_add_par(interpretation_text2, style = "Normal")
-      
-    } else {
-      doc <- doc %>% body_add_par("No time series data available for this country.", style = "Normal")
-    }
-    
-    doc
+    return(doc)
   }
   
-
+  
   #Slides
   
   generate_wage_premium_gender_report_slide <- function(ppt, selected_countries) {
@@ -6175,74 +6107,55 @@ server <- function(input, output, session) {
   #Download selected graphs 
   
   output$downloadSelectedGraphsDoc <- downloadHandler(
-    filename = function() { 
-      paste0("Wage_bill_and_public_employment_analysis_Selected_Report_", Sys.Date(), ".docx") 
+    filename = function() {
+      paste0("Wage_bill_and_public_employment_analysis_Selected_Report_", Sys.Date(), ".docx")
     },
     content = function(file) {
-      # Get the selected countries dynamically
-      selected_countries <- input$download_report_countries
+      # helpers
+      `%||%` <- function(x, y) if (is.null(x)) y else x
       
-      # Initialize Word document
-      doc <- read_docx() 
+      # inputs (NA-safe)
+      selected_countries <- input$download_report_countries %||% character(0)
+      selected_countries <- unique(na.omit(as.character(selected_countries)))
+      selected_countries <- selected_countries[nzchar(selected_countries)]
       
-      # Add Report Title
-      title_style <- fp_text(color = "#722F37", font.size = 20, bold = TRUE)
-      doc <- doc %>% body_add_fpar(fpar(ftext("Wage bill and public employment analysis", prop = title_style)))
-      doc <- generate_intro_section(doc, selected_countries)  # Add the Intro First
+      selected_sections <- input$selected_graphs %||% character(0)
+      selected_sections <- unique(na.omit(as.character(selected_sections)))
+      selected_sections <- selected_sections[nzchar(selected_sections)]
       
-      # Define Section Style 
-      section_style <- fp_text(color = "#003366", font.size = 14, bold = TRUE)
+      has <- function(key) isTRUE(any(selected_sections == key, na.rm = TRUE))
       
-      # ✅ Dynamically include only selected sections
-      selected_sections <- input$selected_graphs
+      # init doc
+      doc <- officer::read_docx()
       
-      # ✅ Ensure selected_sections is not NULL before checking length
-      if (is.null(selected_sections) || length(selected_sections) == 0) {
-        doc <- doc %>% body_add_par("No sections selected for download.", style = "Normal")
-      } else {
-        if ("wagebill" %in% selected_sections) {
-          doc <- generate_wage_bill_analysis_section(doc, selected_countries)
-        }
-        if ("wagebill_gdp" %in% selected_sections) {
-          doc <- generate_gdp_analysis_section(doc, selected_countries)
-        }
-        if ("tertiaryeducation" %in% selected_sections) {
-          doc <- generate_tertiary_education_section(doc, selected_countries)
-        }
-        if ("genderwagepremium" %in% selected_sections) {
-          doc <- generate_wage_premium_gender_section(doc, selected_countries)
-        }
-        if ("wagepremiumeducation" %in% selected_sections) {
-          doc <- generate_wage_premium_education_section(doc, selected_countries)
-        }
-        if ("public_employment" %in% selected_sections) {
-          doc <- generate_public_sector_employment_section(doc, selected_countries) 
-        }
-        if ("wagepremiumgender" %in% selected_sections) {
-          doc <- generate_wage_premium_gender_report_section(doc, selected_countries)
-        }
-        if ("public_workforce" %in% selected_sections) {
-          doc <- generate_public_sector_workforce_section(doc, selected_countries)
-        }
-        if ("gender_workforce" %in% selected_sections) {
-          doc <- generate_gender_workforce_section(doc, selected_countries)
-        }
-        if ("female_leadership" %in% selected_sections) {  # Fixed typo from "femaleocuupation"
-          doc <- generate_females_occupation_groups_section(doc, selected_countries)
-        }
-        if ("wagepremium" %in% selected_sections) {
-          doc <- generate_wage_premium_report_section(doc, selected_countries)
-        }
-        if ("gender_wage_premium" %in% selected_sections) {
-          doc <- generate_gender_wage_premiumbysector_section(doc, selected_countries)
-        }
-        if ("pay_compression" %in% selected_sections) {
-          doc <- generate_pay_compression_section(doc, selected_countries = selected_countries)
-          
-        }
+      # title + intro
+      title_style <- officer::fp_text(color = "#722F37", font.size = 20, bold = TRUE)
+      doc <- doc %>% officer::body_add_fpar(officer::fpar(officer::ftext(
+        "Wage bill and public employment analysis", prop = title_style)))
+      doc <- generate_intro_section(doc, selected_countries)
+      
+      # if no sections picked
+      if (length(selected_sections) == 0) {
+        doc <- doc %>% officer::body_add_par("No sections selected for download.", style = "Normal")
+        print(doc, target = file)
+        return(invisible(NULL))
       }
       
-      # ✅ Save the customized report
+      # include sections safely (no if(NA) anymore)
+      if (has("wagebill"))                    doc <- generate_wage_bill_analysis_section(doc, selected_countries)
+      if (has("wagebill_gdp"))                doc <- generate_gdp_analysis_section(doc, selected_countries)
+      if (has("tertiaryeducation"))           doc <- generate_tertiary_education_section(doc, selected_countries)
+      if (has("genderwagepremium"))           doc <- generate_wage_premium_gender_section(doc, selected_countries)
+      if (has("wagepremiumeducation"))        doc <- generate_wage_premium_education_section(doc, selected_countries)
+      if (has("public_employment"))           doc <- generate_public_sector_employment_section(doc, selected_countries)
+      if (has("wagepremiumgender"))           doc <- generate_wage_premium_gender_report_section(doc, selected_countries)
+      if (has("public_workforce"))            doc <- generate_public_sector_workforce_section(doc, selected_countries)
+      if (has("gender_workforce"))            doc <- generate_gender_workforce_section(doc, selected_countries)
+      if (has("female_leadership"))           doc <- generate_females_occupation_groups_section(doc, selected_countries)
+      if (has("wagepremium"))                 doc <- generate_wage_premium_report_section(doc, selected_countries)
+      if (has("gender_wage_premium"))         doc <- generate_gender_wage_premiumbysector_section(doc, selected_countries)
+      if (has("pay_compression"))             doc <- generate_pay_compression_section(doc, selected_countries = selected_countries)
+      
       print(doc, target = file)
     }
   )
