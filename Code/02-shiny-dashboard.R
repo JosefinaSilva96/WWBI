@@ -6611,7 +6611,8 @@ server <- function(input, output, session) {
         dplyr::filter(.data$country_name %in% selected_countries) |>
         dplyr::mutate(
           Public_Sector  = suppressWarnings(as.numeric(.data$Public_Sector)),
-          Private_Sector = suppressWarnings(as.numeric(.data$Private_Sector))
+          Private_Sector = suppressWarnings(as.numeric(.data$Private_Sector)),
+          country_name   = as.character(.data$country_name)
         ) |>
         dplyr::filter(is.finite(.data$Public_Sector), is.finite(.data$Private_Sector))
       
@@ -6632,28 +6633,27 @@ server <- function(input, output, session) {
       
       # helpers
       pick_or_na <- function(x, idx) if (length(idx) && all(!is.na(idx))) x[idx] else NA_character_
+      
       if (all(is.na(country_summary$public_compression))) {
         highest_public <- lowest_public <- NA_character_
       } else {
-        highest_public <- pick_or_na(country_summary$country_name,
-                                     which.max(country_summary$public_compression))
-        lowest_public  <- pick_or_na(country_summary$country_name,
-                                     which.min(country_summary$public_compression))
+        highest_public <- pick_or_na(country_summary$country_name, which.max(country_summary$public_compression))
+        lowest_public  <- pick_or_na(country_summary$country_name, which.min(country_summary$public_compression))
       }
       if (all(is.na(country_summary$private_compression))) {
         highest_private <- lowest_private <- NA_character_
       } else {
-        highest_private <- pick_or_na(country_summary$country_name,
-                                      which.max(country_summary$private_compression))
-        lowest_private  <- pick_or_na(country_summary$country_name,
-                                      which.min(country_summary$private_compression))
+        highest_private <- pick_or_na(country_summary$country_name, which.max(country_summary$private_compression))
+        lowest_private  <- pick_or_na(country_summary$country_name, which.min(country_summary$private_compression))
       }
       
       fc_row <- dplyr::filter(country_summary, .data$country_name == first_country)
-      first_public_compression  <- if (nrow(fc_row)) fc_row$public_compression[1]  else NA_real_
-      first_private_compression <- if (nrow(fc_row)) fc_row$private_compression[1] else NA_real_
+      first_public_compression  <- if (nrow(fc_row) > 0L) fc_row$public_compression[1]  else NA_real_
+      first_private_compression <- if (nrow(fc_row) > 0L) fc_row$private_compression[1] else NA_real_
       
-      if (nrow(country_summary) >= 1L && first_country %in% country_summary$country_name) {
+      # >>> NA-SAFE MEMBERSHIP CHECK <<<
+      in_first <- isTRUE(any(country_summary$country_name == first_country, na.rm = TRUE))
+      if (nrow(country_summary) >= 1L && in_first) {
         rk_pub <- rank(-country_summary$public_compression,  ties.method = "min")[country_summary$country_name == first_country]
         rk_prv <- rank(-country_summary$private_compression, ties.method = "min")[country_summary$country_name == first_country]
         public_position  <- dplyr::case_when(rk_pub == 1 ~ "the highest",
@@ -6673,8 +6673,8 @@ server <- function(input, output, session) {
       plt <- ggplot2::ggplot(df, ggplot2::aes(x = .data$Private_Sector, y = .data$Public_Sector)) +
         ggplot2::geom_point(size = 3) +
         ggplot2::geom_text(ggplot2::aes(label = .data$country_name), vjust = -0.6, size = 3) +
-        ggplot2::geom_abline(slope = 1, intercept = 0, linetype = "dotted") +   # 45° equality line
-        ggplot2::geom_smooth(method = "lm", se = FALSE, linetype = "dashed") +  # trendline
+        ggplot2::geom_abline(slope = 1, intercept = 0, linetype = "dotted") +   # 45° equality
+        ggplot2::geom_smooth(method = "lm", se = FALSE, linetype = "dashed", linewidth = 0.8) +  # trendline
         ggplot2::coord_equal(xlim = c(lim_min, lim_max), ylim = c(lim_min, lim_max), expand = TRUE) +
         ggplot2::labs(
           title = "Pay Compression: Public vs. Private Sector",
@@ -6689,7 +6689,7 @@ server <- function(input, output, session) {
                error = function(e) { ok <<- FALSE })
       
       # ---- write to doc ----
-      if (ok && file.exists(img_path)) {
+      if (isTRUE(ok) && isTRUE(file.exists(img_path))) {
         doc <- officer::body_add_img(doc, src = img_path, width = 6, height = 4)
       }
       doc <- officer::body_add_par(
@@ -6714,7 +6714,6 @@ server <- function(input, output, session) {
       
       return(doc)
     }
-    
     generate_pay_compression_slide <- function(ppt, selected_countries) {
       if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
         return(ppt)
@@ -6898,75 +6897,76 @@ server <- function(input, output, session) {
   #Download one single report
  
   output$downloadAllGraphsDoc <- downloadHandler(
-    filename = function() { 
-      paste0("Wage_bill_and_public_employment_analysis_", Sys.Date(), ".docx") 
-    },
+    filename = function() paste0("Wage_bill_and_public_employment_analysis_", Sys.Date(), ".docx"),
     content = function(file) {
-      selected_countries <- input$download_report_countries # ✅ Use country selector from the download tab
+      # 1) sanitize the input up front (prevents if(NA) down the line)
+      selected_countries <- sanitize_vec(input$download_report_countries)
       
-      # Initialize Word document
-      doc <- read_docx() 
+      # 2) init + styles
+      doc <- officer::read_docx()
+      title_style   <- officer::fp_text(color = "#722F37", font.size = 20, bold = TRUE)
+      section_style <- officer::fp_text(color = "#003366", font.size = 14, bold = TRUE)
       
-      # Title
+      # 3) safe runner that never crashes the download
+      run_section <- function(label, fn) {
+        cat("[download-all] start:", label, "\n")
+        res <- try(fn(), silent = TRUE)
+        if (inherits(res, "try-error")) {
+          msg <- paste0("Skipping '", label, "': ", conditionMessage(attr(res, "condition")))
+          cat("[download-all] ERROR:", msg, "\n")
+          # write the message so the doc still builds
+          assign("doc", officer::body_add_par(doc, msg, style = "Normal"), inherits = TRUE)
+        } else if (inherits(res, "rdocx")) {
+          assign("doc", res, inherits = TRUE)
+          cat("[download-all] done:", label, "\n")
+        } else {
+          cat("[download-all] done (no doc returned):", label, "\n")
+        }
+        invisible(NULL)
+      }
       
-      title_style <- fp_text(color = "#722F37", font.size = 20, bold = TRUE)
+      # 4) Title + Intro  (pipe passes doc as first arg; we pass countries by name)
       doc <- doc %>%
-        body_add_fpar(fpar(ftext("", prop = title_style))) %>%
-        generate_intro_section(selected_countries)
+        officer::body_add_fpar(officer::fpar(officer::ftext("", prop = title_style)))
+      run_section("Intro", function() generate_intro_section(doc, selected_countries = selected_countries))
       
-      # Section Header Style
-      
-      section_style <- fp_text(color = "#003366", font.size = 14, bold = TRUE)
-      
-      # ──────────────────────────────────────
-      # 📘 Section 1: Macro-Fundamentals
-      # ──────────────────────────────────────
+      # Section 1
       doc <- doc %>%
-        body_add_fpar(fpar(ftext("Macro-Fundamentals of the Public Sector", prop = section_style))) %>%
-        generate_wage_bill_analysis_section(selected_countries) %>%
-        generate_gdp_analysis_section(selected_countries)
+        officer::body_add_fpar(officer::fpar(officer::ftext("Macro-Fundamentals of the Public Sector", prop = section_style)))
+      run_section("Wage Bill", function() generate_wage_bill_analysis_section(doc, selected_countries = selected_countries))
+      run_section("% of GDP",  function() generate_gdp_analysis_section(doc, selected_countries = selected_countries))
       
-      # ──────────────────────────────────────
-      # 📘 Section 2: Size and Characteristics
-      # ──────────────────────────────────────
+      # Section 2
       doc <- doc %>%
-        body_add_fpar(fpar(ftext("Size and Characteristics of the Public Sector", prop = section_style))) %>%
-        generate_public_sector_employment_section(selected_countries) %>%
-        generate_tertiary_education_section(selected_countries)
+        officer::body_add_fpar(officer::fpar(officer::ftext("Size and Characteristics of the Public Sector", prop = section_style)))
+      run_section("Public Employment",  function() generate_public_sector_employment_section(doc, selected_countries = selected_countries))
+      run_section("Tertiary Education", function() generate_tertiary_education_section(doc, selected_countries = selected_countries))
       
-      # ──────────────────────────────────────
-      # 📘 Section 3: Competitiveness of Public Sector Wages
-      # ──────────────────────────────────────
+      # Section 3
       doc <- doc %>%
-        body_add_fpar(fpar(ftext("Competitiveness of Public Sector Wages", prop = section_style))) %>%
-        body_add_par(
-          "Public sector compensation should theoretically be designed with an awareness of its influence on the broader labor market. According to the theory of “compensating wage differentials,” a job should pay more (or less) depending on its non-wage characteristics that are undesirable (or desirable)...",
+        officer::body_add_fpar(officer::fpar(officer::ftext("Competitiveness of Public Sector Wages", prop = section_style))) %>%
+        officer::body_add_par(
+          "Public sector compensation should theoretically be designed with an awareness of its influence on the broader labor market...",
           style = "Normal"
-        ) %>%
-        generate_wage_premium_report_section(selected_countries) %>%
-        generate_wage_premium_education_section(selected_countries) %>%
-        generate_pay_compression_section(selected_countries = selected_countries)
+        )
+      run_section("Wage Premium",             function() generate_wage_premium_report_section(doc, selected_countries = selected_countries))
+      run_section("Wage Premium by Education",function() generate_wage_premium_education_section(doc, selected_countries = selected_countries))
+      run_section("Pay Compression",          function() generate_pay_compression_section(doc, selected_countries = selected_countries))
       
-      # ──────────────────────────────────────
-      # 📘 Section 4: Equity in the Public Sector
-      # ──────────────────────────────────────
+      # Section 4
       doc <- doc %>%
-        body_add_fpar(fpar(ftext("Equity in the Public Sector", prop = section_style))) %>%
-        generate_gender_workforce_section(selected_countries) %>%
-        generate_females_occupation_groups_section(selected_countries) %>%
-        generate_gender_wage_premiumbysector_section(selected_countries) %>%
-        generate_wage_premium_gender_section(selected_countries)
+        officer::body_add_fpar(officer::fpar(officer::ftext("Equity in the Public Sector", prop = section_style)))
+      run_section("Gender Workforce",         function() generate_gender_workforce_section(doc, selected_countries = selected_countries))
+      run_section("Female Leadership",        function() generate_females_occupation_groups_section(doc, selected_countries = selected_countries))
+      run_section("Gender WP by Sector",      function() generate_gender_wage_premiumbysector_section(doc, selected_countries = selected_countries))
+      run_section("WP by Gender (public)",    function() generate_wage_premium_gender_section(doc, selected_countries = selected_countries))
       
-      # ──────────────────────────────────────
-      # 📘 Conclusion
-      # ──────────────────────────────────────
-      doc <- generate_conclusion_section(doc)
+      # Conclusion (adjust if your function takes only doc)
+      run_section("Conclusion",               function() generate_conclusion_section(doc))
       
-      # Save final report
       print(doc, target = file)
     }
   )
-  
   
   #Power Point Slides 
   
