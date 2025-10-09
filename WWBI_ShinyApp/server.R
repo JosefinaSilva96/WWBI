@@ -1506,6 +1506,19 @@ server <- function(input, output, session) {
     return(ppt)
   }
   
+  output$dl_csv_wagebill <- downloadHandler(
+    filename = function() {
+      type <- if (input$graph_choice == "GDP") "gdp" else "publicexp"
+      paste0("wagebill_", type, "_", paste(input$countries, collapse = "-"), ".csv")
+    },
+    content = function(file) {
+      d <- selected_data() %>% arrange(country_name, year)
+      validate(need(nrow(d) > 0, "No data to download"))
+      readr::write_csv(d, file)
+    }
+  )
+  
+  
   output$dot_plot_gdp <- renderPlotly({
     req(input$countries_gdp)
     
@@ -1762,6 +1775,9 @@ server <- function(input, output, session) {
     contentType = "text/csv"     # avoids “.htm” save dialog
   )
   
+  output$note_dotplot_gdp <- renderText({
+    "Note: This graph shows the relationship between the wage bill (expressed as a share of total expenditure) and the income level of countries. It offers a clearer understanding of whether wage bill spending is consistent with countries’ respective income levels. The indicator shows the last year available for each selected country/region/income group(s)."
+  })
   #Employment distribution
   
   filtered_workforce_data <- reactive({
@@ -2155,7 +2171,6 @@ server <- function(input, output, session) {
   
   #Download cvs 
   
-  # ---- Download CSV for BOTH public_workforce graphs ----
   output$dl_csv_public_workforce <- downloadHandler(
     filename = function() paste0("public_workforce_data_", Sys.Date(), ".csv"),
     content  = function(file) {
@@ -6188,41 +6203,62 @@ server <- function(input, output, session) {
     return(doc)
   }
   generate_pay_compression_slide <- function(ppt, selected_countries) {
-    if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
+    # sanitize countries
+    selected_countries <- unique(na.omit(as.character(selected_countries)))
+    selected_countries <- selected_countries[nzchar(selected_countries)]
+    if (length(selected_countries) == 0L) return(ppt)
+    
+    # guard data frame
+    if (!exists("pay_compression_wide") ||
+        !all(c("country_name","Public_Sector","Private_Sector") %in% names(pay_compression_wide))) {
       return(ppt)
     }
     
-    filtered_data_df <- pay_compression_wide %>%
-      filter(country_name %in% selected_countries)
+    # filter + coerce numeric + drop non-finite rows
+    df <- pay_compression_wide %>%
+      dplyr::filter(.data$country_name %in% selected_countries) %>%
+      dplyr::mutate(
+        Public_Sector  = suppressWarnings(as.numeric(.data$Public_Sector)),
+        Private_Sector = suppressWarnings(as.numeric(.data$Private_Sector)),
+        country_name   = as.character(.data$country_name)
+      ) %>%
+      dplyr::filter(is.finite(.data$Public_Sector), is.finite(.data$Private_Sector))
     
-    req(nrow(filtered_data_df) > 0)
+    if (nrow(df) == 0L) return(ppt)
     
-    # Create summary for plot
-    plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector, label = country_name)) +  # or group variable
-      geom_point(size = 3) +
-      geom_text(vjust = -0.5, size = 3) +
-      geom_smooth(method = "lm", color = "gray", linetype = "dashed") +
-      labs(
+    # axis limits for nice 45° reference
+    lim_min <- min(c(df$Private_Sector, df$Public_Sector), na.rm = TRUE)
+    lim_max <- max(c(df$Private_Sector, df$Public_Sector), na.rm = TRUE)
+    
+    # build plot (no color scale since we don't map color)
+    plt <- ggplot2::ggplot(df, ggplot2::aes(x = .data$Private_Sector, y = .data$Public_Sector)) +
+      ggplot2::geom_point(size = 3) +
+      ggplot2::geom_text(ggplot2::aes(label = .data$country_name), vjust = -0.6, size = 3) +
+      ggplot2::geom_abline(slope = 1, intercept = 0, linetype = "dotted") +
+      ggplot2::geom_smooth(method = "lm", se = FALSE, linetype = "dashed", linewidth = 0.8) +
+      ggplot2::coord_equal(xlim = c(lim_min, lim_max), ylim = c(lim_min, lim_max), expand = TRUE) +
+      ggplot2::labs(
         title = "Pay Compression: Public vs. Private Sector",
-        x = "Private Sector Pay Compression",
-        y = "Public Sector Pay Compression"
+        x = "Private Sector Pay Compression (P90/P10)",
+        y = "Public Sector Pay Compression (P90/P10)"
       ) +
-      scale_color_viridis(discrete = TRUE, option = "D") +
-      theme_minimal()
+      ggplot2::theme_minimal()
     
-    # Save plot as image
+    # save image safely
     img_path <- tempfile(fileext = ".png")
-    ggsave(filename = img_path, plot = plot, width = 6, height = 6, dpi = 300)
+    ok <- TRUE
+    tryCatch(ggplot2::ggsave(filename = img_path, plot = plt, width = 6, height = 6, dpi = 300),
+             error = function(e) ok <<- FALSE)
+    if (!ok || !file.exists(img_path)) return(ppt)
     
-    # Add slide with only the image
-    ppt <- ppt %>%
-      add_slide(layout = "Title and Content", master = "Office Theme") %>%
-      ph_with(external_img(img_path, height = 4, width = 4),
-              location = ph_location_type(type = "body"))
-    
-    return(ppt)
+    # add slide with image
+    ppt %>%
+      officer::add_slide(layout = "Title and Content", master = "Office Theme") %>%
+      officer::ph_with(
+        officer::external_img(img_path, height = 4, width = 4),
+        location = officer::ph_location_type(type = "body")
+      )
   }
-  
   generate_conclusion_section <- function(doc) {
     # Add Section Title
     doc <- doc %>% body_add_par("Conclusion", style = "heading 1")

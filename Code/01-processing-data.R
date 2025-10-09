@@ -986,3 +986,6 @@ saveRDS(pay_compression_wide, file.path(data_path, "Data", "pay_compression_wide
 
 #end of script
 
+
+shinyApp(ui = ui, server = server)
+

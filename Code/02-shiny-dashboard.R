@@ -1800,7 +1800,7 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
-  output$dl_csv <- downloadHandler(
+  output$dl_csv_wagebill <- downloadHandler(
     filename = function() {
       type <- if (input$graph_choice == "GDP") "gdp" else "publicexp"
       paste0("wagebill_", type, "_", paste(input$countries, collapse = "-"), ".csv")
