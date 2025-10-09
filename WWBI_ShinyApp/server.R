@@ -4221,9 +4221,28 @@ server <- function(input, output, session) {
       print(doc, target = file)
     }
   )
+ 
   
   generate_wage_premium_gender_report_section <- function(doc, selected_countries) {
-    # Section title and intro
+    
+    # helper: force numeric even if labelled/factor/"12.3%" strings
+    to_num <- function(x) {
+      x <- as.character(x)
+      x <- gsub("[^0-9\\.-]", "", x)
+      suppressWarnings(as.numeric(x))
+    }
+    
+    # ---- Guard inputs ----
+    sel <- as.character(selected_countries)
+    sel <- sel[!is.na(sel) & nzchar(sel)]
+    sel <- unique(sel)
+    if (length(sel) == 0) {
+      doc <- doc %>% body_add_par("No countries selected for analysis.", style = "Normal")
+      return(doc)
+    }
+    first_country <- sel[1]
+    
+    # ---- Title & intro ----
     doc <- doc %>%
       body_add_par("Public Sector Wage Premium by Gender", style = "heading 1") %>%
       body_add_par(
@@ -4231,63 +4250,64 @@ server <- function(input, output, session) {
         style = "Normal"
       )
     
-    # Validate selection
-    if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
-      doc <- doc %>% body_add_par("No countries selected for analysis.", style = "Normal")
-      return(doc)
-    }
+    # ---- Last-available-year data ----
+    filtered_data <- gender_wage_premium_last %>%
+      dplyr::filter(country_name %in% sel) %>%
+      dplyr::mutate(
+        value_percentage = to_num(value_percentage),
+        indicator_label  = as.character(indicator_label),
+        country_name     = as.character(country_name)
+      ) %>%
+      tidyr::drop_na(value_percentage) %>%
+      dplyr::filter(is.finite(value_percentage)) %>%
+      dplyr::mutate(indicator_label = factor(indicator_label, levels = c("Male","Female")))
     
-    first_country <- selected_countries[1]
-    
-    # Filter for last available year data
-    filtered_data <- gender_wage_premium_last %>% 
-      filter(country_name %in% selected_countries) %>%
-      drop_na(value_percentage)
-    
-    if (nrow(filtered_data) == 0) {
+    if (nrow(filtered_data) < 1) {
       doc <- doc %>% body_add_par("No data available for the selected countries.", style = "Normal")
       return(doc)
     }
     
-    # Safe extraction helpers
     get_rounded_value <- function(df, country, indicator) {
-      val <- df %>% filter(country_name == country, indicator_label == indicator) %>%
-        pull(value_percentage) %>% first()
-      ifelse(is.na(val), "Data not available", round(val, 0))
+      v <- df %>%
+        dplyr::filter(.data$country_name == country, .data$indicator_label == indicator) %>%
+        dplyr::pull(.data$value_percentage)
+      if (length(v) == 0 || is.na(v[1])) return("Data not available")
+      round(v[1], 0)
     }
     
     get_max_country <- function(df, indicator) {
-      df_filtered <- df %>% filter(indicator_label == indicator)
-      max_val <- max(df_filtered$value_percentage, na.rm = TRUE)
-      max_row <- df_filtered %>% filter(value_percentage == max_val)
-      if (nrow(max_row) == 0) return(list(country = "N/A", value = "Data not available"))
-      return(list(country = max_row$country_name[1], value = round(max_row$value_percentage[1], 0)))
+      df_f <- df %>% dplyr::filter(.data$indicator_label == indicator)
+      if (nrow(df_f) == 0) return(list(country = "N/A", value = "Data not available"))
+      max_val <- suppressWarnings(max(df_f$value_percentage, na.rm = TRUE))
+      if (!is.finite(max_val)) return(list(country = "N/A", value = "Data not available"))
+      hit <- df_f %>% dplyr::filter(.data$value_percentage == max_val)
+      if (nrow(hit) == 0) return(list(country = "N/A", value = "Data not available"))
+      list(country = hit$country_name[1], value = round(max_val, 0))
     }
     
-    male_first_country <- get_rounded_value(filtered_data, first_country, "Male")
+    male_first_country   <- get_rounded_value(filtered_data, first_country, "Male")
     female_first_country <- get_rounded_value(filtered_data, first_country, "Female")
+    max_male             <- get_max_country(filtered_data, "Male")
+    max_female           <- get_max_country(filtered_data, "Female")
     
-    max_male   <- get_max_country(filtered_data, "Male")
-    max_female <- get_max_country(filtered_data, "Female")
-    
-    # First graph
-    first_graph <- ggplot(filtered_data, aes(x = country_name, y = value_percentage, color = indicator_label)) +
+    # First Graph - Save as Image
+    first_graph <- ggplot(gender_wage_premium_last %>% filter(country_name %in% input$countries_first), 
+                          aes(x = country_name, y = value_percentage, color = indicator_label)) +
       geom_point(size = 4) +
       scale_color_manual(values = c(
         "Male" = "#E69F00",    # Orange
         "Female" = "#56B4E9"   # Sky Blue
       )) +
       labs(
-        title = "Public Sector Wage Premium by Gender (Last Year Available)",
-        x = "Country", y = "Wage Premium (%)", color = "Gender"
+        title = "Public Sector Wage Premium by Gender (Last Year Available)", 
+        x = "Country", 
+        y = "Wage Premium (%)",
+        color = "Gender"
       ) +
-      theme_minimal() +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1))
-    
+      theme_minimal()
     
     img_path1 <- tempfile(fileext = ".png")
     ggsave(img_path1, plot = first_graph, width = 8, height = 6)
-    
     interpretation_text1 <- paste0(
       "This graph displays the public sector wage premium by gender for the last available year across the selected countries. ",
       "In ", first_country, ", the wage premium for male employees is ", male_first_country,
@@ -4301,12 +4321,21 @@ server <- function(input, output, session) {
       body_add_img(src = img_path1, width = 6, height = 4) %>%
       body_add_par(interpretation_text1, style = "Normal")
     
-    # Time series for first selected country
-    time_series_data <- gender_wage_premium %>% 
-      filter(country_name == first_country)
+    # ---- Time series for the first selected country ----
+    ts <- gender_wage_premium %>%
+      dplyr::filter(.data$country_name == first_country) %>%
+      dplyr::mutate(
+        year             = suppressWarnings(as.integer(year)),
+        value_percentage = to_num(value_percentage),
+        indicator_label  = as.character(indicator_label)
+      ) %>%
+      tidyr::drop_na(year, value_percentage) %>%
+      dplyr::filter(is.finite(year), is.finite(value_percentage)) %>%
+      dplyr::mutate(indicator_label = factor(indicator_label, levels = c("Male","Female")))
     
-    if (nrow(time_series_data) > 0) {
-      second_graph <- ggplot(time_series_data, aes(x = year, y = value_percentage, color = indicator_label, group = indicator_label)) +
+    if (nrow(ts) > 0) {
+      second_graph <- ggplot(gender_wage_premium %>% filter(country_name == input$country_second), 
+                             aes(x = year, y = value_percentage, color = indicator_label)) +
         geom_line(size = 1.2) +
         geom_point(size = 3) +
         scale_color_manual(values = c(
@@ -4314,8 +4343,10 @@ server <- function(input, output, session) {
           "Female" = "#56B4E9"   # Sky Blue
         )) +
         labs(
-          title = paste("Public Sector Wage Premium by Gender Over Time in", first_country),
-          x = "Year", y = "Wage Premium (%)", color = "Gender"
+          title = "Public Sector Wage Premium by Gender Over Time", 
+          x = "Year", 
+          y = "Wage Premium (%)",
+          color = "Gender"
         ) +
         theme_minimal()
       
@@ -4323,19 +4354,29 @@ server <- function(input, output, session) {
       img_path2 <- tempfile(fileext = ".png")
       ggsave(img_path2, plot = second_graph, width = 8, height = 6)
       
+      doc <- doc %>% body_add_par("Public Sector Wage Premium by Gender Over Time", style = "heading 2")
+      doc <- doc %>% body_add_img(src = img_path2, width = 6, height = 4) %>% 
+        body_add_par("Note: This indicator represents the gender wage premium across industries in the public sector.", 
+                     style = "Normal")
       first_year <- 2010
-      last_year  <- max(time_series_data$year, na.rm = TRUE)
-      
-      get_year_value <- function(df, year, indicator) {
-        val <- df %>% filter(year == year, indicator_label == indicator) %>%
-          pull(value_percentage) %>% first()
-        ifelse(is.na(val), "Data not available", round(val, 0))
+      last_year  <- suppressWarnings(max(ts$year, na.rm = TRUE))
+      last_year_ok <- isTRUE(is.finite(last_year))
+      if (!last_year_ok) {
+        doc <- doc %>% body_add_par("Time series found but years are missing/invalid.", style = "Normal")
+        return(doc)
+      }
+      get_year_value <- function(df, yr, indicator) {
+        v <- df %>%
+          dplyr::filter(.data$year == yr, .data$indicator_label == indicator) %>%
+          dplyr::pull(.data$value_percentage)
+        if (length(v) == 0 || is.na(v[1])) return("Data not available")
+        round(v[1], 0)
       }
       
-      male_2010    <- get_year_value(time_series_data, first_year, "Male")
-      female_2010  <- get_year_value(time_series_data, first_year, "Female")
-      male_last    <- get_year_value(time_series_data, last_year, "Male")
-      female_last  <- get_year_value(time_series_data, last_year, "Female")
+      male_2010   <- get_year_value(ts, first_year, "Male")
+      female_2010 <- get_year_value(ts, first_year, "Female")
+      male_last   <- get_year_value(ts, last_year,  "Male")
+      female_last <- get_year_value(ts, last_year,  "Female")
       
       interpretation_text2 <- paste0(
         "This graph illustrates how the public sector wage premium by gender has evolved over time in ", first_country, ". ",
@@ -4352,9 +4393,10 @@ server <- function(input, output, session) {
       doc <- doc %>% body_add_par("No time series data available for this country.", style = "Normal")
     }
     
-    return(doc)
+    doc
   }
   
+
   #Slides
   
   generate_wage_premium_gender_report_slide <- function(ppt, selected_countries) {
