@@ -564,7 +564,7 @@ img.wb-logo.wb-logo--dec { max-height: 45px !important; }
         ),
         
         div(class = "nav-section", onclick = "toggleSection('public_sector_section')",
-            "Size and Characteristics of the Public Sector"),
+            "Size and Characteristics of the Public Sector Employment"),
         div(id = "public_sector_section",
             div(class = "nav-sub-item", actionLink("nav_public_graphs", "Public Employment")),
             div(class = "nav-sub-item", actionLink("nav_public_workforce", "Employment Distribution")),
@@ -580,7 +580,7 @@ img.wb-logo.wb-logo--dec { max-height: 45px !important; }
         ),
         
         div(class = "nav-section", onclick = "toggleSection('equity_public_sector_section')",
-            "Equity in Public Sector"),
+            "Equity in Public Sector Employment"),
         div(id = "equity_public_sector_section",
             div(class = "nav-sub-item", actionLink("nav_gender_workforce", "Female Employment")),
             div(class = "nav-sub-item", actionLink("nav_female_leadership", "Female Leadership")),
@@ -1462,7 +1462,7 @@ server <- function(input, output, session) {
           column(6, align = "center",
                  selectInput(
                    inputId = "download_report_countries",
-                   label = "Select countries for the report/slides:",
+                   label = "Select countries/regions/income group(s) for the report/slides:",
                    choices = unique(data_wwbi_long$country_name),
                    selected = c("Chile"),
                    multiple = TRUE,
@@ -2147,7 +2147,7 @@ server <- function(input, output, session) {
       doc <- doc |>
         officer::body_add_gg(value = p, width = 6.5, height = 4.5) |>
         officer::body_add_par(
-          "Note: This graph shows the relationship between the wage bill (expressed as a share of total expenditure) and the income level of countries. It offers a clearer understanding of whether wage bill spending is consistent with countries’ respective income levels.",
+          "Note: This graph shows the relationship between the wage bill (expressed as a share of total expenditure) and the income level of countries. It offers a clearer understanding of whether wage bill spending is consistent with countries’ respective income levels.The indicator shows the last year available for each selected country/region/income group(s).",
           style = "Normal"
         )
       
@@ -2350,7 +2350,7 @@ server <- function(input, output, session) {
   })
   
   output$note_stackedBarGraph <- renderText({
-    "Note: This indicator represents the distribution of public sector employment across different industries (Public Administration, Education, Health, and Other) as a percentage of paid public employment."
+    "Note: This indicator represents the distribution of public sector employment across different industries (Public Administration, Education, Health, and Other) as a percentage of paid public employment. The indicator shows the last year available for each selected country/region/income group(s)."
   })
   output$messageOutput <- renderText({
     filtered_data <- public_sector_workforce %>% filter(country_name == input$selected_country)
@@ -2803,7 +2803,7 @@ server <- function(input, output, session) {
   })
   
   output$note_tertiaryEducation <- renderText({
-    "Note: This indicator represents the proportion of individuals with tertiary education in the public and private sectors across selected countries. It highlights differences in educational attainment among paid employees by sector."
+    "Note: This indicator represents the proportion of individuals with tertiary education in the public and private sectors across selected countries. It highlights differences in educational attainment among paid employees by sector.The indicator shows the last year available for each selected country/region/income group(s)."
   })
   
   output$downloadGraphsWordEducation <- downloadHandler(
@@ -3088,7 +3088,7 @@ server <- function(input, output, session) {
   })
 
   output$note_wage_premium <- renderText({
-    "Note: This visualization shows the estimated public sector wage premium, compared to private sector counterparts, after controlling for characteristics including gender, education, tenure, and geographic location."
+    "Note: This visualization shows the estimated public sector wage premium, compared to private sector counterparts, after controlling for characteristics including gender, education, tenure, and geographic location.The indicator shows the last year available for each selected country/region/income group(s)."
   })
 
   # Download the Report as a Word Document
@@ -3473,7 +3473,7 @@ server <- function(input, output, session) {
   })
   
   output$note_female_employment <- renderText({
-    "Note: This indicator represents female employment as a percentage of paid employees in the public and private sectors. Public sector data is displayed as bars, while private sector data is represented as scatter points."
+    "Note: This indicator represents female employment as a percentage of paid employees in the public and private sectors. Public sector data is displayed as bars, while private sector data is represented as scatter points.The indicator shows the last year available for each selected country/region/income group(s)."
   })
   
   output$note_female_employment_time <- renderText({
@@ -3942,7 +3942,7 @@ server <- function(input, output, session) {
   })
   
   output$note_education_wage_premium <- renderText({
-    "Note: This indicator represents the public sector wage premium across different education levels, comparing public sector wages to those of private formal workers."
+    "Note: This indicator represents the public sector wage premium across different education levels, comparing public sector wages to those of private formal workers.The indicator shows the last year available for each selected country/region/income group(s)."
   })
   
   output$downloadEducationWagePremium <- downloadHandler(
@@ -4331,7 +4331,7 @@ server <- function(input, output, session) {
   
   
   output$note_secondGraphpublic <- renderText({
-    "Note: This visualization shows the evolution of public sector employment in the labor market of the selected country, expressed as its share of formal, paid, and total employment."
+    "Note: This visualization shows the evolution of public sector employment in the labor market of the selected country, expressed as its share of formal, paid, and total employment. The indicator shows the last year available for each selected country/region/income group(s)."
   })
   
   
@@ -5276,7 +5276,7 @@ server <- function(input, output, session) {
   })
   
   output$note_secondGraphGenderWorkforce <- renderText({
-    "Note: This visualization explores female employment in the public and private sectors over time for the selected country"
+    "Note: This visualization explores female employment in the public and private sectors over time for the selected country. The indicator shows the last year available for each selected country/region/income group(s)."
   })
   
   # Download Handler - Save Graphs to Word Document
@@ -5674,7 +5674,7 @@ server <- function(input, output, session) {
   
   
   output$note_barPlotwomen <- renderText({
-    "Note: This indicator represents the share of females in different occupational groups (Managers/Clerks) in both the public and private sectors, highlighting gender representation disparities."
+    "Note: This indicator represents the share of females in different occupational groups (Managers/Clerks) in both the public and private sectors, highlighting gender representation disparities. The indicator shows the last year available for each selected country/region/income group(s)."
   })
   
   output$downloadGraphsWordfemale <- downloadHandler(
@@ -6489,7 +6489,7 @@ server <- function(input, output, session) {
   
   
     output$note_dotplot_pay <- renderText({
-      "Note: This visualization explores pay compression in the public and private sectors across selected countries. Compression ratios are calculated based on the ratio of incomes at the 90th to the 10th percentile."
+      "Note: This visualization explores pay compression in the public and private sectors across selected countries. Compression ratios are calculated based on the ratio of incomes at the 90th to the 10th percentile. The indicator shows the last year available for each selected country/region/income group(s)."
     })
     
     output$downloadPayCompressionDoc <- downloadHandler(
