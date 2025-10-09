@@ -130,6 +130,20 @@ pay_compression_wide <- readRDS(file.path(data_path, "Data", "pay_compression_wi
 # UI
 # ---------------------------
 
+
+options(shiny.fullstacktrace = TRUE, shiny.trace = TRUE)
+
+# helpers (global)
+`%||%` <- function(x, y) if (is.null(x)) y else x
+sanitize_vec <- function(x) {
+  x <- x %||% character(0)
+  x <- as.character(x)
+  x[!is.na(x) & nzchar(x)] |> unique()
+}
+has_key  <- function(x, key) isTRUE(any(sanitize_vec(x) == key, na.rm = TRUE))
+nrow_pos <- function(df)  isTRUE(NROW(df) > 0)
+
+
 ui <- bootstrapPage(
   theme = bs_theme(version = 5, bootswatch = "sandstone"),
   
@@ -6571,107 +6585,132 @@ server <- function(input, output, session) {
   #Pay compression section  
     
     generate_pay_compression_section <- function(doc, selected_countries) {
-      doc <- doc %>% body_add_par("Pay Compression in the Private and Public Sector", style = "heading 1")
+      # ---- guards ----
+      selected_countries <- unique(na.omit(as.character(selected_countries)))
+      selected_countries <- selected_countries[nzchar(selected_countries)]
+      if (length(selected_countries) == 0L) {
+        return(officer::body_add_par(doc, "No countries selected for analysis.", style = "Normal"))
+      }
       
-      doc <- doc %>% body_add_par(
-        "This section presents an analysis of the pay compression for the private and public sector 
-     across selected countries.", 
+      # needed data
+      if (!exists("pay_compression_wide") ||
+          !all(c("country_name","Public_Sector","Private_Sector") %in% names(pay_compression_wide))) {
+        return(officer::body_add_par(doc, "Pay compression data is missing.", style = "Normal"))
+      }
+      
+      # intro
+      doc <- officer::body_add_par(doc, "Pay Compression in the Private and Public Sector", style = "heading 1")
+      doc <- officer::body_add_par(
+        doc,
+        "This section presents pay compression ratios (90th/10th percentile) for public and private sectors across selected countries.",
         style = "Normal"
       )
       
-      if (is.null(selected_countries) || length(na.omit(selected_countries)) == 0) {
-        doc <- doc %>% body_add_par("No countries selected for analysis.", style = "Normal")
-        return(doc)
+      # ---- data ----
+      df <- pay_compression_wide |>
+        dplyr::filter(.data$country_name %in% selected_countries) |>
+        dplyr::mutate(
+          Public_Sector  = suppressWarnings(as.numeric(.data$Public_Sector)),
+          Private_Sector = suppressWarnings(as.numeric(.data$Private_Sector))
+        ) |>
+        dplyr::filter(is.finite(.data$Public_Sector), is.finite(.data$Private_Sector))
+      
+      if (nrow(df) == 0L) {
+        return(officer::body_add_par(doc, "No pay compression data available for the selected countries.", style = "Normal"))
       }
       
+      # ---- summaries ----
       first_country <- selected_countries[1]
       
-      filtered_data_df <- pay_compression_wide %>%
-        filter(country_name %in% selected_countries)
-      
-      req(nrow(filtered_data_df) > 0)
-      
-      country_summary <- filtered_data_df %>%
-        group_by(country_name) %>%
-        summarise(
-          public_compression = round(mean(Public_Sector, na.rm = TRUE), 1),  
-          private_compression = round(mean(Private_Sector, na.rm = TRUE), 1) 
+      country_summary <- df |>
+        dplyr::group_by(.data$country_name) |>
+        dplyr::summarise(
+          public_compression  = round(mean(.data$Public_Sector,  na.rm = TRUE), 1),
+          private_compression = round(mean(.data$Private_Sector, na.rm = TRUE), 1),
+          .groups = "drop"
         )
       
-      highest_public <- country_summary %>%
-        filter(public_compression == max(public_compression, na.rm = TRUE)) %>% pull(country_name)
-      lowest_public <- country_summary %>%
-        filter(public_compression == min(public_compression, na.rm = TRUE)) %>% pull(country_name)
-      
-      highest_private <- country_summary %>%
-        filter(private_compression == max(private_compression, na.rm = TRUE)) %>% pull(country_name)
-      lowest_private <- country_summary %>%
-        filter(private_compression == min(private_compression, na.rm = TRUE)) %>% pull(country_name)
-      
-      first_country_values <- country_summary %>% filter(country_name == first_country)
-      first_public_compression <- first_country_values %>% pull(public_compression) %>% coalesce(NA)
-      first_private_compression <- first_country_values %>% pull(private_compression) %>% coalesce(NA)
-      
-      other_countries_avg <- country_summary %>%
-        filter(country_name != first_country) %>%
-        summarise(
-          avg_public_compression = round(mean(public_compression, na.rm = TRUE), 1),
-          avg_private_compression = round(mean(private_compression, na.rm = TRUE), 1)
-        )
-      
-      if (first_country %in% country_summary$country_name) {
-        rank_public <- rank(-country_summary$public_compression, ties.method = "min")[country_summary$country_name == first_country]
-        rank_private <- rank(-country_summary$private_compression, ties.method = "min")[country_summary$country_name == first_country]
-        
-        public_position <- dplyr::case_when(
-          rank_public == 1 ~ "the highest",
-          rank_public == nrow(country_summary) ~ "the lowest",
-          TRUE ~ "in the middle range"
-        )
-        
-        private_position <- dplyr::case_when(
-          rank_private == 1 ~ "the highest",
-          rank_private == nrow(country_summary) ~ "the lowest",
-          TRUE ~ "in the middle range"
-        )
+      # helpers
+      pick_or_na <- function(x, idx) if (length(idx) && all(!is.na(idx))) x[idx] else NA_character_
+      if (all(is.na(country_summary$public_compression))) {
+        highest_public <- lowest_public <- NA_character_
       } else {
-        public_position <- "unranked"
-        private_position <- "unranked"
+        highest_public <- pick_or_na(country_summary$country_name,
+                                     which.max(country_summary$public_compression))
+        lowest_public  <- pick_or_na(country_summary$country_name,
+                                     which.min(country_summary$public_compression))
+      }
+      if (all(is.na(country_summary$private_compression))) {
+        highest_private <- lowest_private <- NA_character_
+      } else {
+        highest_private <- pick_or_na(country_summary$country_name,
+                                      which.max(country_summary$private_compression))
+        lowest_private  <- pick_or_na(country_summary$country_name,
+                                      which.min(country_summary$private_compression))
       }
       
-      interpretation_text <- paste0(
-        "This figure compares pay compression ratios (90th/10th percentile) in the public and private sectors.\n\n",
-        "For ", first_country, ", the pay compression ratio is ", first_public_compression, 
-        " in the public sector and ", first_private_compression, " in the private sector.\n\n",
-        "Among the selected countries, ", highest_public, " has the highest public sector pay compression, while ",
-        lowest_public, " has the lowest public sector pay compression.\n\n",
-        "In the private sector, ", highest_private, " has the highest pay compression, whereas ",
-        lowest_private, " has the lowest.\n\n",
-        first_country, " is ranked ", public_position, " in public sector compression and ",
-        private_position, " in private sector compression compared to other selected countries.\n\n",
-        "A higher compression ratio indicates greater income disparity within the sector. The trendline provides an overall pattern, and the 45-degree reference line represents equality between public and private sector compression."
-      )
+      fc_row <- dplyr::filter(country_summary, .data$country_name == first_country)
+      first_public_compression  <- if (nrow(fc_row)) fc_row$public_compression[1]  else NA_real_
+      first_private_compression <- if (nrow(fc_row)) fc_row$private_compression[1] else NA_real_
       
-      plot <- ggplot(filtered_data_df, aes(x = Private_Sector, y = Public_Sector, label = country_name)) +  # or group variable
-        geom_point(size = 3) +
-        geom_text(vjust = -0.5, size = 3) +
-        geom_smooth(method = "lm", color = "gray", linetype = "dashed") +
-        labs(
+      if (nrow(country_summary) >= 1L && first_country %in% country_summary$country_name) {
+        rk_pub <- rank(-country_summary$public_compression,  ties.method = "min")[country_summary$country_name == first_country]
+        rk_prv <- rank(-country_summary$private_compression, ties.method = "min")[country_summary$country_name == first_country]
+        public_position  <- dplyr::case_when(rk_pub == 1 ~ "the highest",
+                                             rk_pub == nrow(country_summary) ~ "the lowest",
+                                             TRUE ~ "in the middle range")
+        private_position <- dplyr::case_when(rk_prv == 1 ~ "the highest",
+                                             rk_prv == nrow(country_summary) ~ "the lowest",
+                                             TRUE ~ "in the middle range")
+      } else {
+        public_position <- private_position <- "unranked"
+      }
+      
+      # ---- plot (no color scale) ----
+      lim_min <- min(c(df$Private_Sector, df$Public_Sector), na.rm = TRUE)
+      lim_max <- max(c(df$Private_Sector, df$Public_Sector), na.rm = TRUE)
+      
+      plt <- ggplot2::ggplot(df, ggplot2::aes(x = .data$Private_Sector, y = .data$Public_Sector)) +
+        ggplot2::geom_point(size = 3) +
+        ggplot2::geom_text(ggplot2::aes(label = .data$country_name), vjust = -0.6, size = 3) +
+        ggplot2::geom_abline(slope = 1, intercept = 0, linetype = "dotted") +   # 45° equality line
+        ggplot2::geom_smooth(method = "lm", se = FALSE, linetype = "dashed") +  # trendline
+        ggplot2::coord_equal(xlim = c(lim_min, lim_max), ylim = c(lim_min, lim_max), expand = TRUE) +
+        ggplot2::labs(
           title = "Pay Compression: Public vs. Private Sector",
-          x = "Private Sector Pay Compression",
-          y = "Public Sector Pay Compression"
+          x = "Private Sector Pay Compression (P90/P10)",
+          y = "Public Sector Pay Compression (P90/P10)"
         ) +
-        scale_color_viridis(discrete = TRUE, option = "D") +
-        theme_minimal()
+        ggplot2::theme_minimal()
       
       img_path <- tempfile(fileext = ".png")
-      ggsave(filename = img_path, plot = plot, width = 8, height = 6, dpi = 300)
+      ok <- TRUE
+      tryCatch(ggplot2::ggsave(filename = img_path, plot = plt, width = 8, height = 6, dpi = 300),
+               error = function(e) { ok <<- FALSE })
       
-      doc <- doc %>% 
-        body_add_img(src = img_path, width = 6, height = 4) %>%
-        body_add_par("Note: The trendline provides a visual reference for overall patterns across countries.", style = "Normal") %>%
-        body_add_par(paste(interpretation_text, collapse = ""), style = "Normal")
-      
+      # ---- write to doc ----
+      if (ok && file.exists(img_path)) {
+        doc <- officer::body_add_img(doc, src = img_path, width = 6, height = 4)
+      }
+      doc <- officer::body_add_par(
+        doc,
+        paste0(
+          "For ", first_country, ", the pay compression ratio is ",
+          first_public_compression, " in the public sector and ",
+          first_private_compression, " in the private sector. ",
+          "Among the selected countries, ", highest_public, " has the highest public-sector compression and ",
+          lowest_public, " the lowest; in the private sector, ", highest_private, " is highest and ",
+          lowest_private, " lowest. ",
+          first_country, " ranks ", public_position, " in public-sector compression and ",
+          private_position, " in private-sector compression. A higher ratio implies greater inequality within a sector."
+        ),
+        style = "Normal"
+      )
+      doc <- officer::body_add_par(
+        doc,
+        "Note: Dashed line is linear fit; dotted line is equality (Public = Private).",
+        style = "Normal"
+      )
       
       return(doc)
     }
@@ -6916,7 +6955,7 @@ server <- function(input, output, session) {
         generate_gender_workforce_section(selected_countries) %>%
         generate_females_occupation_groups_section(selected_countries) %>%
         generate_gender_wage_premiumbysector_section(selected_countries) %>%
-        generate_wage_premium_gender_section(doc, selected_countries)
+        generate_wage_premium_gender_section(selected_countries)
       
       # ──────────────────────────────────────
       # 📘 Conclusion
