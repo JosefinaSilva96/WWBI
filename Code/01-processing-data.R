@@ -124,31 +124,58 @@ data_wwbi_long <- data_wwbi %>%
   mutate(year = as.numeric(gsub("year_", "", year))) %>%
   filter(!is.na(value))
 
-# ── Compute aggregates from latest obs per country ────────────────────────────
+# ── Save country-level base before any aggregates ─────────────────────────────
+data_wwbi_countries <- data_wwbi_long
 
-# Step 1: latest observation per country-indicator (excludes any aggregates via iso3c filter)
-data_wwbi_latest <- data_wwbi_long %>%
+# ── PART A: Year-by-year aggregates (for time series in Shiny) ────────────────
+regional_mean_ts <- data_wwbi_countries %>%
+  filter(!is.na(wb_region)) %>%
+  group_by(wb_region, year, indicator_name) %>%
+  summarise(value = mean(value, na.rm = TRUE), .groups = "drop") %>%
+  rename(country_name = wb_region) %>%
+  mutate(is_latest = FALSE)
+
+income_mean_ts <- data_wwbi_countries %>%
+  filter(!is.na(income_level)) %>%
+  group_by(income_level, year, indicator_name) %>%
+  summarise(value = mean(value, na.rm = TRUE), .groups = "drop") %>%
+  rename(country_name = income_level) %>%
+  mutate(is_latest = FALSE)
+
+global_mean_ts <- data_wwbi_countries %>%
+  group_by(year, indicator_name) %>%
+  summarise(value = mean(value, na.rm = TRUE), .groups = "drop") %>%
+  mutate(
+    country_name = "Global",
+    iso3c        = "GLB",
+    country_code = "GLB",
+    wb_region    = "All regions",
+    income_level = "All incomes",
+    is_latest    = FALSE
+  )
+
+# ── PART B: Latest-obs aggregates (for cross-country comparison, matches Excel)
+data_wwbi_latest <- data_wwbi_countries %>%
   filter(!is.na(value), !is.na(iso3c)) %>%
   group_by(country_name, indicator_name) %>%
   filter(year == max(year)) %>%
   ungroup()
 
-# Step 2: Regional mean
-regional_mean <- data_wwbi_latest %>%
+regional_mean_latest <- data_wwbi_latest %>%
   filter(!is.na(wb_region)) %>%
   group_by(wb_region, indicator_name) %>%
   summarise(value = mean(value, na.rm = TRUE), .groups = "drop") %>%
-  rename(country_name = wb_region)
+  rename(country_name = wb_region) %>%
+  mutate(year = NA_real_, is_latest = TRUE)
 
-# Step 3: Income mean
-income_mean <- data_wwbi_latest %>%
+income_mean_latest <- data_wwbi_latest %>%
   filter(!is.na(income_level)) %>%
   group_by(income_level, indicator_name) %>%
   summarise(value = mean(value, na.rm = TRUE), .groups = "drop") %>%
-  rename(country_name = income_level)
+  rename(country_name = income_level) %>%
+  mutate(year = NA_real_, is_latest = TRUE)
 
-# Step 4: Global mean
-global_mean <- data_wwbi_latest %>%
+global_mean_latest <- data_wwbi_latest %>%
   group_by(indicator_name) %>%
   summarise(value = mean(value, na.rm = TRUE), .groups = "drop") %>%
   mutate(
@@ -156,19 +183,30 @@ global_mean <- data_wwbi_latest %>%
     iso3c        = "GLB",
     country_code = "GLB",
     wb_region    = "All regions",
-    income_level = "All incomes"
+    income_level = "All incomes",
+    year         = NA_real_,
+    is_latest    = TRUE
   )
 
-# Step 5: Append all aggregates once
-data_wwbi_long <- bind_rows(data_wwbi_long, regional_mean, income_mean, global_mean)
+# ── Append everything once ────────────────────────────────────────────────────
+data_wwbi_long <- bind_rows(
+  data_wwbi_countries,    # country-level, all years
+  regional_mean_ts,       # regional averages, all years  (Shiny time series)
+  income_mean_ts,         # income averages, all years    (Shiny time series)
+  global_mean_ts,         # global average, all years     (Shiny time series)
+  regional_mean_latest,   # regional averages, latest only (matches Excel)
+  income_mean_latest,     # income averages, latest only   (matches Excel)
+  global_mean_latest      # global average, latest only    (matches Excel)
+)
 
-# Step 6: Verify LAC
+# ── Verify ────────────────────────────────────────────────────────────────────
+# Should show year-by-year rows (is_latest = FALSE) + 1 latest row (is_latest = TRUE)
 data_wwbi_long %>%
   filter(
     country_name == "Latin America & Caribbean",
     indicator_name == "Core Public Administration workers, as a share of public formal employees"
   ) %>%
-  select(country_name, year, value)
+  select(country_name, year, value, is_latest)
 
 # Save
 write_dta(data_wwbi_long, file.path(data_path, "Data/data_wwbi_long.dta"))
@@ -196,12 +234,12 @@ public_sector_emp_temp <- data_wwbi_long[data_wwbi_long$indicator_name %in% c(
 public_sector_emp_temp <- public_sector_emp_temp %>%
   select(year, indicator_name, value, wb_region, country_name) %>%
   mutate(
-    indicator_name  = factor(indicator_name),
-    indicator_label = recode(indicator_name,
-                             "Public sector employment, as a share of formal employment" = "as a share of formal employment",
-                             "Public sector employment, as a share of paid employment"   = "as a share of paid employment",
-                             "Public sector employment, as a share of total employment"  = "as a share of total employment"),
-    value           = as.numeric(value),
+    indicator_name   = factor(indicator_name),
+    indicator_label  = recode(indicator_name,
+                              "Public sector employment, as a share of formal employment" = "as a share of formal employment",
+                              "Public sector employment, as a share of paid employment"   = "as a share of paid employment",
+                              "Public sector employment, as a share of total employment"  = "as a share of total employment"),
+    value            = as.numeric(value),
     value_percentage = value * 100
   )
 
@@ -242,8 +280,8 @@ public_sector_workforce <- data_wwbi_long %>%
   mutate(
     value_percentage = value * 100,
     indicator_name   = case_when(
-      indicator_name == "Education workers, as a share of public paid employees"          ~ "Education",
-      indicator_name == "Health workers, as a share of public paid employees"             ~ "Health",
+      indicator_name == "Education workers, as a share of public paid employees"             ~ "Education",
+      indicator_name == "Health workers, as a share of public paid employees"                ~ "Health",
       indicator_name == "Public Administration workers, as a share of public paid employees" ~ "Public Administration",
       TRUE ~ indicator_name
     )
@@ -426,10 +464,10 @@ gender_wage_premium <- data_wwbi_long %>%
   mutate(value = as.numeric(value)) %>%
   select(year, indicator_name, value, country_name, wb_region) %>%
   mutate(
-    indicator_name  = factor(indicator_name),
-    indicator_label = recode(indicator_name,
-                             "Public sector wage premium, by gender: Female (compared to all private employees)" = "Female",
-                             "Public sector wage premium, by gender: Male (compared to all private employees)"   = "Male"),
+    indicator_name   = factor(indicator_name),
+    indicator_label  = recode(indicator_name,
+                              "Public sector wage premium, by gender: Female (compared to all private employees)" = "Female",
+                              "Public sector wage premium, by gender: Male (compared to all private employees)"   = "Male"),
     value_percentage = value * 100,
     value_percentage = as.numeric(value_percentage),
     value_rescaled   = rescale(value_percentage, to = c(0, 1))
