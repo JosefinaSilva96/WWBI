@@ -249,32 +249,21 @@ data_wwbi_long <- data_wwbi %>%
   filter(!is.na(value)) #4096 obs
 
 
-regional_mean<- data_wwbi_long %>%
+# Compute BOTH before any bind_rows
+regional_mean <- data_wwbi_long %>%
+  filter(!is.na(wb_region)) %>%
   group_by(wb_region, year, indicator_name) %>%
-  summarise(mean_value = mean(value, na.rm = TRUE), .groups = 'drop')
-
-
-regional_mean <- regional_mean %>%
-  rename(country_name = wb_region)
-
-regional_mean <- regional_mean %>%
-  rename(value = mean_value)
-
-data_wwbi_long <- bind_rows(data_wwbi_long, regional_mean)
+  summarise(mean_value = mean(value, na.rm = TRUE), .groups = "drop") %>%
+  rename(country_name = wb_region, value = mean_value)
 
 income_mean <- data_wwbi_long %>%
+  filter(!is.na(income_level)) %>%
   group_by(income_level, year, indicator_name) %>%
-  summarise(mean_value = mean(value, na.rm = TRUE), .groups = 'drop')
+  summarise(mean_value = mean(value, na.rm = TRUE), .groups = "drop") %>%
+  rename(country_name = income_level, value = mean_value)
 
-
-income_mean <- income_mean %>%
-  rename(country_name = income_level)
-
-income_mean <- income_mean %>%
-  rename(value = mean_value)
-
-
-data_wwbi_long <- bind_rows(data_wwbi_long, income_mean)
+# THEN append both at once
+data_wwbi_long <- bind_rows(data_wwbi_long, regional_mean, income_mean)
 
 #Build global means 
 
@@ -987,5 +976,5 @@ saveRDS(pay_compression_wide, file.path(data_path, "Data", "pay_compression_wide
 #end of script
 
 
-shinyApp(ui = ui, server = server)
+
 
