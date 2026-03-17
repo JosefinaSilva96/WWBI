@@ -43,6 +43,18 @@ gdp_pc    <- read_dta(file.path(data_path, "/Data/data_gdp.dta"))
 data_table     <- as.data.table(data_wwbi)
 data_table_gdp <- as.data.table(gdp_pc)
 
+# ── Helper: keep latest year for countries, is_latest=TRUE for aggregates ─────
+# Ensures exactly ONE row per group in cross-section datasets
+keep_latest <- function(df, group_vars) {
+  df %>%
+    group_by(across(all_of(group_vars))) %>%
+    mutate(max_year = suppressWarnings(max(year, na.rm = TRUE))) %>%
+    filter(is_latest == TRUE | year == max_year) %>%
+    filter(!(n() > 1 & (is_latest == FALSE | is.na(is_latest)))) %>%
+    select(-max_year) %>%
+    ungroup()
+}
+
 #Part II ----
 
 setDT(data_wwbi)
@@ -73,7 +85,6 @@ data_wwbi <- as.data.frame(data_wwbi)
 countries <- unique(data_wwbi$country_name)
 indicator <- unique(data_wwbi$indicator_name)
 
-# Filter and reshape selected data
 selected_data_long <- data_wwbi %>%
   filter(indicator_name == indicator & country_name %in% countries) %>%
   select(country_name, indicator_name, wb_region, income_level, starts_with("year_")) %>%
@@ -190,7 +201,7 @@ public_sector_emp_temp <- data_wwbi_long %>%
   filter(indicator_name %in% c(
     "Public sector employment, as a share of formal employment",
     "Public sector employment, as a share of paid employment")) %>%
-  select(year, indicator_name, value, wb_region, country_name) %>%
+  select(year, indicator_name, value, wb_region, country_name, is_latest) %>%
   mutate(
     indicator_name   = factor(indicator_name),
     indicator_label  = recode(indicator_name,
@@ -205,7 +216,7 @@ saveRDS(public_sector_emp_temp, file.path(data_path, "Data", "public_sector_emp_
 
 public_sector_emp <- public_sector_emp %>%
   mutate(value_percentage = value * 100) %>%
-  select(year, indicator_name, value, country_name, wb_region, value_percentage) %>%
+  select(year, indicator_name, value, country_name, wb_region, value_percentage, is_latest) %>%
   mutate(
     indicator_name  = factor(indicator_name),
     indicator_label = recode(indicator_name,
@@ -216,12 +227,10 @@ public_sector_emp <- public_sector_emp %>%
 
 saveRDS(public_sector_emp, file.path(data_path, "Data", "public_sector_emp.rds"))
 
-# KEY CHANGE: use is.na(year) | year == max(...) to keep aggregate rows
+# Cross-section: one row per country-indicator (keep_latest handles aggregates)
 public_sector_emp_temp_last <- public_sector_emp %>%
   filter(!is.na(value)) %>%
-  group_by(country_name, indicator_name, wb_region) %>%
-  filter(is.na(year) | year == max(year, na.rm = TRUE)) %>%
-  ungroup() %>%
+  keep_latest(c("country_name", "indicator_name", "wb_region")) %>%
   mutate(
     value            = as.numeric(value),
     value_percentage = value * 100
@@ -267,9 +276,7 @@ public_sector_workforce_clean <- data_wwbi_long %>%
   mutate(value_percentage = value * 100)
 
 latest_values <- public_sector_workforce_clean %>%
-  group_by(country_name, indicator_name, wb_region) %>%
-  filter(is.na(year) | year == max(year, na.rm = TRUE)) %>%   # KEY CHANGE
-  ungroup() %>%
+  keep_latest(c("country_name", "indicator_name", "wb_region")) %>%
   group_by(country_name, indicator_name, wb_region, year) %>%
   summarise(value_percentage = mean(value_percentage, na.rm = TRUE), .groups = "drop")
 
@@ -300,7 +307,7 @@ region_other <- region_summary_partial %>%
   group_by(wb_region) %>%
   summarise(indicator_name = "Other", mean_value = 100 - sum(mean_value, na.rm = TRUE), .groups = "drop")
 
-region_summary   <- bind_rows(region_summary_partial, region_other)
+region_summary <- bind_rows(region_summary_partial, region_other)
 
 region_as_country <- region_summary %>%
   transmute(
@@ -319,7 +326,7 @@ public_sector_workforce_clean <- public_sector_workforce_clean %>%
 
 write_dta(public_sector_workforce_clean, file.path(data_path, "Data/public_sector_workforce_clean.dta"))
 
-# Gender workforce
+# Gender workforce (full time series — no keep_latest, Shiny handles latest)
 gender_workforce <- data_wwbi_long %>%
   filter(indicator_name %in% c(
     "Females, as a share of public paid employees",
@@ -343,9 +350,9 @@ gdp_2015 <- data_gdp %>%
 
 write_dta(gdp_2015, file.path(data_path, "Data/gdp_2015.dta"))
 
-# Merged data
+# Merged data (uses time-series wage bill rows only)
 merged_data <- wage_bill_publicexp %>%
-  filter(is_latest == FALSE | is.na(is_latest)) %>%   # time-series rows only for GDP scatter
+  filter(is_latest == FALSE | is.na(is_latest)) %>%
   rename(indicator_value = value) %>%
   left_join(gdp_2015, by = "country_name") %>%
   select(country_name, indicator_name, country_code, indicator_value, gdp_value, wb_region, year) %>%
@@ -357,16 +364,14 @@ merged_data <- wage_bill_publicexp %>%
 
 write_dta(merged_data, file.path(data_path, "Data/merged_data.dta"))
 
-# Tertiary education — KEY CHANGE: is.na(year) keeps aggregate rows
+# Tertiary education — cross-section, one row per country
 tertiary_education <- data_wwbi_long %>%
   filter(indicator_name %in% c(
     "Individuals with tertiary education as a share of public paid employees",
     "Individuals with tertiary education as a share of private paid employees")) %>%
   mutate(value_percentage = value * 100) %>%
   filter(!is.na(value)) %>%
-  group_by(country_name, indicator_name, wb_region) %>%
-  filter(is.na(year) | year == max(year, na.rm = TRUE)) %>%   # KEY CHANGE
-  ungroup() %>%
+  keep_latest(c("country_name", "indicator_name", "wb_region")) %>%
   mutate(indicator_name = case_when(
     indicator_name == "Individuals with tertiary education as a share of private paid employees" ~ "as a share of private paid employees",
     indicator_name == "Individuals with tertiary education as a share of public paid employees"  ~ "as a share of public paid employees",
@@ -375,18 +380,16 @@ tertiary_education <- data_wwbi_long %>%
 
 write_dta(tertiary_education, file.path(data_path, "Data/tertiary_education.dta"))
 
-# Public wage premium — KEY CHANGE
+# Public wage premium — cross-section
 public_wage_premium <- data_wwbi_long %>%
   filter(indicator_name == "Public sector wage premium (compared to all private employees)") %>%
   mutate(value_percentage = value * 100) %>%
   filter(!is.na(value)) %>%
-  group_by(country_name, indicator_name, wb_region) %>%
-  filter(is.na(year) | year == max(year, na.rm = TRUE)) %>%   # KEY CHANGE
-  ungroup()
+  keep_latest(c("country_name", "indicator_name", "wb_region"))
 
 write_dta(public_wage_premium, file.path(data_path, "Data/public_wage_premium.dta"))
 
-# Public wage premium by education — KEY CHANGE
+# Public wage premium by education — cross-section
 public_wage_premium_educ <- data_wwbi_long %>%
   filter(indicator_name %in% c(
     "Public sector wage premium, by education level: Tertiary Education (compared to formal wage employees)",
@@ -395,9 +398,7 @@ public_wage_premium_educ <- data_wwbi_long %>%
     "Public sector wage premium, by education level: No Education (compared to formal wage employees)")) %>%
   mutate(value_percentage = value * 100) %>%
   filter(!is.na(value)) %>%
-  group_by(country_name, indicator_name, wb_region) %>%
-  filter(is.na(year) | year == max(year, na.rm = TRUE)) %>%   # KEY CHANGE
-  ungroup() %>%
+  keep_latest(c("country_name", "indicator_name", "wb_region")) %>%
   mutate(indicator_name = case_when(
     indicator_name == "Public sector wage premium, by education level: Tertiary Education (compared to formal wage employees)"  ~ "Tertiary Education",
     indicator_name == "Public sector wage premium, by education level: Secondary Education (compared to formal wage employees)" ~ "Secondary Education",
@@ -408,14 +409,14 @@ public_wage_premium_educ <- data_wwbi_long %>%
 
 write_dta(public_wage_premium_educ, file.path(data_path, "Data/public_wage_premium_educ.dta"))
 
-# Gender wage premium (full time series — no latest filter needed, Shiny handles it)
+# Gender wage premium (full time series for trend chart)
 gender_wage_premium <- data_wwbi_long %>%
   filter(indicator_name %in% c(
     "Public sector wage premium, by gender: Female (compared to all private employees)",
     "Public sector wage premium, by gender: Male (compared to all private employees)"
   )) %>%
   mutate(value = as.numeric(value)) %>%
-  select(year, indicator_name, value, country_name, wb_region) %>%
+  select(year, indicator_name, value, country_name, wb_region, is_latest) %>%
   mutate(
     indicator_name   = factor(indicator_name),
     indicator_label  = recode(indicator_name,
@@ -428,12 +429,10 @@ gender_wage_premium <- data_wwbi_long %>%
 
 saveRDS(gender_wage_premium, file.path(data_path, "Data", "gender_wage_premium.rds"))
 
-# Gender wage premium last — KEY CHANGE
+# Gender wage premium last — cross-section, one row per country
 gender_wage_premium_last <- gender_wage_premium %>%
   filter(!is.na(value)) %>%
-  group_by(country_name, indicator_label, wb_region) %>%
-  filter(is.na(year) | year == max(year, na.rm = TRUE)) %>%   # KEY CHANGE
-  ungroup() %>%
+  keep_latest(c("country_name", "indicator_label", "wb_region")) %>%
   mutate(
     value_percentage = as.numeric(value * 100),
     value_rescaled   = rescale(value * 100, to = c(0, 1))
@@ -442,7 +441,7 @@ gender_wage_premium_last <- gender_wage_premium %>%
 
 saveRDS(gender_wage_premium_last, file.path(data_path, "Data", "gender_wage_premium_last.rds"))
 
-# Gender leadership — KEY CHANGE
+# Gender leadership — cross-section
 gender_leadership <- data_wwbi_long %>%
   filter(indicator_name %in% c(
     "Females, as a share of public paid employees by occupational group: Managers",
@@ -450,7 +449,7 @@ gender_leadership <- data_wwbi_long %>%
     "Females, as a share of private paid employees by occupational group: Managers",
     "Females, as a share of private paid employees by occupational group: Clerks"
   )) %>%
-  select(year, indicator_name, value, country_name, wb_region) %>%
+  select(year, indicator_name, value, country_name, wb_region, is_latest) %>%
   mutate(
     indicator_name  = factor(indicator_name),
     value           = as.numeric(value),
@@ -461,9 +460,7 @@ gender_leadership <- data_wwbi_long %>%
                              "Females, as a share of private paid employees by occupational group: Clerks"   = "Clerks-Private")
   ) %>%
   filter(!is.na(value)) %>%
-  group_by(country_name, indicator_label, wb_region) %>%
-  filter(is.na(year) | year == max(year, na.rm = TRUE)) %>%   # KEY CHANGE
-  ungroup() %>%
+  keep_latest(c("country_name", "indicator_label", "wb_region")) %>%
   mutate(
     value_percentage = as.numeric(value * 100),
     value_rescaled   = rescale(value * 100, to = c(0, 1))
@@ -472,7 +469,7 @@ gender_leadership <- data_wwbi_long %>%
 
 saveRDS(gender_leadership, file.path(data_path, "Data", "gender_leadership.rds"))
 
-# Gender wage premium in public sector — KEY CHANGE
+# Gender wage premium in public sector — cross-section
 gender_wage_premiumpublic <- data_wwbi_long %>%
   filter(indicator_name %in% c(
     "Gender wage premium in the public sector, by industry: Public Administration (compared to male paid employees)",
@@ -481,9 +478,7 @@ gender_wage_premiumpublic <- data_wwbi_long %>%
   )) %>%
   mutate(value = as.numeric(value), value_percentage = value * 100) %>%
   filter(!is.na(value)) %>%
-  group_by(country_name, indicator_name, wb_region) %>%
-  filter(is.na(year) | year == max(year, na.rm = TRUE)) %>%   # KEY CHANGE
-  ungroup() %>%
+  keep_latest(c("country_name", "indicator_name", "wb_region")) %>%
   mutate(
     indicator_label = case_when(
       indicator_name == "Gender wage premium in the public sector, by industry: Public Administration (compared to male paid employees)" ~ "Public Administration",
@@ -498,7 +493,7 @@ gender_wage_premiumpublic <- data_wwbi_long %>%
 
 saveRDS(gender_wage_premiumpublic, file.path(data_path, "Data", "gender_wage_premiumpublic.rds"))
 
-# Pay compression — KEY CHANGE
+# Pay compression — cross-section
 pay_compression <- data_wwbi_long %>%
   filter(indicator_name %in% c(
     "Pay compression ratio in public sector (ratio of 90th/10th percentile earners)",
@@ -506,14 +501,11 @@ pay_compression <- data_wwbi_long %>%
   )) %>%
   mutate(value = as.numeric(value), value_percentage = value * 100) %>%
   filter(!is.na(value)) %>%
-  group_by(country_name, wb_region, indicator_name) %>%
-  filter(is.na(year) | year == max(year, na.rm = TRUE)) %>%   # KEY CHANGE
-  ungroup()
+  keep_latest(c("country_name", "wb_region", "indicator_name"))
 
 pay_compression_wide <- pay_compression %>%
-  select(country_name, indicator_name, value) %>%
   group_by(country_name, indicator_name) %>%
-  summarise(value = mean(value, na.rm = TRUE), .groups = "drop") %>%   # collapse duplicates first
+  summarise(value = mean(value, na.rm = TRUE), .groups = "drop") %>%
   pivot_wider(names_from = indicator_name, values_from = value) %>%
   rename(
     Public_Sector  = "Pay compression ratio in public sector (ratio of 90th/10th percentile earners)",
